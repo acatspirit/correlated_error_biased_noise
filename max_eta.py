@@ -1,6 +1,5 @@
 import numpy as np
 from pymatching import Matching
-import stim
 import matplotlib.pyplot as plt
 from scipy import sparse, linalg, optimize
 import CompassCodes as cc
@@ -26,24 +25,26 @@ def get_threshold(errors_array, p_list, pth_0):
 
 
     # make pairwise sets of points from the errors_array
-    log_x_errs = errors_array[0]
-    log_z_errs = errors_array[1]
-    log_corr_z_errs = errors_array[2]
-    total_errs = errors_array[3]
+    # log_x_errs = errors_array[0]
+    # log_z_errs = errors_array[1]
+    # log_corr_z_errs = errors_array[2]
+    # total_errs = errors_array[3]
 
     # guess threshold
     pth_averages = []
+    pth_error_averages = []
     
     for i in range(len(errors_array)):
         pth_list = []
         pth_err_list = []
-        for j in range(len(errors_array[i]), step=2):
-            net_err = [max(a,b) for a,b in zip(errors_array[i][j], errors_array[i][j+1])]
-            popt, pcov = optimize.curve_fit(quadratic, p_list, net_err, p0=[1, pth_0[i], 0.5])
+        for j in range(1,len(errors_array[i]), 2):
+            net_err = [max(a,b) for a,b in errors_array[i][j-1], errors_array[i][j]] # fix this line
+            popt, pcov = optimize.curve_fit(quadratic, p_list, net_err, p0=[1, pth_0[i], 1], bounds= ([0, pth_0[i]-0.2, 0],[np.inf, pth_0[i]+0.2, np.inf]), maxfev=5000)
             pth_list += [popt[1]]
             pth_err_list += [pcov[1]]
 
-        pth_averages.append(np.array([sum(pth_list)/len(pth_list), sum(pth_err_list)/len(pth_err_list)]))
+        pth_averages.append(sum(pth_list)/len(pth_list))
+        pth_error_averages.append(sum(pth_err_list)/len(pth_err_list))
 
     return pth_averages
 
@@ -90,7 +91,7 @@ def get_data(num_shots, l, eta, p_list, d_list):
     data = [log_err_list_x, log_err_indep_list_z, log_err_corr_list_z, log_total_err]
 
     # scale for current eta
-    data = [data[0]*prob_scale[0], data[1]*prob_scale[1], data[2], data[3]]
+    data = [np.array(data[0])*prob_scale[0], np.array(data[1])*prob_scale[1], np.array(data[2]), np.array(data[3])]
     return data
 
 def get_max_thresh_from_eta(num_shots, l, eta, p_list, d_list):
@@ -142,6 +143,7 @@ eta =  0.5
 p_th0 = [0.1, 0.1, 0.16, 0.14] # x , z, z correlated, total
 
 data = get_data(num_shots, l, eta, p_list, d_list)
+print(data)
 pth_list = get_threshold(data, p_list, p_th0)
 
 print(pth_list)
