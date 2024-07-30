@@ -1,10 +1,10 @@
 import numpy as np
 from pymatching import Matching
-import stim
 import matplotlib.pyplot as plt
 from scipy import sparse, linalg
 import CompassCodes as cc
 import csv
+
 
 
 def depolarizing_err(p, H, eta=0.5):
@@ -181,7 +181,7 @@ def decoding_failures_total(H_x, H_z, L_x, L_z, p, eta, shots):
 # for generating a threshold graph for Z/X too 
 #
 
-num_shots = 1000000
+num_shots = 1000
 d_list = [3,5,7,9,11]
 l=6
 p_list = np.linspace(0.01, 0.5, 20)
@@ -221,54 +221,54 @@ with open(f"l{l}_shots{num_shots}.csv", 'w', newline='') as csvfile:
     writer = csv.writer(csvfile)
     writer.writerows(data)
 
-# Create a figure with two subplots
-fig, axs = plt.subplots(2, 2, figsize=(12, 10))
+# # Create a figure with two subplots
+# fig, axs = plt.subplots(2, 2, figsize=(12, 10))
 
-ax1 = axs[0][0]
-ax2 = axs[0][1]
-ax3 = axs[1][0]
-ax4 = axs[1][1]
-# Plot on the first subplot (ax1)
-for d, logical_errors_x in zip(d_list, log_err_list_x):
-    ax1.plot(p_list*prob_scale[0], logical_errors_x, label="d={}".format(d))
-ax1.set_title('X Errors')
-ax1.set_xlabel("Physical Error Rate")
-ax1.set_ylabel('Logical Error Rate')
-ax1.legend()
-ax1.grid(True)
+# ax1 = axs[0][0]
+# ax2 = axs[0][1]
+# ax3 = axs[1][0]
+# ax4 = axs[1][1]
+# # Plot on the first subplot (ax1)
+# for d, logical_errors_x in zip(d_list, log_err_list_x):
+#     ax1.plot(p_list*prob_scale[0], logical_errors_x, label="d={}".format(d))
+# ax1.set_title('X Errors')
+# ax1.set_xlabel("Physical Error Rate")
+# ax1.set_ylabel('Logical Error Rate')
+# ax1.legend()
+# ax1.grid(True)
 
-# Plot Independent Z errors
-for d, logical_errors_indep_z in zip(d_list, log_err_indep_list_z):
-    ax2.plot(p_list*prob_scale[1], logical_errors_indep_z, label="d={}".format(d))
-ax2.set_title('Z Errors')
-ax2.set_xlabel("Physical Error Rate")
-ax2.set_ylabel('Logical Error Rate')
-ax2.legend()
-ax2.grid(True)
+# # Plot Independent Z errors
+# for d, logical_errors_indep_z in zip(d_list, log_err_indep_list_z):
+#     ax2.plot(p_list*prob_scale[1], logical_errors_indep_z, label="d={}".format(d))
+# ax2.set_title('Z Errors')
+# ax2.set_xlabel("Physical Error Rate")
+# ax2.set_ylabel('Logical Error Rate')
+# ax2.legend()
+# ax2.grid(True)
 
-# Plot Z / X Errors
-for d, logical_errors_z in zip(d_list, log_err_list_z):
-    ax3.plot(p_list, logical_errors_z, label="d={}".format(d))
-ax3.set_title('Z/X Errors')
-ax3.set_xlabel("Physical Error Rate")
-ax3.set_ylabel('Logical Error Rate')
-ax3.legend()
-ax3.grid(True)
+# # Plot Z / X Errors
+# for d, logical_errors_z in zip(d_list, log_err_list_z):
+#     ax3.plot(p_list, logical_errors_z, label="d={}".format(d))
+# ax3.set_title('Z/X Errors')
+# ax3.set_xlabel("Physical Error Rate")
+# ax3.set_ylabel('Logical Error Rate')
+# ax3.legend()
+# ax3.grid(True)
 
-# Plot Z + X Errors
-for d, log_total in zip(d_list, log_total_err_list):
-    ax4.plot(p_list, log_total, label="d={}".format(d))
-ax4.set_title('All Independent Errors')
-ax4.set_xlabel("Physical Error Rate")
-ax4.set_ylabel('Logical Error Rate')
-ax4.legend()
-ax4.grid(True)
+# # Plot Z + X Errors
+# for d, log_total in zip(d_list, log_total_err_list):
+#     ax4.plot(p_list, log_total, label="d={}".format(d))
+# ax4.set_title('All Independent Errors')
+# ax4.set_xlabel("Physical Error Rate")
+# ax4.set_ylabel('Logical Error Rate')
+# ax4.legend()
+# ax4.grid(True)
 
-# Adjust layout to prevent overlap
-plt.tight_layout()
+# # Adjust layout to prevent overlap
+# plt.tight_layout()
 
-# Display the figure with subplots
-plt.show()
+# # Display the figure with subplots
+# plt.show()
 
 
 
