@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 l = 6
-num_shots = 1000
+num_shots = 1000000
 eta = 5.89
 d_list = [3,5,7,9,11]
 p_list = np.linspace(0.01, 0.5, 20)

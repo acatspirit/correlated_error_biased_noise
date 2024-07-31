@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH -e slurm_compass_code_corr_err_l6_test.err               # Error file location
+#SBATCH -e slurm_compass_code_corr_err_l6_1000000.err               # Error file location
 #SBATCH -o slurm_%A_%a.out 
 #SBATCH -p brownlab-gpu,common,scavenger     # Show who you are and get priority
 #SBATCH --array=1-5                # How many jobs do you have (the int variable $SLURM_ARRAY_TASK_ID
