@@ -183,7 +183,7 @@ def decoding_failures_total(H_x, H_z, L_x, L_z, p, eta, shots):
 # for generating a threshold graph for Z/X too 
 #
 
-num_shots = 1000
+num_shots = 1000000
 d_list = [3,5,7,9,11]
 l=6
 p_list = np.linspace(0.01, 0.5, 20)
@@ -229,7 +229,6 @@ for ind, sublist in enumerate(data):
     df = pd.DataFrame(sublist)
     file_name = os.path.join(folder,f"{ind_dict[ind+1]}.csv")
     df.to_csv(file_name, index=False, header=False)
-
 
 
 
