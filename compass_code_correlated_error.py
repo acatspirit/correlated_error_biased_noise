@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 from scipy import sparse, linalg
 import CompassCodes as cc
 import csv
+import pandas as pd
+import os
 
 
 
@@ -215,60 +217,20 @@ for d in d_list:
     log_err_indep_list_z.append(np.array(log_errors_indep_z))
     log_total_err_list.append(np.array(log_total_err))
 
-data = [log_err_list_x, log_err_list_z, log_err_indep_list_z, log_total_err]
 
-with open(f"l{l}_shots{num_shots}.csv", 'w', newline='') as csvfile:
-    writer = csv.writer(csvfile)
-    writer.writerows(data)
+data = [log_err_list_x, log_err_list_z, log_err_indep_list_z, log_total_err_list]
+ind_dict = {1:'x', 2:'z', 3:'corr_z', 4:'total'}
+folder = f"l{l}_shots{num_shots}"
 
-# # Create a figure with two subplots
-# fig, axs = plt.subplots(2, 2, figsize=(12, 10))
+if not os.path.exists(folder):
+    os.makedirs(folder)
 
-# ax1 = axs[0][0]
-# ax2 = axs[0][1]
-# ax3 = axs[1][0]
-# ax4 = axs[1][1]
-# # Plot on the first subplot (ax1)
-# for d, logical_errors_x in zip(d_list, log_err_list_x):
-#     ax1.plot(p_list*prob_scale[0], logical_errors_x, label="d={}".format(d))
-# ax1.set_title('X Errors')
-# ax1.set_xlabel("Physical Error Rate")
-# ax1.set_ylabel('Logical Error Rate')
-# ax1.legend()
-# ax1.grid(True)
+for ind, sublist in enumerate(data):
+    df = pd.DataFrame(sublist)
+    file_name = os.path.join(folder,f"{ind_dict[ind+1]}.csv")
+    df.to_csv(file_name, index=False, header=False)
 
-# # Plot Independent Z errors
-# for d, logical_errors_indep_z in zip(d_list, log_err_indep_list_z):
-#     ax2.plot(p_list*prob_scale[1], logical_errors_indep_z, label="d={}".format(d))
-# ax2.set_title('Z Errors')
-# ax2.set_xlabel("Physical Error Rate")
-# ax2.set_ylabel('Logical Error Rate')
-# ax2.legend()
-# ax2.grid(True)
 
-# # Plot Z / X Errors
-# for d, logical_errors_z in zip(d_list, log_err_list_z):
-#     ax3.plot(p_list, logical_errors_z, label="d={}".format(d))
-# ax3.set_title('Z/X Errors')
-# ax3.set_xlabel("Physical Error Rate")
-# ax3.set_ylabel('Logical Error Rate')
-# ax3.legend()
-# ax3.grid(True)
-
-# # Plot Z + X Errors
-# for d, log_total in zip(d_list, log_total_err_list):
-#     ax4.plot(p_list, log_total, label="d={}".format(d))
-# ax4.set_title('All Independent Errors')
-# ax4.set_xlabel("Physical Error Rate")
-# ax4.set_ylabel('Logical Error Rate')
-# ax4.legend()
-# ax4.grid(True)
-
-# # Adjust layout to prevent overlap
-# plt.tight_layout()
-
-# # Display the figure with subplots
-# plt.show()
 
 
 
