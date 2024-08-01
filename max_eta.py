@@ -6,41 +6,94 @@ import CompassCodes as cc
 import csv
 from compass_code_correlated_error import decoding_failures_correlated, decoding_failures_total
 from functools import partial
+from lmfit import Minimizer, Parameters, report_fit
+import os
+import pandas as pd
 
-def quadratic(x,a,b,c):
-    return a*(x-b)**2 + c
+def threshold_fit(p,a, b, c, e, pth, mu, d):
+    return a + b*(d**(1/mu))*(p-pth) + c*((d**(1/mu))*(p-pth))**2 + e * ((d**(1/mu))*(p-pth))**3
+
+def combined_residual(params, p_list, d_list, error_list):
+    """ Gets the residuals for a global fit of data with many different d's
+        in: params - the input parameters to the fitting model
+            p_list - list of physical error probabilities to scan
+            d_list - list of lattice distances
+            error_list - the list of lists of logical errors for each distance scanning over each probability.
+                        Obtained from get_data function.
+        returns: The residuals for global and individual fit variables, designated in the get_threshold function
+    """
+    residuals = []
+    for i in range(len(d_list)):
+        curr_d = d_list[i]
+        # Get the local parameters for the current dataset
+        a = params[f'a{curr_d}']
+        b = params[f'b{curr_d}']
+        c = params[f'c{curr_d}']
+        d = params[f'd{curr_d}']
+        e = params[f'e{curr_d}']
+        
+        # Get the shared global parameter
+        pth = params['pth']
+        mu = params['mu']
+        
+        # Calculate the model and residual
+        # model_value = threshold_fit(p_list, a, b, c, e, pth, mu, d)
+        model_value = threshold_fit(p_list, a, b, c,e, pth, mu, d)
+        residuals.append(error_list[i] - model_value)
+    return np.concatenate(residuals)
 
 # find the intersection point of the lines within a range
-def get_threshold(errors_array, p_list, pth_0):
+def get_threshold(error_list, p_list, d_list, pth_0, return_all = False):
     """ Using the list of logical error rates for different distances in errors_array,
         finds the intersection in p_list of the lines
-        in: errors_array - array of lists of logical error rates at different probabilities
+        in: errors_list - the list of lists of logical errors for each distance scanning over each probability.
+                        Obtained from get_data function.
+            d_list - list of lattice distances
             p_list - list of probabilites scanned over to produce errors_array
-            pth_0 - a list of the threshold guesses for each of the error types in errors_array
-        out: p_thr - a float, the probability where intersection occurred
+            pth_0 - the current threshold probability guess for designated logical error
+            return_all - indicates whether or not to return all fitting parameters or just the probability threshold
+        out: p_thr - a float, the probability where intersection of different lattice distances occurred
+            (or) result - the minimized object with all variables for each iteration
+        used "Confinement-Higgs transition in a disordered gauge theory and the
+            accuracy threshold for quantum memory" (2002) section 4.2 by Wang, Harrington, Preskill for fitting model
     """
-    # do a quadratic fit to the area where the threshold is
-    # can also try linear fit - do this one on the log log plot
-    # maybe take the average of pairwise intersections
 
+    params = Parameters()
+    for curr_d in d_list:
+        # local params to vary for each d
+        params.add(f"a{curr_d}", value = 0)
+        # params[f'a{curr_d}'].min = 0
+        # params[f'a{curr_d}'].max = 10
+        
+        params.add(f"b{curr_d}", value = 0.5)
+        # params[f'b{curr_d}'].min = 0
+        # params[f'b{curr_d}'].max = 10
+        params.add(f"c{curr_d}", value = 0.5)
+        # params[f'c{curr_d}'].min = 0
+        # params[f'c{curr_d}'].max = 10
+        params.add(f"e{curr_d}", value = 0.5)
+        # params[f'e{curr_d}'].min = 0
+        # params[f'e{curr_d}'].max = 10
 
-    # guess threshold
-    pth_averages = []
-    pth_error_averages = []
+        # local param to fix
+        params.add(f"d{curr_d}", value=curr_d, vary=False) # lattice size, have been calling this d
+
+        # global params
+        params.add("pth", value=pth_0, vary=True)
+
+        params.add("mu", value=1, vary=True)
+        # params['mu'].min = -1
+        # params['mu'].max = 1
+
+    minimizer = Minimizer(combined_residual, params, fcn_args=(p_list, d_list, error_list))
+    result = minimizer.minimize()
     
-    for i in range(len(errors_array)):
-        pth_list = []
-        pth_err_list = []
-        for j in range(1,len(errors_array[i]), 2):
-            net_err = [max(a,b) for a,b in zip(errors_array[i][j-1], errors_array[i][j])] # fix this line
-            popt, pcov = optimize.curve_fit(quadratic, p_list, net_err, p0=[0.5, pth_0[i], 1], bounds= ([0, pth_0[i]-0.1, 0],[np.inf, pth_0[i]+0.1, np.inf]), maxfev=5000)
-            pth_list += [popt]
-            pth_err_list += [pcov]
-
-        pth_averages.append(sum(pth_list)/len(pth_list))
-        pth_error_averages.append(sum(pth_err_list)/len(pth_err_list))
-
-    return pth_averages
+    
+    if return_all:
+        return result
+    else:
+        return result.params['pth'].value, result.params['pth'].stderr
+    
 
 
 def get_data(num_shots, l, eta, p_list, d_list):
@@ -129,13 +182,85 @@ def get_opt_eta(in_num_shots, in_l, init_eta, in_p_list, in_d_list):
 #
 # Testing the threshold 
 #
-num_shots = 10
-d_list = [3,5,7]
+num_shots = 1000
+d_list = [5,7,9,11]
 l=2
-p_list = np.linspace(0.01, 0.5, 20)
+p_list = np.linspace(0.01, 0.5, 100)
 eta =  0.5
-p_th0 = [0.1, 0.1, 0.16, 0.14] # x , z, z correlated, total
-data = get_data(num_shots, l, eta, p_list, d_list)
-pth_list = get_threshold(data, p_list, p_th0)
+p_th0 = [0.10, 0.10, 0.175, 0.15] # x , z, z correlated, total
+full_data = get_data(num_shots, l, eta, p_list, d_list)
+data = full_data[0]
+get_var = {'x':0, 'z': 1, 'corr_z': 2, 'total':3}
+# result_list = [get_threshold(data[i], p_list, d_list, p_th0[i]) for i in range(len(data))]
 
-print(pth_list)
+p_list_near_th = [p for p in p_list if p_th0[1] - 0.1 < p < p_th0[0] + 0.1]
+data_near_th = [[data[d][i] for i in range(len(p_list)) if p_th0[1] - 0.1 < p_list[i] < p_th0[0] + 0.1] for d in range(len(d_list))]
+result = get_threshold(data_near_th, p_list_near_th, d_list, p_th0[0],return_all=True)
+
+
+
+# l = 6
+# num_shots = 1000000
+# eta = 5.89
+# d_list = [3,5,7,9,11]
+# p_list = np.linspace(0.01, 0.5, 20)
+# prob_scale = [2*0.5/(1+eta), (1+2*eta)/(2*(1+eta))]
+# ind_d = {1:'x', 2:'z', 3:'corr_z', 4:'total'}
+# folder = f"l{l}_shots{num_shots}"
+# files = os.listdir(folder)
+
+# dfs = {}
+# for file in files:
+#     # Construct the full file path
+#     file_path = os.path.join(folder, file)
+    
+#     # Read the CSV file into a DataFrame and append it to the list
+#     df = pd.read_csv(file_path, header=None)
+#     dfs[file[:-4]] = df
+
+# data = dfs['z'].values
+
+
+print(p_list_near_th)
+result = get_threshold(data_near_th, p_list_near_th, d_list, p_th0[1],return_all=True)
+
+print(f"pth: {result.params[f'pth'].value} pm {result.params[f'pth'].stderr}") 
+print(f"mu: {result.params[f'mu'].value} pm {result.params[f'mu'].stderr}")
+
+
+for curr_d in d_list:
+    print(f"a{curr_d}: {result.params[f'a{curr_d}'].value} pm {result.params[f'a{curr_d}'].stderr}") 
+    print(f"b{curr_d}: {result.params[f'b{curr_d}'].value} pm {result.params[f'b{curr_d}'].stderr}") 
+    print(f"c{curr_d}: {result.params[f'c{curr_d}'].value} pm {result.params[f'c{curr_d}'].stderr}") 
+    print(f"d{curr_d}: {result.params[f'd{curr_d}'].value} pm {result.params[f'd{curr_d}'].stderr}") 
+    print(f"e{curr_d}: {result.params[f'e{curr_d}'].value} pm {result.params[f'e{curr_d}'].stderr}") 
+
+
+
+# df
+
+# plt.figure(figsize=(10, 5))
+# for i, y in enumerate(data):
+#     curr_d = d_list[i]
+
+#     plt.plot(p_list_near_th, y, 'o', label=f'd={d_list[i]}')
+#     plt.plot(p_list_near_th, threshold_fit(p_list_near_th, result.params[f'a{curr_d}'], result.params[f'b{curr_d}'], result.params[f'c{curr_d}'], result.params[f'e{curr_d}'], \
+#                                    result.params[f'pth'], result.params[f'mu'],result.params[f'd{curr_d}']), label=f'Fit {i}')
+#     # plt.plot(p_list, threshold_fit(p_list, result.params[f'a{curr_d}'], result.params[f'b{curr_d}'], result.params[f'c{curr_d}'], \
+#     #                                result.params[f'pth'], result.params[f'mu'],result.params[f'd{curr_d}']), label=f'Fit {i}')
+# plt.legend()
+# plt.show()
+
+# in sim
+
+plt.figure(figsize=(10, 5))
+for i, y in enumerate(data[0]):
+    curr_d = d_list[i]
+    plt.plot(p_list_near_th, y, 'o', label=f'd={d_list[i]}')
+    plt.plot(p_list_near_th, threshold_fit(p_list_near_th, result.params[f'a{curr_d}'], result.params[f'b{curr_d}'], result.params[f'c{curr_d}'], result.params[f'e{curr_d}'], \
+                                   result.params[f'pth'], result.params[f'mu'],result.params[f'd{curr_d}']), label=f'Fit {i}')
+    # plt.plot(p_list, threshold_fit(p_list, result.params[f'a{curr_d}'], result.params[f'b{curr_d}'], result.params[f'c{curr_d}'], \
+    #                                result.params[f'pth'], result.params[f'mu'],result.params[f'd{curr_d}']), label=f'Fit {i}')    
+plt.legend()
+plt.show()
+# fitting well (the error is not good), but it's not returning what I thought it should return - I think it's returning the overall min of the quadratic, not the crossing point"
