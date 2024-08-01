@@ -186,9 +186,9 @@ def decoding_failures_total(H_x, H_z, L_x, L_z, p, eta, shots):
 if __name__ == "__main__":
     num_shots = 1000000
     d_list = [3,5,7,9,11]
-    l=6
+    l=5
     p_list = np.linspace(0.01, 0.5, 20)
-    eta = 5.89
+    eta = 4.26
     prob_scale = [2*0.5/(1+eta), (1+2*eta)/(2*(1+eta))] # the rate by which we double count errors for each type, X and then Z
     log_err_list_x = []
     log_err_list_z = []
