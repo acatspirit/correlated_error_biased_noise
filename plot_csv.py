@@ -3,9 +3,9 @@ import os
 import matplotlib.pyplot as plt
 import numpy as np
 
-l = 6
+l = 5
 num_shots = 1000000
-eta = 5.89
+eta = 4.26
 d_list = [3,5,7,9,11]
 p_list = np.linspace(0.01, 0.5, 20)
 prob_scale = [2*0.5/(1+eta), (1+2*eta)/(2*(1+eta))]
