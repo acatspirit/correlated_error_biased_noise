@@ -183,52 +183,52 @@ def decoding_failures_total(H_x, H_z, L_x, L_z, p, eta, shots):
 # for generating a threshold graph for Z/X too 
 #
 
-num_shots = 1000000
-d_list = [3,5,7,9,11]
-l=6
-p_list = np.linspace(0.01, 0.5, 20)
-eta = 5.89
-prob_scale = [2*0.5/(1+eta), (1+2*eta)/(2*(1+eta))] # the rate by which we double count errors for each type, X and then Z
-log_err_list_x = []
-log_err_list_z = []
-log_err_indep_list_z = []
-log_total_err_list = []
+if __name__ == "__main__":
+    num_shots = 1000000
+    d_list = [3,5,7,9,11]
+    l=6
+    p_list = np.linspace(0.01, 0.5, 20)
+    eta = 5.89
+    prob_scale = [2*0.5/(1+eta), (1+2*eta)/(2*(1+eta))] # the rate by which we double count errors for each type, X and then Z
+    log_err_list_x = []
+    log_err_list_z = []
+    log_err_indep_list_z = []
+    log_total_err_list = []
 
-for d in d_list:
-    print(f"simulating d={d}")
-    compass_code = cc.CompassCode(d=d, l=l)
-    H_x, H_z = compass_code.H['X'], compass_code.H['Z']
-    log_x, log_z = compass_code.logicals['X'], compass_code.logicals['Z']
+    for d in d_list:
+        compass_code = cc.CompassCode(d=d, l=l)
+        H_x, H_z = compass_code.H['X'], compass_code.H['Z']
+        log_x, log_z = compass_code.logicals['X'], compass_code.logicals['Z']
 
-    log_errors_x = []
-    log_errors_z = []
-    log_errors_indep_z = []
-    log_total_err = []
-    for p in p_list:
-        num_errors_x,num_errors_z = decoding_failures_correlated(H_x, H_z, log_x, log_z, p, eta, num_shots)
-        num_indep_x, num_indep_z = decoding_failures_total(H_x, H_z, log_x, log_z, p, eta, num_shots)
-        log_errors_x.append(num_errors_x/num_shots)
-        log_errors_z.append(num_errors_z/num_shots)
-        log_errors_indep_z.append(num_indep_z/num_shots)
-        log_total_err.append((num_indep_x+num_indep_z)/num_shots)
-    
-    log_err_list_x.append(np.array(log_errors_x))
-    log_err_list_z.append(np.array(log_errors_z))
-    log_err_indep_list_z.append(np.array(log_errors_indep_z))
-    log_total_err_list.append(np.array(log_total_err))
+        log_errors_x = []
+        log_errors_z = []
+        log_errors_indep_z = []
+        log_total_err = []
+        for p in p_list:
+            num_errors_x,num_errors_z = decoding_failures_correlated(H_x, H_z, log_x, log_z, p, eta, num_shots)
+            num_indep_x, num_indep_z = decoding_failures_total(H_x, H_z, log_x, log_z, p, eta, num_shots)
+            log_errors_x.append(num_errors_x/num_shots)
+            log_errors_z.append(num_errors_z/num_shots)
+            log_errors_indep_z.append(num_indep_z/num_shots)
+            log_total_err.append((num_indep_x+num_indep_z)/num_shots)
+        
+        log_err_list_x.append(np.array(log_errors_x))
+        log_err_list_z.append(np.array(log_errors_z))
+        log_err_indep_list_z.append(np.array(log_errors_indep_z))
+        log_total_err_list.append(np.array(log_total_err))
 
 
-data = [log_err_list_x, log_err_list_z, log_err_indep_list_z, log_total_err_list]
-ind_dict = {1:'x', 2:'z', 3:'corr_z', 4:'total'}
-folder = f"l{l}_shots{num_shots}"
+    data = [log_err_list_x, log_err_list_z, log_err_indep_list_z, log_total_err_list]
+    ind_dict = {1:'x', 2:'z', 3:'corr_z', 4:'total'}
+    folder = f"l{l}_shots{num_shots}"
 
-if not os.path.exists(folder):
-    os.makedirs(folder)
+    if not os.path.exists(folder):
+        os.makedirs(folder)
 
-for ind, sublist in enumerate(data):
-    df = pd.DataFrame(sublist)
-    file_name = os.path.join(folder,f"{ind_dict[ind+1]}.csv")
-    df.to_csv(file_name, index=False, header=False)
+    for ind, sublist in enumerate(data):
+        df = pd.DataFrame(sublist)
+        file_name = os.path.join(folder,f"{ind_dict[ind+1]}.csv")
+        df.to_csv(file_name, index=False, header=False)
 
 
 
@@ -238,6 +238,6 @@ for ind, sublist in enumerate(data):
 # l=3 # eta=1.67 # pzx=0.163 # pthr=0.174 # pz=0.142 # px=0.065 #
 # l=4 # eta=3.00 # pzx=0.181 # pthr=0.199 # pz=0.174 # px=0.049 #
 # l=5 # eta=4.26 # pzx=0.203 # pthr=0.217 # pz=0.195 # px=0.041 #
-# l=6 # eta=5.89 # pzx=0.222 # pthr=0.233 # pz=0.213 # px=0.034 #
+# l=6 # eta=5.89 # pzx=0.259 # pthr=0.221 # pz=0.216 # px=0.033 # from 1000000 shots
 #################################################################
 
