@@ -4,11 +4,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-l = 5
+l = 6
 num_shots = 1000000
-eta = 4.26
-d_list = [3,5,7,9,11]
-p_list = np.linspace(0.01, 0.5, 20)
+eta = 5.89
+d_list = [7,9,11,13,15]
+p_list = np.linspace(0.01, 0.5, 40)
 prob_scale = [2*0.5/(1+eta), (1+2*eta)/(2*(1+eta))]
 ind_d = {1:'x', 2:'z', 3:'corr_z', 4:'total'}
 folder = f"l{l}_shots{num_shots}"
