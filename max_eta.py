@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from scipy import optimize
 import CompassCodes as cc
 import csv
-from compass_code_correlated_error import decoding_failures_correlated, decoding_failures_total
+from compass_code_correlated_error import decoding_failures_correlated, decoding_failures_total, decoding_failures
 from functools import partial
 from lmfit import Minimizer, Parameters, report_fit
 import os
@@ -25,6 +25,7 @@ def combined_residual(params, p_list, d_list, error_list):
     residuals = []
     for i in range(len(d_list)):
         curr_d = d_list[i]
+
         # Get the local parameters for the current dataset
         a = params[f'a{curr_d}']
         b = params[f'b{curr_d}']
@@ -37,13 +38,13 @@ def combined_residual(params, p_list, d_list, error_list):
         mu = params['mu']
         
         # Calculate the model and residual
-        # model_value = threshold_fit(p_list, a, b, c, e, pth, mu, d)
-        model_value = threshold_fit(p_list, a, b, c,e, pth, mu, d)
+        model_value = threshold_fit(p_list, a, b, c, e, pth, mu, d)
+        # model_value = threshold_fit(p_list, a, b, c, pth, mu, d)
         residuals.append(error_list[i] - model_value)
     return np.concatenate(residuals)
 
 # find the intersection point of the lines within a range
-def get_threshold(error_list, p_list, d_list, pth_0, return_all = False):
+def get_threshold(error_list, p_list, d_list, pth_0, p_range, return_all = False):
     """ Using the list of logical error rates for different distances in errors_array,
         finds the intersection in p_list of the lines
         in: errors_list - the list of lists of logical errors for each distance scanning over each probability.
@@ -60,18 +61,21 @@ def get_threshold(error_list, p_list, d_list, pth_0, return_all = False):
 
     params = Parameters()
     for curr_d in d_list:
+        
         # local params to vary for each d
         params.add(f"a{curr_d}", value = 0)
         # params[f'a{curr_d}'].min = 0
         # params[f'a{curr_d}'].max = 10
         
-        params.add(f"b{curr_d}", value = 0.5)
+        params.add(f"b{curr_d}", value = 1)
         # params[f'b{curr_d}'].min = 0
         # params[f'b{curr_d}'].max = 10
-        params.add(f"c{curr_d}", value = 0.5)
+
+        params.add(f"c{curr_d}", value = 1)
         # params[f'c{curr_d}'].min = 0
         # params[f'c{curr_d}'].max = 10
-        params.add(f"e{curr_d}", value = 0.5)
+
+        params.add(f"e{curr_d}", value = 0)
         # params[f'e{curr_d}'].min = 0
         # params[f'e{curr_d}'].max = 10
 
@@ -80,6 +84,8 @@ def get_threshold(error_list, p_list, d_list, pth_0, return_all = False):
 
         # global params
         params.add("pth", value=pth_0, vary=True)
+        params['pth'].min = pth_0 - p_range
+        params['pth'].max = pth_0 + p_range
 
         params.add("mu", value=1, vary=True)
         # params['mu'].min = -1
@@ -92,7 +98,7 @@ def get_threshold(error_list, p_list, d_list, pth_0, return_all = False):
     if return_all:
         return result
     else:
-        return result.params['pth'].value, result.params['pth'].stderr
+        return result.params['pth'].value
     
 
 
@@ -125,6 +131,9 @@ def get_data(num_shots, l, eta, p_list, d_list):
         for p in p_list:
             num_errors_x,num_corr_z = decoding_failures_correlated(H_x, H_z, log_x, log_z, p, eta, num_shots)
             num_indep_x, num_indep_z = decoding_failures_total(H_x, H_z, log_x, log_z, p, eta, num_shots)
+            # num_indep_x = decoding_failures(H_z, log_z, p, eta, num_shots, 0)
+            # num_indep_z = decoding_failures(H_x, log_x, p, eta, num_shots, 1)
+            num_corr_z = 0
             log_errors_x.append(num_indep_x/num_shots)
             log_corr_z.append(num_corr_z/num_shots)
             log_errors_indep_z.append(num_indep_z/num_shots)
@@ -141,7 +150,7 @@ def get_data(num_shots, l, eta, p_list, d_list):
     data = [np.array(data[0])*prob_scale[0], np.array(data[1])*prob_scale[1], np.array(data[2]), np.array(data[3])]
     return data
 
-def get_max_thresh_from_eta(num_shots, l, eta, p_list, d_list):
+def get_max_thresh_from_eta(params, num_shots, l, p_list, d_list, err_type, th_range, p_th0_list):
     """ FUNCTION TO BE MAXIMIZED. Returns the threshold with the current data, only eta to be iterated
         Inputs:
             num_shots - the number of experimental iterations
@@ -149,16 +158,26 @@ def get_max_thresh_from_eta(num_shots, l, eta, p_list, d_list):
             eta - the float bias ratio of the error model
             p_list - array of probabilities to scan
             d_list - the distances of compass code to scan
+            err_type - can get the threshold for x, z, corr_z, or total errors
     """
-    data = get_data(num_shots, l, eta, p_list, d_list)
-    curr_thresh = get_threshold(data, p_list)
-    return curr_thresh
+    err_dict = {'x':0, 'z':1, 'corr_z':2, 'total':3}
+    p_th0 = p_th0_list[err_dict[err_type]]
 
-def threshold_minimization(num_shots, l, eta, p_list, d_list):
-    return -get_max_thresh_from_eta(num_shots, l, eta, p_list, d_list)
+    eta = params['eta']
+
+    full_data = get_data(num_shots, l, eta, p_list, d_list)
+    error_data = full_data[err_dict[err_type]]
+    p_list_near_th = [p for p in p_list if p_th0 - th_range < p < p_th0 + th_range]
+    error_data_near_th = [[error_data[d][i] for i in range(len(p_list)) if p_th0 - th_range < p_list[i] < p_th0 + th_range] for d in range(len(d_list))]
+    curr_th = get_threshold(error_data_near_th, p_list_near_th, d_list, p_th0, th_range)
+    
+    return curr_th
+
+def threshold_minimization(eta, num_shots, l, p_list, d_list, err_type, th_range, p_th0_list):
+    return -get_max_thresh_from_eta(eta, num_shots, l, p_list, d_list, err_type, th_range, p_th0_list)
 
 # minimize the negative of the intersection point and return param eta
-def get_opt_eta(in_num_shots, in_l, init_eta, in_p_list, in_d_list):
+def get_opt_eta(in_num_shots, in_l, init_eta, in_p_list, in_d_list, in_err_type, in_th_range, in_p_th0_list):
     """ Returns the eta that produces the maximum p_threshold for a given l and d, along with
         other relevant parameters. 
         in: num_shots - the number of experimental iterations
@@ -168,9 +187,30 @@ def get_opt_eta(in_num_shots, in_l, init_eta, in_p_list, in_d_list):
             d_list - the distances of compass code to scan
         out: array of the optimal eta and corresponding thresholds ptotal, pz/x, pz, and px
     """
-    fixed_threshold = partial(threshold_minimization, num_shots=in_num_shots, l=in_l, p_list=in_p_list, d_list=in_d_list)
-    best_threshold = optimize.minimize(lambda vars: fixed_threshold(*vars), x0 = [init_eta])
-    return best_threshold.x
+    # fixed_threshold = partial(threshold_minimization, num_shots=in_num_shots, l=in_l, p_list=in_p_list, d_list=in_d_list, err_type=err_type, th_range= in_th_range, p_th0_list= in_p_th0_list)
+    # best_threshold = optimize.minimize(lambda eta: fixed_threshold(eta), x0 = [init_eta])
+    params = Parameters()
+
+    # # fixed parameters
+    # params.add('num_shots', value=in_num_shots, vary=False)
+    # params.add('l', value=in_l, vary=False)
+    # params.add('p_list', value=in_p_list, vary=False)
+    # params.add('d_list', value=in_d_list, vary=False)
+    # params.add('err_type', value=in_err_type, vary=False)
+    # params.add('p_th_range', value=in_th_range, vary=False)
+    # params.add('p_th0_list', value=in_p_th0_list, vary=False)
+
+    # params to optimize
+    params.add('eta', value=init_eta, vary=True)
+
+    # perform the minimization
+    minimizer = Minimizer(threshold_minimization, params=params, fcn_args=(in_num_shots, in_l, in_p_list, in_d_list, in_err_type, in_th_range, in_p_th0_list))
+    result = minimizer.minimize()
+
+    max_p_th = -threshold_minimization(result.params, in_num_shots, in_l, in_p_list, in_d_list, in_err_type, in_th_range, in_p_th0_list)
+    optimal_eta = result.params['eta'].value
+
+    return optimal_eta, max_p_th
 
 #
 #
@@ -180,22 +220,50 @@ def get_opt_eta(in_num_shots, in_l, init_eta, in_p_list, in_d_list):
 
 
 #
-# Testing the threshold 
+# Test the Minimizer
 #
-num_shots = 1000
-d_list = [5,7,9,11]
-l=2
-p_list = np.linspace(0.01, 0.5, 100)
-eta =  0.5
-p_th0 = [0.10, 0.10, 0.175, 0.15] # x , z, z correlated, total
-full_data = get_data(num_shots, l, eta, p_list, d_list)
-data = full_data[0]
-get_var = {'x':0, 'z': 1, 'corr_z': 2, 'total':3}
-# result_list = [get_threshold(data[i], p_list, d_list, p_th0[i]) for i in range(len(data))]
 
-p_list_near_th = [p for p in p_list if p_th0[1] - 0.1 < p < p_th0[0] + 0.1]
-data_near_th = [[data[d][i] for i in range(len(p_list)) if p_th0[1] - 0.1 < p_list[i] < p_th0[0] + 0.1] for d in range(len(d_list))]
-result = get_threshold(data_near_th, p_list_near_th, d_list, p_th0[0],return_all=True)
+num_shots = 100
+l = 3
+eta_0 = 1.67
+p_list = np.linspace(0.01, 0.5, 500)
+d_list = [3,5,7]
+err_type = 'x'
+p_th_range = 0.05
+p_th0_list = [0.065,0.141,0.199, 0.179]
+
+opt_eta, max_p_th = get_opt_eta(num_shots, l, eta_0, p_list, d_list, err_type, p_th_range, p_th0_list)
+print(opt_eta, max_p_th)
+
+# to work on
+# - my correlated z function is markedly worse at guessing than the regular z function
+# - implement a way to graph as we go
+# - add paralleization to my compass_code_correlated error file so that I can get results from the dcc faster
+
+
+
+
+
+#
+# Testing the threshold finder
+#
+# num_shots = 5000
+# d_list = [3,5,7]
+# l=3
+# p_list = np.linspace(0.01, 0.5, 500)
+# eta =  1.67
+# p_th0 = [0.065, 0.141, 0.2, 0.179] # x , z, z correlated, total
+# full_data = get_data(num_shots, l, eta, p_list, d_list)
+# p_range = 0.05
+# get_var = {'x':0, 'z': 1, 'corr_z': 2, 'total':3}
+# # result_list = [get_threshold(data[i], p_list, d_list, p_th0[i]) for i in range(len(data))]
+# var = get_var['z']
+# data = full_data[var]
+
+# p_list_near_th = [p for p in p_list if p_th0[var] - p_range < p < p_th0[var] + p_range]
+# data_near_th = [[data[d][i] for i in range(len(p_list)) if p_th0[var] - p_range < p_list[i] < p_th0[var] + p_range] for d in range(len(d_list))]
+# result = get_threshold(data_near_th, p_list_near_th, d_list, p_th0[var],p_range,return_all=True)
+# # result_x = get_threshold(data_near_th, p_list_near_th, d_list, p_th0[0],p_range,return_all=True)
 
 
 
@@ -221,19 +289,19 @@ result = get_threshold(data_near_th, p_list_near_th, d_list, p_th0[0],return_all
 # data = dfs['z'].values
 
 
-print(p_list_near_th)
-result = get_threshold(data_near_th, p_list_near_th, d_list, p_th0[1],return_all=True)
+# print(p_list_near_th)
+# result = get_threshold(data_near_th, p_list_near_th, d_list, p_th0[var], p_range, return_all=True)
 
-print(f"pth: {result.params[f'pth'].value} pm {result.params[f'pth'].stderr}") 
-print(f"mu: {result.params[f'mu'].value} pm {result.params[f'mu'].stderr}")
+# print(f"pth: {result.params[f'pth'].value} pm {result.params[f'pth'].stderr}") 
+# print(f"mu: {result.params[f'mu'].value} pm {result.params[f'mu'].stderr}")
 
 
-for curr_d in d_list:
-    print(f"a{curr_d}: {result.params[f'a{curr_d}'].value} pm {result.params[f'a{curr_d}'].stderr}") 
-    print(f"b{curr_d}: {result.params[f'b{curr_d}'].value} pm {result.params[f'b{curr_d}'].stderr}") 
-    print(f"c{curr_d}: {result.params[f'c{curr_d}'].value} pm {result.params[f'c{curr_d}'].stderr}") 
-    print(f"d{curr_d}: {result.params[f'd{curr_d}'].value} pm {result.params[f'd{curr_d}'].stderr}") 
-    print(f"e{curr_d}: {result.params[f'e{curr_d}'].value} pm {result.params[f'e{curr_d}'].stderr}") 
+# for curr_d in d_list:
+#     print(f"a{curr_d}: {result.params[f'a{curr_d}'].value} pm {result.params[f'a{curr_d}'].stderr}") 
+#     print(f"b{curr_d}: {result.params[f'b{curr_d}'].value} pm {result.params[f'b{curr_d}'].stderr}") 
+#     print(f"c{curr_d}: {result.params[f'c{curr_d}'].value} pm {result.params[f'c{curr_d}'].stderr}") 
+#     print(f"d{curr_d}: {result.params[f'd{curr_d}'].value} pm {result.params[f'd{curr_d}'].stderr}") 
+#     print(f"e{curr_d}: {result.params[f'e{curr_d}'].value} pm {result.params[f'e{curr_d}'].stderr}") 
 
 
 
@@ -253,14 +321,14 @@ for curr_d in d_list:
 
 # in sim
 
-plt.figure(figsize=(10, 5))
-for i, y in enumerate(data[0]):
-    curr_d = d_list[i]
-    plt.plot(p_list_near_th, y, 'o', label=f'd={d_list[i]}')
-    plt.plot(p_list_near_th, threshold_fit(p_list_near_th, result.params[f'a{curr_d}'], result.params[f'b{curr_d}'], result.params[f'c{curr_d}'], result.params[f'e{curr_d}'], \
-                                   result.params[f'pth'], result.params[f'mu'],result.params[f'd{curr_d}']), label=f'Fit {i}')
-    # plt.plot(p_list, threshold_fit(p_list, result.params[f'a{curr_d}'], result.params[f'b{curr_d}'], result.params[f'c{curr_d}'], \
-    #                                result.params[f'pth'], result.params[f'mu'],result.params[f'd{curr_d}']), label=f'Fit {i}')    
-plt.legend()
-plt.show()
+# plt.figure(figsize=(10, 5))
+# for i, y in enumerate(data):
+#     curr_d = d_list[i]
+#     plt.plot(p_list, y, 'o', label=f'd={d_list[i]}')
+#     plt.plot(p_list_near_th, threshold_fit(p_list_near_th, result.params[f'a{curr_d}'], result.params[f'b{curr_d}'], result.params[f'c{curr_d}'], result.params[f'e{curr_d}'], \
+#                                    result.params[f'pth'], result.params[f'mu'],result.params[f'd{curr_d}']), label=f'Fit {i}')
+#     # plt.plot(p_list_near_th, threshold_fit(p_list_near_th, result.params[f'a{curr_d}'], result.params[f'b{curr_d}'], result.params[f'c{curr_d}'], \
+#     #                                result.params[f'pth'], result.params[f'mu'],result.params[f'd{curr_d}']), label=f'Fit {i}')    
+# plt.legend()
+# plt.show()
 # fitting well (the error is not good), but it's not returning what I thought it should return - I think it's returning the overall min of the quadratic, not the crossing point"
