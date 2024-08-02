@@ -239,6 +239,7 @@ print(opt_eta, max_p_th)
 # - my correlated z function is markedly worse at guessing than the regular z function
 # - implement a way to graph as we go
 # - add paralleization to my compass_code_correlated error file so that I can get results from the dcc faster
+# - test all the eta
 
 
 
