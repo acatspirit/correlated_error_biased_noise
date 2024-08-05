@@ -5,7 +5,7 @@ import numpy as np
 
 
 l = 6
-num_shots = 50000
+num_shots = 1000000
 eta = 5.89
 d_list = [11,13,15,17,19]
 p_list = np.linspace(0.01, 0.5, 500)
@@ -16,6 +16,7 @@ with open(f"counter_l{l}_shots{num_shots}_d{"_".join(map(str, d_list))}.txt", "r
             counter = int(f.read().strip())
 
 folder = f"l{l}_shots{num_shots}_d{"_".join(map(str, d_list))}-{counter}"
+folder = f"l{l}_shots{num_shots}_large_d"
 files = os.listdir(folder)
 
 dfs = {}
