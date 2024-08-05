@@ -222,8 +222,25 @@ if __name__ == "__main__":
     ind_dict = {1:'x', 2:'z', 3:'corr_z', 4:'total'}
     folder = f"l{l}_shots{num_shots}"
 
-    if not os.path.exists(folder):
+    if os.path.exists(folder):
+        with open(f"counter_l{l}.txt", "r") as f:
+            counter = int(f.read().strip())
+        counter += 1
+        
+        with open("counter.txt", "w") as f:
+            f.write(str(counter))
+        
+        folder = folder + f"{counter}"
         os.makedirs(folder)
+    else:
+        counter = 0
+        os.makedirs(folder)
+        
+        os.makedirs("counter_l{l}.txt")
+        with open("counter.txt", "w") as f:
+            f.write(str(counter))
+
+ 
 
     for ind, sublist in enumerate(data):
         df = pd.DataFrame(sublist)
