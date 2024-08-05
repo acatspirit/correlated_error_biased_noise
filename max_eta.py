@@ -177,7 +177,7 @@ def threshold_minimization(eta, num_shots, l, p_list, d_list, err_type, th_range
     return -get_max_thresh_from_eta(eta, num_shots, l, p_list, d_list, err_type, th_range, p_th0_list)
 
 # minimize the negative of the intersection point and return param eta
-def get_opt_eta(in_num_shots, in_l, init_eta, in_p_list, in_d_list, in_err_type, in_th_range, in_p_th0_list):
+def get_opt_eta(in_num_shots, in_l, init_eta, in_p_list, in_d_list, in_err_type, in_th_range, in_p_th0_list, show_result = True):
     """ Returns the eta that produces the maximum p_threshold for a given l and d, along with
         other relevant parameters. 
         in: num_shots - the number of experimental iterations
@@ -187,18 +187,7 @@ def get_opt_eta(in_num_shots, in_l, init_eta, in_p_list, in_d_list, in_err_type,
             d_list - the distances of compass code to scan
         out: array of the optimal eta and corresponding thresholds ptotal, pz/x, pz, and px
     """
-    # fixed_threshold = partial(threshold_minimization, num_shots=in_num_shots, l=in_l, p_list=in_p_list, d_list=in_d_list, err_type=err_type, th_range= in_th_range, p_th0_list= in_p_th0_list)
-    # best_threshold = optimize.minimize(lambda eta: fixed_threshold(eta), x0 = [init_eta])
     params = Parameters()
-
-    # # fixed parameters
-    # params.add('num_shots', value=in_num_shots, vary=False)
-    # params.add('l', value=in_l, vary=False)
-    # params.add('p_list', value=in_p_list, vary=False)
-    # params.add('d_list', value=in_d_list, vary=False)
-    # params.add('err_type', value=in_err_type, vary=False)
-    # params.add('p_th_range', value=in_th_range, vary=False)
-    # params.add('p_th0_list', value=in_p_th0_list, vary=False)
 
     # params to optimize
     params.add('eta', value=init_eta, vary=True)
@@ -210,7 +199,46 @@ def get_opt_eta(in_num_shots, in_l, init_eta, in_p_list, in_d_list, in_err_type,
     max_p_th = -threshold_minimization(result.params, in_num_shots, in_l, in_p_list, in_d_list, in_err_type, in_th_range, in_p_th0_list)
     optimal_eta = result.params['eta'].value
 
+    if show_result:
+        single_error_graph(in_d_list, in_p_list, optimal_eta, in_num_shots, in_l, in_err_type, in_th_range, max_p_th)
+
     return optimal_eta, max_p_th
+
+def single_error_graph(d_list, p_list, eta, num_shots, l, err_type, th_range, p_th):
+    """
+    Make a plot for one type of error with full p_list, but fitting only the 
+    """
+    err_dict = {'x':0, 'z':1, 'corr_z':2, 'total':3}
+
+    err_ind = err_dict[err_type]
+
+    full_data = get_data(num_shots, l, eta, p_list, d_list)
+    error_data = full_data[err_ind]
+
+    p_list_near_th = [p for p in p_list if p_th - th_range < p < p_th + th_range]
+    error_data_near_th = [[error_data[d][i] for i in range(len(p_list)) if p_th - th_range < p_list[i] < p_th + th_range] for d in range(len(d_list))]
+
+    
+
+    fig, ax = plt.subplots()
+    ax.set_title(f"Compass Code Logical Error Rate, Eta={eta}")
+    ax.set_xlabel("Physical Error Probability")
+    ax.set_ylabel("Logical Error Rate")
+    
+    # Plot the data for all values of d
+    for d, errors in zip(d_list, error_data):
+        ax.plot(p_list, errors, linestyle='dotted', label=f'd={d}')
+        
+        # Fit the data for each d
+        fit_result = get_threshold(error_data_near_th, p_list_near_th, d_list, p_th, 0.001, return_all=True)
+        curr_params= fit_result.params
+        fit_values = threshold_fit(np.array(p_list_near_th), curr_params[f'a{d}'].value, curr_params[f'b{d}'].value, curr_params[f'c{d}'].value, curr_params[f'e{d}'].value, p_th, curr_params['mu'].value, d)
+        ax.plot(p_list_near_th, fit_values, linestyle='--', label=f'fit d={d}')
+    
+    ax.legend()
+    plt.show()
+
+
 
 #
 #
@@ -232,13 +260,17 @@ err_type = 'x'
 p_th_range = 0.05
 p_th0_list = [0.065,0.141,0.199, 0.179]
 
-opt_eta, max_p_th = get_opt_eta(num_shots, l, eta_0, p_list, d_list, err_type, p_th_range, p_th0_list)
+opt_eta, max_p_th = get_opt_eta(num_shots, l, eta_0, p_list, d_list, err_type, p_th_range, p_th0_list, show_result=True)
 print(opt_eta, max_p_th)
+
+
+
+
+
 
 # to work on
 # - my correlated z function is markedly worse at guessing than the regular z function
-# - implement a way to graph as we go
-# - add paralleization to my compass_code_correlated error file so that I can get results from the dcc faster
+# - implement a way to graph as we go - show the end value of eta and p_th as well as the original data
 # - test all the eta
 
 
