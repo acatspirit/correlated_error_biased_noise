@@ -220,14 +220,14 @@ if __name__ == "__main__":
 
     data = [log_err_list_x, log_err_list_z, log_err_indep_list_z, log_total_err_list]
     ind_dict = {1:'x', 2:'z', 3:'corr_z', 4:'total'}
-    folder = f"l{l}_shots{num_shots}_d{"_".join(map(str, d_list))}"
+    folder = f"l{l}_shots{num_shots}_d" + "_".join(map(str, d_list))
 
     if os.path.exists(folder):
-        with open(f"counter_l{l}_shots{num_shots}_d{"_".join(map(str, d_list))}.txt", "r") as f:
+        with open(f"counter_l{l}_shots{num_shots}_d" + "_".join(map(str, d_list)) + ".txt", "r") as f:
             counter = int(f.read().strip())
         counter += 1
         
-        with open(f"counter_l{l}_shots{num_shots}_d{"_".join(map(str, d_list))}.txt", "w") as f:
+        with open(f"counter_l{l}_shots{num_shots}_d" + "_".join(map(str, d_list)) + ".txt", "w") as f:
             f.write(str(counter))
         
         folder = folder + f"-{counter}"
@@ -236,8 +236,8 @@ if __name__ == "__main__":
         counter = 0
         os.makedirs(folder)
         
-        os.makedirs(f"counter_l{l}_shots{num_shots}_d{"_".join(map(str, d_list))}.txt")
-        with open(f"counter_l{l}_shots{num_shots}_d{"_".join(map(str, d_list))}.txt", "w") as f:
+        os.makedirs(f"counter_l{l}_shots{num_shots}_d" + "_".join(map(str, d_list)) + ".txt")
+        with open(f"counter_l{l}_shots{num_shots}_d" + "_".join(map(str, d_list)) + ".txt", "w") as f:
             f.write(str(counter))
 
  
