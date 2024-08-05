@@ -1,0 +1,4 @@
+/hpc/group/brownlab/am1155/pymatching_env/lib64/python3.9/site-packages/networkx/utils/backends.py:135: RuntimeWarning: networkx backend defined more than once: nx-loopback
+  backends.update(_get_backends("networkx.backends"))
+/var/spool/slurmd/job13704047/slurm_script: line 13: 1115097 Killed                  python3 compass_code_correlated_error.py
+slurmstepd: error: Detected 1 oom_kill event in StepId=13704047.batch. Some of the step tasks have been OOM Killed.
