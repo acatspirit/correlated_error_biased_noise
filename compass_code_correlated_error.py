@@ -185,9 +185,9 @@ def decoding_failures_total(H_x, H_z, L_x, L_z, p, eta, shots):
 
 if __name__ == "__main__":
     num_shots = 100000
-    d_list = [7,9,11,13,15]
+    d_list = [11,13,15,17,19]
     l=6
-    p_list = np.linspace(0.01, 0.5, 100)
+    p_list = np.linspace(0.01, 0.5, 500)
     eta = 5.89
     prob_scale = [2*0.5/(1+eta), (1+2*eta)/(2*(1+eta))] # the rate by which we double count errors for each type, X and then Z
     log_err_list_x = []
@@ -220,24 +220,24 @@ if __name__ == "__main__":
 
     data = [log_err_list_x, log_err_list_z, log_err_indep_list_z, log_total_err_list]
     ind_dict = {1:'x', 2:'z', 3:'corr_z', 4:'total'}
-    folder = f"l{l}_shots{num_shots}"
+    folder = f"l{l}_shots{num_shots}_d{"_".join(map(str, d_list))}"
 
     if os.path.exists(folder):
-        with open(f"counter_l{l}.txt", "r") as f:
+        with open(f"counter_l{l}_shots{num_shots}_d{"_".join(map(str, d_list))}.txt", "r") as f:
             counter = int(f.read().strip())
         counter += 1
         
-        with open("counter.txt", "w") as f:
+        with open(f"counter_l{l}_shots{num_shots}_d{"_".join(map(str, d_list))}.txt", "w") as f:
             f.write(str(counter))
         
-        folder = folder + f"{counter}"
+        folder = folder + f"-{counter}"
         os.makedirs(folder)
     else:
         counter = 0
         os.makedirs(folder)
         
-        os.makedirs("counter_l{l}.txt")
-        with open("counter.txt", "w") as f:
+        os.makedirs(f"counter_l{l}_shots{num_shots}_d{"_".join(map(str, d_list))}.txt")
+        with open(f"counter_l{l}_shots{num_shots}_d{"_".join(map(str, d_list))}.txt", "w") as f:
             f.write(str(counter))
 
  
