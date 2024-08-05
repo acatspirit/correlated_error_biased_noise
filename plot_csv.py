@@ -5,7 +5,7 @@ import numpy as np
 
 
 l = 6
-num_shots = 100000
+num_shots = 50000
 eta = 5.89
 d_list = [11,13,15,17,19]
 p_list = np.linspace(0.01, 0.5, 500)

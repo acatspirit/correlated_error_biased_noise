@@ -184,7 +184,7 @@ def decoding_failures_total(H_x, H_z, L_x, L_z, p, eta, shots):
 #
 
 if __name__ == "__main__":
-    num_shots = 100000
+    num_shots = 50000
     d_list = [11,13,15,17,19]
     l=6
     p_list = np.linspace(0.01, 0.5, 500)
