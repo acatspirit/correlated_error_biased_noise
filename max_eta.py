@@ -133,7 +133,7 @@ def get_data(num_shots, l, eta, p_list, d_list):
             num_indep_x, num_indep_z = decoding_failures_total(H_x, H_z, log_x, log_z, p, eta, num_shots)
             # num_indep_x = decoding_failures(H_z, log_z, p, eta, num_shots, 0)
             # num_indep_z = decoding_failures(H_x, log_x, p, eta, num_shots, 1)
-            num_corr_z = 0
+            # num_corr_z = 0
             log_errors_x.append(num_indep_x/num_shots)
             log_corr_z.append(num_corr_z/num_shots)
             log_errors_indep_z.append(num_indep_z/num_shots)
@@ -255,10 +255,10 @@ num_shots = 1000
 l = 3
 eta_0 = 1.67
 p_list = np.linspace(0.01, 0.5, 500)
-d_list = [3,5,7]
+d_list = [7,9,11]
 err_type = 'z'
 p_th_range = 0.03
-p_th0_list = [0.065,0.141,0.199, 0.179]
+p_th0_list = [0.065,0.151,0.199, 0.179]
 
 opt_eta, max_p_th = get_opt_eta(num_shots, l, eta_0, p_list, d_list, err_type, p_th_range, p_th0_list, show_result=True)
 print(opt_eta, max_p_th)
@@ -270,7 +270,9 @@ print(opt_eta, max_p_th)
 
 # to work on
 # - my correlated z function is markedly worse at guessing than the regular z function
-# - implement a way to graph as we go - show the end value of eta and p_th as well as the original data
+# - accuracy of p_th guessing ... 
+#   - when I set up the threshold so that it's higher than reality, it guesses higher ... otherwise lower?
+#   - may have to do with the fact that these thresholds for z are not in range i would expect
 # - test all the eta
 
 
