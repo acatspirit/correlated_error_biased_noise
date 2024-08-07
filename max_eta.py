@@ -257,7 +257,7 @@ eta_0 = 1.67
 p_list = np.linspace(0.01, 0.5, 500)
 d_list = [7,9,11]
 err_type = 'z'
-p_th_range = 0.03
+p_th_range = 0.05
 p_th0_list = [0.065,0.151,0.199, 0.179]
 
 opt_eta, max_p_th = get_opt_eta(num_shots, l, eta_0, p_list, d_list, err_type, p_th_range, p_th0_list, show_result=True)
