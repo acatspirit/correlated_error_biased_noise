@@ -215,8 +215,8 @@ def decoding_failures_uncorr(H_x, H_z, L_x, L_z, p, eta, shots):
 #
 
 if __name__ == "__main__":
-    num_shots = 25000
-    d_list = [11,13,15,17, 19]
+    num_shots = 1000
+    d_list = [11,13,15,17,19]
     l=6
     p_list = np.linspace(0.01, 0.5, 10)
     eta = 5.89
@@ -229,10 +229,11 @@ if __name__ == "__main__":
     # create a df to store the data
     # error type dict
     err_type = {0:"x", 1:"z", 2:"corr_z", 3:"total"}
-    data = {"d":[], "num_shots":[], "p":[], "l": [], "eta":[], "error_type":[], "num_log_errors":[], "time_stamp":[]}
-    df = pd.DataFrame(data)
+    data_dict = {"d":[], "num_shots":[], "p":[], "l": [], "eta":[], "error_type":[], "num_log_errors":[], "time_stamp":[]}
+    data = pd.DataFrame(data_dict)
 
     for d in d_list:
+        print(f"Running d is {d}")
         compass_code = cc.CompassCode(d=d, l=l)
         H_x, H_z = compass_code.H['X'], compass_code.H['Z']
         log_x, log_z = compass_code.logicals['X'], compass_code.logicals['Z']
@@ -246,7 +247,7 @@ if __name__ == "__main__":
             # num_indep_x, num_indep_z = decoding_failures_total(H_x, H_z, log_x, log_z, p, eta, num_shots)
             for i in range(len(errors)):
                 curr_row = {"d":d, "num_shots":num_shots, "p":p, "l": l, "eta":eta, "error_type":err_type[i], "num_log_errors":[errors[i]], "time_stamp":[datetime.now()]}
-                df = pd.concat([df, pd.DataFrame([curr_row])], ignore_index=True)
+                data = pd.concat([data, pd.DataFrame([curr_row])], ignore_index=True)
         #     log_errors_x.append(num_errors_x/num_shots)
         #     log_errors_z.append(num_errors_z/num_shots)
         #     log_errors_indep_z.append(num_indep_z/num_shots)
@@ -258,34 +259,51 @@ if __name__ == "__main__":
         # log_total_err_list.append(np.array(log_total_err))
 
 
-    data = [log_err_list_x, log_err_list_z, log_err_indep_list_z, log_total_err_list]
-    ind_dict = {1:'x', 2:'z', 3:'corr_z', 4:'total'}
-    folder = f"l{l}_shots{num_shots}_d" + "_".join(map(str, d_list))
+    data_file = 'corr_err_data.csv'
 
-    if os.path.exists(folder):
-        with open(f"counter_l{l}_shots{num_shots}_d" + "_".join(map(str, d_list)) + ".txt", "r") as f:
-            counter = int(f.read().strip())
-        counter += 1
-        
-        with open(f"counter_l{l}_shots{num_shots}_d" + "_".join(map(str, d_list)) + ".txt", "w") as f:
-            f.write(str(counter))
-        
-        folder = folder + f"-{counter}"
-        os.makedirs(folder)
+    # Check if the CSV file exists
+    if os.path.isfile(data_file):
+        # If it exists, load the existing data
+        past_data = pd.read_csv(data_file)
+        # Append the new data
+        all_data = pd.concat([past_data, data], ignore_index=True)
     else:
-        counter = 0
-        os.makedirs(folder)
+        # If it doesn't exist, the new data will be the combined data
+        all_data = data
+
+    # Save the combined data to the CSV file
+    all_data.to_csv(data_file, index=False)
+
+    print(f"CSV file saved to: {data_file}")
+
+    # data = [log_err_list_x, log_err_list_z, log_err_indep_list_z, log_total_err_list]
+    # ind_dict = {1:'x', 2:'z', 3:'corr_z', 4:'total'}
+    # folder = f"l{l}_shots{num_shots}_d" + "_".join(map(str, d_list))
+
+    # if os.path.exists(folder):
+    #     with open(f"counter_l{l}_shots{num_shots}_d" + "_".join(map(str, d_list)) + ".txt", "r") as f:
+    #         counter = int(f.read().strip())
+    #     counter += 1
         
-        os.makedirs(f"counter_l{l}_shots{num_shots}_d" + "_".join(map(str, d_list)) + ".txt")
-        with open(f"counter_l{l}_shots{num_shots}_d" + "_".join(map(str, d_list)) + ".txt", "w") as f:
-            f.write(str(counter))
+    #     with open(f"counter_l{l}_shots{num_shots}_d" + "_".join(map(str, d_list)) + ".txt", "w") as f:
+    #         f.write(str(counter))
+        
+    #     folder = folder + f"-{counter}"
+    #     os.makedirs(folder)
+    # else:
+    #     counter = 0
+    #     os.makedirs(folder)
+        
+    #     os.makedirs(f"counter_l{l}_shots{num_shots}_d" + "_".join(map(str, d_list)) + ".txt")
+    #     with open(f"counter_l{l}_shots{num_shots}_d" + "_".join(map(str, d_list)) + ".txt", "w") as f:
+    #         f.write(str(counter))
 
  
 
-    for ind, sublist in enumerate(data):
-        df = pd.DataFrame(sublist)
-        file_name = os.path.join(folder,f"{ind_dict[ind+1]}.csv")
-        df.to_csv(file_name, index=False, header=False)
+    # for ind, sublist in enumerate(data):
+    #     df = pd.DataFrame(sublist)
+    #     file_name = os.path.join(folder,f"{ind_dict[ind+1]}.csv")
+    #     df.to_csv(file_name, index=False, header=False)
 
 
 
