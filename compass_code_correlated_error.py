@@ -69,6 +69,24 @@ def decoding_failures_correlated(H_x, H_z, L_x, L_z, p, eta, shots):
         eta - depolarizing channel bias.
         shots - number of shots
     """
+    # M_z = Matching.from_check_matrix(H_z)
+    # M_x = Matching.from_check_matrix(H_x)
+    
+    # # Generate error vectors
+    # err_vec = [depolarizing_err(p, H_x, eta=eta) for _ in range(shots)]
+    # err_vec_x = np.array([err[0] for err in err_vec])
+    # err_vec_z = np.array([err[1] for err in err_vec])
+    
+    # # Syndrome for Z errors and decoding
+    # syndrome_z = err_vec_x @ H_z.T % 2
+    # correction_x = M_z.decode_batch(syndrome_z)
+    # num_errors_x = np.sum((correction_x + err_vec_x) @ L_z % 2)
+    
+    # # Syndrome for X errors and decoding
+    # syndrome_x = err_vec_z @ H_x.T % 2
+    # correction_z = M_x.decode_batch(syndrome_x)
+    # num_errors_z = np.sum((correction_z + err_vec_z) @ L_x % 2)
+    
     # create a matching graph
     M_z = Matching.from_check_matrix(H_z)
     
@@ -79,23 +97,33 @@ def decoding_failures_correlated(H_x, H_z, L_x, L_z, p, eta, shots):
     
     # Syndrome for Z errors and decoding
     syndrome_z = err_vec_x @ H_z.T % 2
-    correction_z = M_z.decode_batch(syndrome_z)
-    num_errors_x = np.sum((correction_z + err_vec_x) @ L_z % 2)
+    correction_x = M_z.decode_batch(syndrome_z)
+    num_errors_x = np.sum((correction_x + err_vec_x) @ L_z % 2)
     
     # Prepare weights and syndrome for X errors
-    updated_weights = np.logical_not(correction_z).astype(int)
+    updated_weights = np.logical_not(correction_x).astype(int)
     syndrome_x = err_vec_z @ H_x.T % 2
     
     # Decode X errors 
     num_errors_z = 0
+
     for i in range(shots):
         M_x = Matching.from_check_matrix(H_x, weights=updated_weights[i])
-        correction_x = M_x.decode(syndrome_x[i])
-        num_errors_z += np.sum((correction_x + err_vec_z[i]) @ L_x % 2)
+        correction_z = M_x.decode(syndrome_x[i])
+        num_errors_z += np.sum((correction_z + err_vec_z[i]) @ L_x % 2)
+
+    # check this performs the same as the above
+    M_x = Matching.from_check_matrix(H_x)
+    edges = M_x.edges()
+    for i in range(shots):
+        for edge, w in zip(edges, updated_weights[i]):
+            M_x.add_edge(edge[0], edge[1], None, weight=w, merge_strategy="replace")
+        correction_z = M_x.decode(syndrome_x[i])
+        num_errors_z += np.sum((correction_z + err_vec_z[i]) @ L_x % 2)
 
     return num_errors_x, num_errors_z
 
-def decoding_failures_total(H_x, H_z, L_x, L_z, p, eta, shots):
+def decoding_failures_uncorr(H_x, H_z, L_x, L_z, p, eta, shots):
     """ Finds the number of logical errors after decoding.
         H_x - X parity check matrix for Z errors
         H_z - Z parity check matrix for X errors
@@ -184,16 +212,20 @@ def decoding_failures_total(H_x, H_z, L_x, L_z, p, eta, shots):
 #
 
 if __name__ == "__main__":
-    num_shots = 500000
-    d_list = [11,13,15,17,19]
+    num_shots = 2500
+    d_list = [11,13,15,17, 19]
     l=6
-    p_list = np.linspace(0.01, 0.5, 250)
+    p_list = np.linspace(0.01, 0.5, 10)
     eta = 5.89
     prob_scale = [2*0.5/(1+eta), (1+2*eta)/(2*(1+eta))] # the rate by which we double count errors for each type, X and then Z
     log_err_list_x = []
     log_err_list_z = []
     log_err_indep_list_z = []
     log_total_err_list = []
+
+    # create a df to store the data
+    data = {"d":[], "num_shots":[], "p":[], "l": [], "eta":[], "error_type":[], "num_log_errors":[], "time_stamp":[]}
+    df = pd.DataFrame(data)
 
     for d in d_list:
         compass_code = cc.CompassCode(d=d, l=l)
@@ -207,6 +239,9 @@ if __name__ == "__main__":
         for p in p_list:
             num_errors_x,num_errors_z = decoding_failures_correlated(H_x, H_z, log_x, log_z, p, eta, num_shots)
             num_indep_x, num_indep_z = decoding_failures_total(H_x, H_z, log_x, log_z, p, eta, num_shots)
+
+            curr_row = {"d":d, "num_shots":num_shots, "p":p, "l": l, "eta":eta, "error_type":, "num_log_errors":[], "time_stamp":[]}
+            df = pd.concat([df, pd.DataFrame([curr_row])], ignore_index=True)
             log_errors_x.append(num_errors_x/num_shots)
             log_errors_z.append(num_errors_z/num_shots)
             log_errors_indep_z.append(num_indep_z/num_shots)

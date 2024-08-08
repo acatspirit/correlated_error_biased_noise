@@ -257,8 +257,8 @@ eta_0 = 1.67
 p_list = np.linspace(0.01, 0.5, 500)
 d_list = [7,9,11]
 err_type = 'z'
-p_th_range = 0.05
-p_th0_list = [0.065,0.151,0.199, 0.179]
+p_th_range = 0.01
+p_th0_list = [0.065,0.152,0.199, 0.179]
 
 opt_eta, max_p_th = get_opt_eta(num_shots, l, eta_0, p_list, d_list, err_type, p_th_range, p_th0_list, show_result=True)
 print(opt_eta, max_p_th)
@@ -272,6 +272,8 @@ print(opt_eta, max_p_th)
 # - my correlated z function is markedly worse at guessing than the regular z function
 # - accuracy of p_th guessing ... 
 #   - when I set up the threshold so that it's higher than reality, it guesses higher ... otherwise lower?
+#       - wider range ==> worse guess
+#       - trying to set the guess to be higher and the range to be smaller ... see if it gets the right answer
 #   - may have to do with the fact that these thresholds for z are not in range i would expect
 # - test all the eta
 
