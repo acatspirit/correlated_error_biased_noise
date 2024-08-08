@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from scipy import optimize
 import CompassCodes as cc
 import csv
-from compass_code_correlated_error import decoding_failures_correlated, decoding_failures_total, decoding_failures
+from compass_code_correlated_error import decoding_failures_correlated, write_data
 from functools import partial
 from lmfit import Minimizer, Parameters, report_fit
 import os
@@ -112,42 +112,37 @@ def get_data(num_shots, l, eta, p_list, d_list):
             p_list - array of probabilities to scan
             d_list - the distances of compass code to scan
     """
-    prob_scale = [2*0.5/(1+eta), (1+2*eta)/(2*(1+eta))] # the rate by which we double count errors for each type, X and then Z
-    log_err_list_x = []
-    log_err_corr_list_z = []
-    log_err_indep_list_z = []
-    log_total_err_list = []
+    err_type = {0:"x", 1:"z", 2:"corr_z", 3:"total"}
+    data_dict = {"d":[], "num_shots":[], "p":[], "l": [], "eta":[], "error_type":[], "num_log_errors":[], "time_stamp":[]}
+    data = pd.DataFrame(data_dict)
 
     for d in d_list:
-        print(f"simulating d={d} in get data")
         compass_code = cc.CompassCode(d=d, l=l)
         H_x, H_z = compass_code.H['X'], compass_code.H['Z']
         log_x, log_z = compass_code.logicals['X'], compass_code.logicals['Z']
 
-        log_errors_x = []
-        log_corr_z = []
-        log_errors_indep_z = []
-        log_total_err = []
         for p in p_list:
-            num_errors_x,num_corr_z = decoding_failures_correlated(H_x, H_z, log_x, log_z, p, eta, num_shots)
-            num_indep_x, num_indep_z = decoding_failures_total(H_x, H_z, log_x, log_z, p, eta, num_shots)
-            # num_indep_x = decoding_failures(H_z, log_z, p, eta, num_shots, 0)
-            # num_indep_z = decoding_failures(H_x, log_x, p, eta, num_shots, 1)
-            # num_corr_z = 0
-            log_errors_x.append(num_indep_x/num_shots)
-            log_corr_z.append(num_corr_z/num_shots)
-            log_errors_indep_z.append(num_indep_z/num_shots)
-            log_total_err.append((num_indep_x+num_indep_z)/num_shots)
-        
-        log_err_list_x.append(np.array(log_errors_x))
-        log_err_corr_list_z.append(np.array(log_corr_z))
-        log_err_indep_list_z.append(np.array(log_errors_indep_z))
-        log_total_err_list.append(np.array(log_total_err))
+            errors = decoding_failures_correlated(H_x, H_z, log_x, log_z, p, eta, num_shots)
+            for i in range(len(errors)):
+                curr_row = {"d":d, "num_shots":num_shots, "p":p, "l": l, "eta":eta, "error_type":err_type[i], "num_log_errors":errors[i]/num_shots, "time_stamp":datetime.now()}
+                data = pd.concat([data, pd.DataFrame([curr_row])], ignore_index=True)
 
-    data = [log_err_list_x, log_err_indep_list_z, log_err_corr_list_z, log_total_err_list]
 
-    # scale for current eta
-    data = [np.array(data[0])*prob_scale[0], np.array(data[1])*prob_scale[1], np.array(data[2]), np.array(data[3])]
+
+    data_file = 'corr_err_data.csv'
+
+    # Check if the CSV file exists
+    if os.path.isfile(data_file):
+        # If it exists, load the existing data
+        past_data = pd.read_csv(data_file)
+        # Append the new data
+        all_data = pd.concat([past_data, data], ignore_index=True)
+    else:
+        # If it doesn't exist, the new data will be the combined data
+        all_data = data
+
+    # Save the combined data to the CSV file
+    all_data.to_csv(data_file, index=False)
     return data
 
 def get_max_thresh_from_eta(params, num_shots, l, p_list, d_list, err_type, th_range, p_th0_list):
@@ -259,6 +254,8 @@ d_list = [7,9,11]
 err_type = 'z'
 p_th_range = 0.01
 p_th0_list = [0.065,0.152,0.199, 0.179]
+
+
 
 opt_eta, max_p_th = get_opt_eta(num_shots, l, eta_0, p_list, d_list, err_type, p_th_range, p_th0_list, show_result=True)
 print(opt_eta, max_p_th)
