@@ -87,18 +87,6 @@ def decoding_failures_correlated(H_x, H_z, L_x, L_z, p, eta, shots):
     correction_z = M_x.decode_batch(syndrome_x)
     num_errors_z = np.sum((correction_z + err_vec_z) @ L_x % 2)
     
-    # create a matching graph
-    # M_z = Matching.from_check_matrix(H_z)
-    
-    # # Generate error vectors
-    # err_vec = [depolarizing_err(p, H_x, eta=eta) for _ in range(shots)]
-    # err_vec_x = np.array([err[0] for err in err_vec])
-    # err_vec_z = np.array([err[1] for err in err_vec])
-    
-    # # Syndrome for Z errors and decoding
-    # syndrome_z = err_vec_x @ H_z.T % 2
-    # correction_x = M_z.decode_batch(syndrome_z)
-    # num_errors_x = np.sum((correction_x + err_vec_x) @ L_z % 2)
     
     # Prepare weights and syndrome for X errors
     updated_weights = np.logical_not(correction_x).astype(int)
@@ -112,7 +100,7 @@ def decoding_failures_correlated(H_x, H_z, L_x, L_z, p, eta, shots):
         correction_z_corr = M_x_corr.decode(syndrome_x[i])
         num_errors_z_corr += np.sum((correction_z_corr + err_vec_z[i]) @ L_x % 2)
 
-    # check this performs the same as the above
+    # how do we make this perform the same as above
 
     # change the edges in the existing M_x graph
     # edges = M_x.edges()
@@ -159,58 +147,6 @@ def decoding_failures_uncorr(H_x, H_z, L_x, L_z, p, eta, shots):
     return num_errors_x, num_errors_z
 
 
-#l = 3,4,6
-# d = 3,5,7
-# p_list = np.linspace(0.01, 0.5, 20)
-# d_list = [3,5,7]
-# l = 3
-# num_shots = 10000
-
-# log_err_list_x = []
-# log_err_list_z = []
-# for d in d_list:
-#     print(f"simulating d={d}")
-
-#     compass_code = cc.CompassCode(d=d, l=l)
-
-#     H_x, H_z = compass_code.H['X'], compass_code.H['Z']
-#     log_x, log_z = compass_code.logicals['X'], compass_code.logicals['Z']
-    
-#     log_errors_x = []
-#     log_errors_z = []
-#     for p in p_list:
-#         num_errors_x = decoding_failures(H_z, log_z, p, num_shots, 0)
-#         log_errors_x.append(num_errors_x/num_shots)
-        
-#         num_errors_z = decoding_failures(H_x, log_x, p, num_shots, 1)
-#         log_errors_z.append(num_errors_z/num_shots)
-
-#     log_err_list_x.append(np.array(log_errors_x))
-#     log_err_list_z.append(np.array(log_errors_z))
-
-# # Create a figure with two subplots
-# fig, (ax1,ax2 )= plt.subplots(1, 2, figsize=(12, 5))
-
-
-# # Plot on the first subplot (ax1)
-# for d, logical_errors_x in zip(d_list, log_err_list_x):
-#     ax1.plot(2*p_list/3, logical_errors_x, label="d={}".format(d))
-# ax1.set_title('X Errors')
-# ax1.set_xlabel("Physical Error Rate")
-# ax1.set_ylabel('Logical Error Rate')
-# ax1.legend()
-# ax1.grid(True)
-
-# # Plot on the first subplot (ax2)
-# for d, logical_errors_z in zip(d_list, log_err_list_z):
-#     ax2.plot(2*p_list/3, logical_errors_z, label="d={}".format(d))
-# ax2.set_title('Z Errors')
-# ax2.set_xlabel("Physical Error Rate")
-# ax2.set_ylabel('Logical Error Rate')
-# ax2.legend()
-# ax2.grid(True)
-
-# plt.show()
 #
 # for generating a threshold graph for Z/X too 
 #
@@ -239,25 +175,12 @@ if __name__ == "__main__":
         H_x, H_z = compass_code.H['X'], compass_code.H['Z']
         log_x, log_z = compass_code.logicals['X'], compass_code.logicals['Z']
 
-        # log_errors_x = []
-        # log_errors_z = []
-        # log_errors_indep_z = []
-        # log_total_err = []
         for p in p_list:
             errors = decoding_failures_correlated(H_x, H_z, log_x, log_z, p, eta, num_shots)
-            # num_indep_x, num_indep_z = decoding_failures_total(H_x, H_z, log_x, log_z, p, eta, num_shots)
             for i in range(len(errors)):
                 curr_row = {"d":d, "num_shots":num_shots, "p":p, "l": l, "eta":eta, "error_type":err_type[i], "num_log_errors":errors[i]/num_shots, "time_stamp":datetime.now()}
                 data = pd.concat([data, pd.DataFrame([curr_row])], ignore_index=True)
-        #     log_errors_x.append(num_errors_x/num_shots)
-        #     log_errors_z.append(num_errors_z/num_shots)
-        #     log_errors_indep_z.append(num_indep_z/num_shots)
-        #     log_total_err.append((num_indep_x+num_indep_z)/num_shots)
-        
-        # log_err_list_x.append(np.array(log_errors_x))
-        # log_err_list_z.append(np.array(log_errors_z))
-        # log_err_indep_list_z.append(np.array(log_errors_indep_z))
-        # log_total_err_list.append(np.array(log_total_err))
+
 
 
     data_file = 'corr_err_data.csv'
@@ -276,37 +199,6 @@ if __name__ == "__main__":
     all_data.to_csv(data_file, index=False)
 
     print(f"CSV file saved to: {data_file}")
-
-    # data = [log_err_list_x, log_err_list_z, log_err_indep_list_z, log_total_err_list]
-    # ind_dict = {1:'x', 2:'z', 3:'corr_z', 4:'total'}
-    # folder = f"l{l}_shots{num_shots}_d" + "_".join(map(str, d_list))
-
-    # if os.path.exists(folder):
-    #     with open(f"counter_l{l}_shots{num_shots}_d" + "_".join(map(str, d_list)) + ".txt", "r") as f:
-    #         counter = int(f.read().strip())
-    #     counter += 1
-        
-    #     with open(f"counter_l{l}_shots{num_shots}_d" + "_".join(map(str, d_list)) + ".txt", "w") as f:
-    #         f.write(str(counter))
-        
-    #     folder = folder + f"-{counter}"
-    #     os.makedirs(folder)
-    # else:
-    #     counter = 0
-    #     os.makedirs(folder)
-        
-    #     os.makedirs(f"counter_l{l}_shots{num_shots}_d" + "_".join(map(str, d_list)) + ".txt")
-    #     with open(f"counter_l{l}_shots{num_shots}_d" + "_".join(map(str, d_list)) + ".txt", "w") as f:
-    #         f.write(str(counter))
-
- 
-
-    # for ind, sublist in enumerate(data):
-    #     df = pd.DataFrame(sublist)
-    #     file_name = os.path.join(folder,f"{ind_dict[ind+1]}.csv")
-    #     df.to_csv(file_name, index=False, header=False)
-
-
 
 
 #################################################################
