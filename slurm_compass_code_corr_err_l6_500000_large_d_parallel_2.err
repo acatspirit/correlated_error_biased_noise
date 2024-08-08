@@ -1,2 +1,5 @@
 /hpc/group/brownlab/am1155/pymatching_env/lib64/python3.9/site-packages/networkx/utils/backends.py:135: RuntimeWarning: networkx backend defined more than once: nx-loopback
   backends.update(_get_backends("networkx.backends"))
+slurmstepd: error: *** JOB 13814727 ON dcc-yoderlab-02 CANCELLED AT 2024-08-08T16:22:52 ***
+slurmstepd: error: *** JOB 13816786 ON dcc-yoderlab-02 CANCELLED AT 2024-08-08T16:22:56 ***
+slurmstepd: error: *** JOB 13816785 ON dcc-yoderlab-02 CANCELLED AT 2024-08-08T16:22:58 ***
