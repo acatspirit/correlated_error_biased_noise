@@ -1,6 +1,5 @@
 import CompassCodes as cc
-from compass_code_correlated_error import decoding_failures_correlated, decoding_failures_total
-
+from compass_code_correlated_error import decoding_failures_correlated
 
 d = 9
 l = 3
@@ -15,4 +14,3 @@ log_x, log_z = compass_code.logicals['X'], compass_code.logicals['Z']
 
 
 %timeit decoding_failures_correlated(H_x, H_z, log_x, log_z, p, eta, num_shots)
-%timeit decoding_failures_total(H_x, H_z, log_x, log_z, p, eta, num_shots)

@@ -107,21 +107,22 @@ def decoding_failures_correlated(H_x, H_z, L_x, L_z, p, eta, shots):
     # Decode X errors 
     num_errors_z_corr = 0
 
-    # for i in range(shots):
-    #     M_x = Matching.from_check_matrix(H_x, weights=updated_weights[i])
-    #     correction_z = M_x.decode(syndrome_x[i])
-    #     num_errors_z += np.sum((correction_z + err_vec_z[i]) @ L_x % 2)
+    for i in range(shots):
+        M_x_corr = Matching.from_check_matrix(H_x, weights=updated_weights[i])
+        correction_z_corr = M_x_corr.decode(syndrome_x[i])
+        num_errors_z_corr += np.sum((correction_z_corr + err_vec_z[i]) @ L_x % 2)
 
     # check this performs the same as the above
 
-    # chagne the edges in the existing M_x graph
-    edges = M_x.edges()
-    for i in range(shots):
-        for edge, w in zip(edges, updated_weights[i]):
-            M_x.add_edge(edge[0], edge[1], None, weight=w, merge_strategy="replace")
-        correction_z = M_x.decode(syndrome_x[i])
-        num_errors_z_corr += np.sum((correction_z + err_vec_z[i]) @ L_x % 2)
-    
+    # change the edges in the existing M_x graph
+    # edges = M_x.edges()
+    # for i in range(shots):
+    #     for edge, w in zip(edges, updated_weights[i]):
+    #         M_x.add_edge(edge[0], edge[1], None, weight=w, merge_strategy="replace")
+    #     correction_z = M_x.decode(syndrome_x[i])
+    #     num_errors_z_corr += np.sum((correction_z + err_vec_z[i]) @ L_x % 2)
+
+
     num_errors_tot = num_errors_x + num_errors_z
 
     return num_errors_x, num_errors_z, num_errors_z_corr, num_errors_tot
@@ -246,7 +247,7 @@ if __name__ == "__main__":
             errors = decoding_failures_correlated(H_x, H_z, log_x, log_z, p, eta, num_shots)
             # num_indep_x, num_indep_z = decoding_failures_total(H_x, H_z, log_x, log_z, p, eta, num_shots)
             for i in range(len(errors)):
-                curr_row = {"d":d, "num_shots":num_shots, "p":p, "l": l, "eta":eta, "error_type":err_type[i], "num_log_errors":[errors[i]], "time_stamp":[datetime.now()]}
+                curr_row = {"d":d, "num_shots":num_shots, "p":p, "l": l, "eta":eta, "error_type":err_type[i], "num_log_errors":errors[i]/num_shots, "time_stamp":datetime.now()}
                 data = pd.concat([data, pd.DataFrame([curr_row])], ignore_index=True)
         #     log_errors_x.append(num_errors_x/num_shots)
         #     log_errors_z.append(num_errors_z/num_shots)
