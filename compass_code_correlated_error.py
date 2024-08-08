@@ -155,7 +155,7 @@ if __name__ == "__main__":
     num_shots = 10000
     d_list = [11,13,15,17,19]
     l=6
-    p_list = np.linspace(0.01, 0.5, 10)
+    p_list = np.linspace(0.01, 0.5, 40)
     eta = 5.89
     prob_scale = [2*0.5/(1+eta), (1+2*eta)/(2*(1+eta))] # the rate by which we double count errors for each type, X and then Z
     # log_err_list_x = []
