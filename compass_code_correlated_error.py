@@ -223,7 +223,7 @@ def concat_csv(file_path, output_file):
 if __name__ == "__main__":
     task_id = int(os.environ['SLURM_ARRAY_TASK_ID'])
 
-    num_shots = 10
+    num_shots = 10000
     d_list = [11,13,15,17,19]
     l=6
     p_list = np.linspace(0.01, 0.5, 40)
