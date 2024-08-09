@@ -10,7 +10,7 @@ df = pd.read_csv(csv_file_path)
 # Input parameters
 curr_l = 6
 curr_eta = 5.89
-curr_num_shots = 1000
+curr_num_shots = 10000
 
 prob_scale = {'x': 2*0.5/(1+curr_eta), 'z': (1+2*curr_eta)/(2*(1+curr_eta)), 'corr_z': 1, 'total':1}
 
@@ -33,7 +33,7 @@ for i, error_type in enumerate(error_types):
     # Plot each d value
     for d in d_values:
         d_df = error_type_df[error_type_df['d'] == d]
-        ax.plot(d_df['p']*prob_scale[error_type], d_df['num_log_errors'], marker='o', label=f'd={d}')
+        ax.plot(d_df['p']*prob_scale[error_type], d_df['num_log_errors'], label=f'd={d}')
     
     ax.set_title(f'Error Type: {error_type}')
     ax.set_xlabel('p')

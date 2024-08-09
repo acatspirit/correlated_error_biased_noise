@@ -147,6 +147,40 @@ def decoding_failures_uncorr(H_x, H_z, L_x, L_z, p, eta, shots):
     return num_errors_x, num_errors_z
 
 
+def write_data(num_shots, d_list, l, p_list, eta):
+    err_type = {0:"x", 1:"z", 2:"corr_z", 3:"total"}
+    data_dict = {"d":[], "num_shots":[], "p":[], "l": [], "eta":[], "error_type":[], "num_log_errors":[], "time_stamp":[]}
+    data = pd.DataFrame(data_dict)
+
+    for d in d_list:
+        print(f"Running d is {d}")
+        compass_code = cc.CompassCode(d=d, l=l)
+        H_x, H_z = compass_code.H['X'], compass_code.H['Z']
+        log_x, log_z = compass_code.logicals['X'], compass_code.logicals['Z']
+
+        for p in p_list:
+            errors = decoding_failures_correlated(H_x, H_z, log_x, log_z, p, eta, num_shots)
+            for i in range(len(errors)):
+                curr_row = {"d":d, "num_shots":num_shots, "p":p, "l": l, "eta":eta, "error_type":err_type[i], "num_log_errors":errors[i]/num_shots, "time_stamp":datetime.now()}
+                data = pd.concat([data, pd.DataFrame([curr_row])], ignore_index=True)
+
+
+
+    data_file = 'corr_err_data.csv'
+
+    # Check if the CSV file exists
+    if os.path.isfile(data_file):
+        # If it exists, load the existing data
+        past_data = pd.read_csv(data_file)
+        # Append the new data
+        all_data = pd.concat([past_data, data], ignore_index=True)
+    else:
+        # If it doesn't exist, the new data will be the combined data
+        all_data = data
+
+    # Save the combined data to the CSV file
+    all_data.to_csv(data_file, index=False)
+
 #
 # for generating a threshold graph for Z/X too 
 #
@@ -158,46 +192,9 @@ if __name__ == "__main__":
     p_list = np.linspace(0.01, 0.5, 40)
     eta = 5.89
     prob_scale = [2*0.5/(1+eta), (1+2*eta)/(2*(1+eta))] # the rate by which we double count errors for each type, X and then Z
-    # log_err_list_x = []
-    # log_err_list_z = []
-    # log_err_indep_list_z = []
-    # log_total_err_list = []
+    write_data(num_shots, d_list, l, p_list, eta)
 
-    # create a df to store the data
-    # error type dict
-    def write_data(num_shots, d_list, l, p_list, eta):
-        err_type = {0:"x", 1:"z", 2:"corr_z", 3:"total"}
-        data_dict = {"d":[], "num_shots":[], "p":[], "l": [], "eta":[], "error_type":[], "num_log_errors":[], "time_stamp":[]}
-        data = pd.DataFrame(data_dict)
-
-        for d in d_list:
-            print(f"Running d is {d}")
-            compass_code = cc.CompassCode(d=d, l=l)
-            H_x, H_z = compass_code.H['X'], compass_code.H['Z']
-            log_x, log_z = compass_code.logicals['X'], compass_code.logicals['Z']
-
-            for p in p_list:
-                errors = decoding_failures_correlated(H_x, H_z, log_x, log_z, p, eta, num_shots)
-                for i in range(len(errors)):
-                    curr_row = {"d":d, "num_shots":num_shots, "p":p, "l": l, "eta":eta, "error_type":err_type[i], "num_log_errors":errors[i]/num_shots, "time_stamp":datetime.now()}
-                    data = pd.concat([data, pd.DataFrame([curr_row])], ignore_index=True)
-
-
-
-        data_file = 'corr_err_data.csv'
-
-        # Check if the CSV file exists
-        if os.path.isfile(data_file):
-            # If it exists, load the existing data
-            past_data = pd.read_csv(data_file)
-            # Append the new data
-            all_data = pd.concat([past_data, data], ignore_index=True)
-        else:
-            # If it doesn't exist, the new data will be the combined data
-            all_data = data
-
-        # Save the combined data to the CSV file
-        all_data.to_csv(data_file, index=False)
+    
 
 
 
