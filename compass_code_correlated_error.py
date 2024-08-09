@@ -218,7 +218,7 @@ if __name__ == "__main__":
     task_id = os.getenv('SLURM_ARRAY_TASK_ID')
     task_id = int(task_id) if task_id is not None else None
 
-    num_shots = 10000
+    num_shots = 10
     d_list = [11,13,15,17,19]
     l=6
     p_list = np.linspace(0.01, 0.5, 40)
