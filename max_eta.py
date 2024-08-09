@@ -169,7 +169,7 @@ def single_error_graph(d_list, p_list, eta, num_shots, l, err_type, th_range, p_
     # filter the df to contain only rows of interest
     error_data_df = data_df[(data_df['error_type'] == err_type & data_df['num_shots'] == num_shots)]
     error_data_near_th_df = error_data_df[(error_data_df['p'] < p_th + th_range & error_data_df['p'] > p_th - th_range)]
-
+    prob_scale = {'x': 2*0.5/(1+eta), 'z': (1+2*eta)/(2*(1+eta)), 'corr_z': 1, 'total':1}
 
     fig, ax = plt.subplots()
     ax.set_title(f"Compass Code Logical Error Rate, Eta={eta}")
@@ -186,9 +186,9 @@ def single_error_graph(d_list, p_list, eta, num_shots, l, err_type, th_range, p_
         fit_values = threshold_fit(np.array(d_df_near_th['p']), curr_params[f'a{d}'].value, 
                                    curr_params[f'b{d}'].value, curr_params[f'c{d}'].value, 
                                    curr_params[f'e{d}'].value, p_th, curr_params['mu'].value, d)
-        line, = ax.plot(d_df_near_th['p'], fit_values, linestyle='--', label=f'fit d={d}')
+        line, = ax.plot(d_df_near_th['p']*prob_scale[err_type], fit_values, linestyle='--', label=f'fit d={d}')
         color = line.get_color()
-        ax.plot(d_df['p'], d_df['num_log_errors'], linestyle='dotted', color=color, label=f'd={d}')
+        ax.plot(d_df['p']*prob_scale[err_type], d_df['num_log_errors'], linestyle='dotted', color=color, label=f'd={d}')
 
     ax.legend()
     plt.show()
