@@ -1,11 +1,17 @@
 import pandas as pd
 import os
+import glob
 import matplotlib.pyplot as plt
 import numpy as np
+from compass_code_correlated_error import concat_csv
 
-# Load the CSV file
-csv_file_path = 'corr_err_data.csv'
-df = pd.read_csv(csv_file_path)
+
+csv_file = 'corr_err_data.csv'
+concat_csv('corr_err_data/', csv_file)
+df = pd.read_csv(csv_file)
+
+
+
 
 # Input parameters
 curr_l = 6

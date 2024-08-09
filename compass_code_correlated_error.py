@@ -7,7 +7,11 @@ import csv
 import pandas as pd
 import os
 from datetime import datetime
+import sys
+import glob
 
+# sys.argv[1] to get the parameter from slurm sh file
+# use seed to map the job to change filename (you can call seed one of the params = which job you're running)
 
 def depolarizing_err(p, H, eta=0.5):
     """Generates the error vector for one shot according to depolarizing noise model.
@@ -147,7 +151,7 @@ def decoding_failures_uncorr(H_x, H_z, L_x, L_z, p, eta, shots):
     return num_errors_x, num_errors_z
 
 
-def write_data(num_shots, d_list, l, p_list, eta):
+def write_data(num_shots, d_list, l, p_list, eta, ID):
     err_type = {0:"x", 1:"z", 2:"corr_z", 3:"total"}
     data_dict = {"d":[], "num_shots":[], "p":[], "l": [], "eta":[], "error_type":[], "num_log_errors":[], "time_stamp":[]}
     data = pd.DataFrame(data_dict)
@@ -166,7 +170,7 @@ def write_data(num_shots, d_list, l, p_list, eta):
 
 
 
-    data_file = 'corr_err_data.csv'
+    data_file = f'corr_err_data/{ID}.csv'
 
     # Check if the CSV file exists
     if os.path.isfile(data_file):
@@ -181,18 +185,46 @@ def write_data(num_shots, d_list, l, p_list, eta):
     # Save the combined data to the CSV file
     all_data.to_csv(data_file, index=False)
 
+def concat_csv(file_path, output_file):
+    data_files = glob.glob(os.path.join(file_path, '*.csv'))
+
+    df_list = []
+    for file in data_files:
+        df = pd.read_csv(file)
+        df_list.append(df)
+    
+    new_data = pd.concat(df_list, ignore_index=True)
+
+    # Check if the output file already exists
+    if os.path.exists(output_file):
+        # If it exists, load the existing data
+        existing_data = pd.read_csv(output_file)
+        # Append the new data to the existing data
+        all_data = pd.concat([existing_data, new_data], ignore_index=True)
+    else:
+        # If the file doesn't exist, the new data is the combined data
+        all_data = new_data
+    
+    all_data.to_csv(output_file, index=False)
+    
+    for file in data_files:
+        os.remove(file)
+
 #
 # for generating a threshold graph for Z/X too 
 #
 
 if __name__ == "__main__":
+    task_id = os.getenv('SLURM_ARRAY_TASK_ID')
+    task_id = int(task_id) if task_id is not None else None
+
     num_shots = 10000
     d_list = [11,13,15,17,19]
     l=6
     p_list = np.linspace(0.01, 0.5, 40)
     eta = 5.89
     prob_scale = [2*0.5/(1+eta), (1+2*eta)/(2*(1+eta))] # the rate by which we double count errors for each type, X and then Z
-    write_data(num_shots, d_list, l, p_list, eta)
+    write_data(num_shots, d_list, l, p_list, eta, task_id)
 
     
 
