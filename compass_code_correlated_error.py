@@ -215,8 +215,7 @@ def concat_csv(file_path, output_file):
 #
 
 if __name__ == "__main__":
-    task_id = os.getenv('SLURM_ARRAY_TASK_ID')
-    task_id = int(task_id) if task_id is not None else None
+    task_id = int(os.environ['SLURM_ARRAY_TASK_ID'])
 
     num_shots = 10
     d_list = [11,13,15,17,19]
