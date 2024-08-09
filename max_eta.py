@@ -91,7 +91,7 @@ def get_threshold(error_count_df, d_list, pth_0, p_range, return_all = False):
         return result.params['pth'].value
     
 
-def get_max_thresh_from_eta(params, num_shots, l, p_list, d_list, err_type, th_range, p_th0_list):
+def get_max_thresh_from_eta(params, num_shots, l, p_list, d_list, err_type, th_range, p_th0_list, data_file="corr_err_data.csv", new_data=True):
     """ FUNCTION TO BE MAXIMIZED. Returns the threshold with the current data, only eta to be iterated
         Inputs:
             num_shots - the number of experimental iterations
@@ -106,18 +106,23 @@ def get_max_thresh_from_eta(params, num_shots, l, p_list, d_list, err_type, th_r
 
     eta = params['eta']
 
-    full_data_df = get_data(num_shots, d_list, l, p_list, eta)
+    if new_data:
+        full_data_df = get_data(num_shots, d_list, l, p_list, eta)
+    else:
+        full_data_df = pd.read_csv(data_file)
+    
     error_data_df = full_data_df[(full_data_df['error_type'] == err_type)]
     errors_near_th_df = error_data_df[(error_data_df['p'] < p_th0 + th_range & error_data_df['p'] > p_th0 - th_range)]
+
     curr_th = get_threshold(errors_near_th_df, d_list, p_th0, th_range)
     
     return curr_th
 
-def threshold_minimization(eta, num_shots, l, p_list, d_list, err_type, th_range, p_th0_list):
-    return -get_max_thresh_from_eta(eta, num_shots, l, p_list, d_list, err_type, th_range, p_th0_list)
+def threshold_minimization(eta, num_shots, l, p_list, d_list, err_type, th_range, p_th0_list, new_data=True, data_file='corr_err_data.csv'):
+    return -get_max_thresh_from_eta(eta, num_shots, l, p_list, d_list, err_type, th_range, p_th0_list, new_data=new_data, data_file=data_file)
 
 # minimize the negative of the intersection point and return param eta
-def get_opt_eta(in_num_shots, in_l, init_eta, in_p_list, in_d_list, in_err_type, in_th_range, in_p_th0_list, show_result = True):
+def get_opt_eta(in_num_shots, in_l, init_eta, in_p_list, in_d_list, in_err_type, in_th_range, in_p_th0_list, show_result = True, new_data=True, data_file='corr_err_data.csv'):
     """ Returns the eta that produces the maximum p_threshold for a given l and d, along with
         other relevant parameters. 
         in: num_shots - the number of experimental iterations
@@ -136,7 +141,7 @@ def get_opt_eta(in_num_shots, in_l, init_eta, in_p_list, in_d_list, in_err_type,
     minimizer = Minimizer(threshold_minimization, params=params, fcn_args=(in_num_shots, in_l, in_p_list, in_d_list, in_err_type, in_th_range, in_p_th0_list))
     result = minimizer.minimize()
 
-    max_p_th = -threshold_minimization(result.params, in_num_shots, in_l, in_p_list, in_d_list, in_err_type, in_th_range, in_p_th0_list)
+    max_p_th = -threshold_minimization(result.params, in_num_shots, in_l, in_p_list, in_d_list, in_err_type, in_th_range, in_p_th0_list, new_data=new_data, data_file=data_file)
     optimal_eta = result.params['eta'].value
 
     if show_result:
@@ -207,9 +212,9 @@ def single_error_graph(d_list, p_list, eta, num_shots, l, err_type, th_range, p_
 #
 
 num_shots = 1000
-l = 3
+l = 6
 eta_0 = 1.67
-p_list = np.linspace(0.01, 0.5, 500)
+p_list = np.linspace(0.1, 0.25, 500)
 d_list = [7,9,11]
 err_type = 'z'
 p_th_range = 0.01
@@ -217,7 +222,7 @@ p_th0_list = [0.065,0.152,0.199, 0.179]
 
 
 
-opt_eta, max_p_th = get_opt_eta(num_shots, l, eta_0, p_list, d_list, err_type, p_th_range, p_th0_list, show_result=True)
+opt_eta, max_p_th = get_opt_eta(num_shots, l, eta_0, p_list, d_list, err_type, p_th_range, p_th0_list, show_result=True, )
 print(opt_eta, max_p_th)
 
 
