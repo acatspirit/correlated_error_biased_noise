@@ -150,8 +150,13 @@ def decoding_failures_uncorr(H_x, H_z, L_x, L_z, p, eta, shots):
     
     return num_errors_x, num_errors_z
 
+def get_data(num_shots, d_list, l, p_list, eta):
+    """ Generate logical error rates for x,z, correlatex z, and total errors
+        via MC sim in decoding_failures_correlated and add it to a shared pandas df
+        
+        in: num_shots - the number of MC iterations
 
-def write_data(num_shots, d_list, l, p_list, eta, ID):
+    """
     err_type = {0:"x", 1:"z", 2:"corr_z", 3:"total"}
     data_dict = {"d":[], "num_shots":[], "p":[], "l": [], "eta":[], "error_type":[], "num_log_errors":[], "time_stamp":[]}
     data = pd.DataFrame(data_dict)
@@ -167,9 +172,11 @@ def write_data(num_shots, d_list, l, p_list, eta, ID):
             for i in range(len(errors)):
                 curr_row = {"d":d, "num_shots":num_shots, "p":p, "l": l, "eta":eta, "error_type":err_type[i], "num_log_errors":errors[i]/num_shots, "time_stamp":datetime.now()}
                 data = pd.concat([data, pd.DataFrame([curr_row])], ignore_index=True)
+    return data
 
-
-
+def write_data(num_shots, d_list, l, p_list, eta, ID):
+    
+    data = get_data(num_shots, d_list, l, p_list, eta)
     data_file = f'corr_err_data/{ID}.csv'
 
     # Check if the CSV file exists
@@ -181,7 +188,6 @@ def write_data(num_shots, d_list, l, p_list, eta, ID):
     else:
         # If it doesn't exist, the new data will be the combined data
         all_data = data
-
     # Save the combined data to the CSV file
     all_data.to_csv(data_file, index=False)
 
