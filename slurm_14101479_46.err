@@ -1,0 +1,22 @@
+/hpc/group/brownlab/am1155/pymatching_env/lib64/python3.9/site-packages/networkx/utils/backends.py:135: RuntimeWarning: networkx backend defined more than once: nx-loopback
+  backends.update(_get_backends("networkx.backends"))
+/hpc/group/brownlab/am1155/correlated_error_biased_noise/compass_code_correlated_error.py:174: FutureWarning: The behavior of DataFrame concatenation with empty or all-NA entries is deprecated. In a future version, this will no longer exclude empty or all-NA columns when determining the result dtypes. To retain the old behavior, exclude the relevant entries before the concat operation.
+  data = pd.concat([data, pd.DataFrame([curr_row])], ignore_index=True)
+Traceback (most recent call last):
+  File "/hpc/group/brownlab/am1155/correlated_error_biased_noise/compass_code_correlated_error.py", line 232, in <module>
+    write_data(num_shots, d_list, l, p_list, eta, task_id)
+  File "/hpc/group/brownlab/am1155/correlated_error_biased_noise/compass_code_correlated_error.py", line 192, in write_data
+    all_data.to_csv(data_file, index=False)
+  File "/hpc/group/brownlab/am1155/pymatching_env/lib64/python3.9/site-packages/pandas/util/_decorators.py", line 333, in wrapper
+    return func(*args, **kwargs)
+  File "/hpc/group/brownlab/am1155/pymatching_env/lib64/python3.9/site-packages/pandas/core/generic.py", line 3967, in to_csv
+    return DataFrameRenderer(formatter).to_csv(
+  File "/hpc/group/brownlab/am1155/pymatching_env/lib64/python3.9/site-packages/pandas/io/formats/format.py", line 1014, in to_csv
+    csv_formatter.save()
+  File "/hpc/group/brownlab/am1155/pymatching_env/lib64/python3.9/site-packages/pandas/io/formats/csvs.py", line 251, in save
+    with get_handle(
+  File "/hpc/group/brownlab/am1155/pymatching_env/lib64/python3.9/site-packages/pandas/io/common.py", line 749, in get_handle
+    check_parent_directory(str(handle))
+  File "/hpc/group/brownlab/am1155/pymatching_env/lib64/python3.9/site-packages/pandas/io/common.py", line 616, in check_parent_directory
+    raise OSError(rf"Cannot save file into a non-existent directory: '{parent}'")
+OSError: Cannot save file into a non-existent directory: 'corr_err_data'
