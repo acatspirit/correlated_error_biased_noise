@@ -191,6 +191,9 @@ def write_data(num_shots, d_list, l, p_list, eta, ID):
     """
     data = get_data(num_shots, d_list, l, p_list, eta)
     data_file = f'corr_err_data/{ID}.csv'
+    
+    if not os.path.isfile('corr_err_data/'):
+        os.mkdir('corr_err_data')
 
     # Check if the CSV file exists
     if os.path.isfile(data_file):
