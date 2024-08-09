@@ -11,8 +11,6 @@ concat_csv('corr_err_data/', csv_file)
 df = pd.read_csv(csv_file)
 
 
-
-
 # Input parameters
 curr_l = 6
 curr_eta = 5.89

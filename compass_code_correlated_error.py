@@ -155,6 +155,12 @@ def get_data(num_shots, d_list, l, p_list, eta):
         via MC sim in decoding_failures_correlated and add it to a shared pandas df
         
         in: num_shots - the number of MC iterations
+            l - the integer repition of the compass code
+            eta - the float bias ratio of the error model
+            p_list - array of probabilities to scan
+            d_list - the distances of compass code to scan
+        
+        out: a pandas df recording the logical error rate with all corresponding params
 
     """
     err_type = {0:"x", 1:"z", 2:"corr_z", 3:"total"}
@@ -175,7 +181,14 @@ def get_data(num_shots, d_list, l, p_list, eta):
     return data
 
 def write_data(num_shots, d_list, l, p_list, eta, ID):
-    
+    """ Writes data from pandas df to a csv file, for use with SLURM arrays.
+        in: num_shots - the number of MC iterations
+            l - the integer repition of the compass code
+            eta - the float bias ratio of the error model
+            p_list - array of probabilities to scan
+            d_list - the distances of compass code to scan
+            ID - SLURM input task_ID number, corresponds to which array element we run
+    """
     data = get_data(num_shots, d_list, l, p_list, eta)
     data_file = f'corr_err_data/{ID}.csv'
 
@@ -191,8 +204,14 @@ def write_data(num_shots, d_list, l, p_list, eta, ID):
     # Save the combined data to the CSV file
     all_data.to_csv(data_file, index=False)
 
-def concat_csv(file_path, output_file):
-    data_files = glob.glob(os.path.join(file_path, '*.csv'))
+def concat_csv(folder_path, output_file):
+    """Combines all CSV files is in folder 'folder_path' and writes them to one common 
+        'output_file'. The CSV files in folder_path are deleted.
+        in: folder_path - the folder that stores all the csv files to be combined
+            output_file - the file that the CSV files will be combined into
+        out: no output. The folder_path files are deleted and the output_file is added to
+    """
+    data_files = glob.glob(os.path.join(folder_path, '*.csv'))
 
     df_list = []
     for file in data_files:
@@ -216,6 +235,9 @@ def concat_csv(file_path, output_file):
     for file in data_files:
         os.remove(file)
 
+
+
+
 #
 # for generating a threshold graph for Z/X too 
 #
@@ -225,10 +247,10 @@ if __name__ == "__main__":
 
     num_shots = 10000
     d_list = [11,13,15,17,19]
-    l=6
+    l=6 # elongation parameter of compass code
     p_list = np.linspace(0.01, 0.5, 40)
-    eta = 5.89
-    prob_scale = [2*0.5/(1+eta), (1+2*eta)/(2*(1+eta))] # the rate by which we double count errors for each type, X and then Z
+    eta = 5.89 # the degree of noise bias
+
     write_data(num_shots, d_list, l, p_list, eta, task_id)
 
     

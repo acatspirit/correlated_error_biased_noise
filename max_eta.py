@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from scipy import optimize
 import CompassCodes as cc
 import csv
-from compass_code_correlated_error import decoding_failures_correlated, write_data
+from compass_code_correlated_error import decoding_failures_correlated, write_data, get_data
 from functools import partial
 from lmfit import Minimizer, Parameters, report_fit
 import os
@@ -44,11 +44,10 @@ def combined_residual(params, p_list, d_list, error_list):
     return np.concatenate(residuals)
 
 # find the intersection point of the lines within a range
-def get_threshold(error_list, p_list, d_list, pth_0, p_range, return_all = False):
+def get_threshold(error_count_df, d_list, pth_0, p_range, return_all = False):
     """ Using the list of logical error rates for different distances in errors_array,
         finds the intersection in p_list of the lines
-        in: errors_list - the list of lists of logical errors for each distance scanning over each probability.
-                        Obtained from get_data function.
+        in: error_count_df - the dataframe containing all data, filtered for one error_type
             d_list - list of lattice distances
             p_list - list of probabilites scanned over to produce errors_array
             pth_0 - the current threshold probability guess for designated logical error
@@ -64,20 +63,9 @@ def get_threshold(error_list, p_list, d_list, pth_0, p_range, return_all = False
         
         # local params to vary for each d
         params.add(f"a{curr_d}", value = 0)
-        # params[f'a{curr_d}'].min = 0
-        # params[f'a{curr_d}'].max = 10
-        
         params.add(f"b{curr_d}", value = 1)
-        # params[f'b{curr_d}'].min = 0
-        # params[f'b{curr_d}'].max = 10
-
         params.add(f"c{curr_d}", value = 1)
-        # params[f'c{curr_d}'].min = 0
-        # params[f'c{curr_d}'].max = 10
-
         params.add(f"e{curr_d}", value = 0)
-        # params[f'e{curr_d}'].min = 0
-        # params[f'e{curr_d}'].max = 10
 
         # local param to fix
         params.add(f"d{curr_d}", value=curr_d, vary=False) # lattice size, have been calling this d
@@ -88,10 +76,12 @@ def get_threshold(error_list, p_list, d_list, pth_0, p_range, return_all = False
         params['pth'].max = pth_0 + p_range
 
         params.add("mu", value=1, vary=True)
-        # params['mu'].min = -1
-        # params['mu'].max = 1
 
-    minimizer = Minimizer(combined_residual, params, fcn_args=(p_list, d_list, error_list))
+    p_list_zoomed = error_count_df['p']
+    error_list = error_count_df['num_log_errors']
+
+
+    minimizer = Minimizer(combined_residual, params, fcn_args=(p_list_zoomed, d_list, error_list))
     result = minimizer.minimize()
     
     
@@ -101,50 +91,6 @@ def get_threshold(error_list, p_list, d_list, pth_0, p_range, return_all = False
         return result.params['pth'].value
     
 
-
-def get_data(num_shots, l, eta, p_list, d_list):
-    """ For a given l and eta, for many distances produces the number of logical errors at 
-        various probabilities. Returns the logical error rate for X errors, Z errors,
-        Z errors after X errors have been corrected, and Z and X errors in total.
-        in: num_shots - the number of experimental iterations
-            l - the integer repition of the compass code
-            eta - the float bias ratio of the error model
-            p_list - array of probabilities to scan
-            d_list - the distances of compass code to scan
-    """
-    err_type = {0:"x", 1:"z", 2:"corr_z", 3:"total"}
-    data_dict = {"d":[], "num_shots":[], "p":[], "l": [], "eta":[], "error_type":[], "num_log_errors":[], "time_stamp":[]}
-    data = pd.DataFrame(data_dict)
-
-    for d in d_list:
-        compass_code = cc.CompassCode(d=d, l=l)
-        H_x, H_z = compass_code.H['X'], compass_code.H['Z']
-        log_x, log_z = compass_code.logicals['X'], compass_code.logicals['Z']
-
-        for p in p_list:
-            errors = decoding_failures_correlated(H_x, H_z, log_x, log_z, p, eta, num_shots)
-            for i in range(len(errors)):
-                curr_row = {"d":d, "num_shots":num_shots, "p":p, "l": l, "eta":eta, "error_type":err_type[i], "num_log_errors":errors[i]/num_shots, "time_stamp":datetime.now()}
-                data = pd.concat([data, pd.DataFrame([curr_row])], ignore_index=True)
-
-
-
-    data_file = 'corr_err_data.csv'
-
-    # Check if the CSV file exists
-    if os.path.isfile(data_file):
-        # If it exists, load the existing data
-        past_data = pd.read_csv(data_file)
-        # Append the new data
-        all_data = pd.concat([past_data, data], ignore_index=True)
-    else:
-        # If it doesn't exist, the new data will be the combined data
-        all_data = data
-
-    # Save the combined data to the CSV file
-    all_data.to_csv(data_file, index=False)
-    return data
-
 def get_max_thresh_from_eta(params, num_shots, l, p_list, d_list, err_type, th_range, p_th0_list):
     """ FUNCTION TO BE MAXIMIZED. Returns the threshold with the current data, only eta to be iterated
         Inputs:
@@ -153,18 +99,17 @@ def get_max_thresh_from_eta(params, num_shots, l, p_list, d_list, err_type, th_r
             eta - the float bias ratio of the error model
             p_list - array of probabilities to scan
             d_list - the distances of compass code to scan
-            err_type - can get the threshold for x, z, corr_z, or total errors
+            err_type - string, can get the threshold for x, z, corr_z, or total errors
     """
     err_dict = {'x':0, 'z':1, 'corr_z':2, 'total':3}
     p_th0 = p_th0_list[err_dict[err_type]]
 
     eta = params['eta']
 
-    full_data = get_data(num_shots, l, eta, p_list, d_list)
-    error_data = full_data[err_dict[err_type]]
-    p_list_near_th = [p for p in p_list if p_th0 - th_range < p < p_th0 + th_range]
-    error_data_near_th = [[error_data[d][i] for i in range(len(p_list)) if p_th0 - th_range < p_list[i] < p_th0 + th_range] for d in range(len(d_list))]
-    curr_th = get_threshold(error_data_near_th, p_list_near_th, d_list, p_th0, th_range)
+    full_data_df = get_data(num_shots, d_list, l, p_list, eta)
+    error_data_df = full_data_df[(full_data_df['error_type'] == err_type)]
+    errors_near_th_df = error_data_df[(error_data_df['p'] < p_th0 + th_range & error_data_df['p'] > p_th0 - th_range)]
+    curr_th = get_threshold(errors_near_th_df, d_list, p_th0, th_range)
     
     return curr_th
 
@@ -199,21 +144,32 @@ def get_opt_eta(in_num_shots, in_l, init_eta, in_p_list, in_d_list, in_err_type,
 
     return optimal_eta, max_p_th
 
-def single_error_graph(d_list, p_list, eta, num_shots, l, err_type, th_range, p_th):
+def single_error_graph(d_list, p_list, eta, num_shots, l, err_type, th_range, p_th, new_data=False, data_file='corr_err_data.csv'):
+    """ Make a plot for one type of error with full p_list, fitting the range around p_th specified by th_range.
+        If new_data is False, single_error_graph plots existing data from the full csv file. Otherwise, it generates
+        and plots new data.
+
+        in - num_shots - the number of experimental iterations
+            l - the integer repition of the compass code
+            eta - the float bias ratio of the error model
+            p_list - array of probabilities to scan
+            d_list - the distances of compass code to scan
+            err_type - string, x, z, z_corr, or total
+            th_range - the window to be graphed around p_th
+            p_th - the probability threshold
+            new_data - specifies whether to create new data or to write to the csv file
     """
-    Make a plot for one type of error with full p_list, but fitting only the 
-    """
-    err_dict = {'x':0, 'z':1, 'corr_z':2, 'total':3}
-
-    err_ind = err_dict[err_type]
-
-    full_data = get_data(num_shots, l, eta, p_list, d_list)
-    error_data = full_data[err_ind]
-
-    p_list_near_th = [p for p in p_list if p_th - th_range < p < p_th + th_range]
-    error_data_near_th = [[error_data[d][i] for i in range(len(p_list)) if p_th - th_range < p_list[i] < p_th + th_range] for d in range(len(d_list))]
-
+    # get the relavent data
+    if new_data:
+        data_df = get_data(num_shots, d_list, l, p_list, eta)
+    else:
+        data_df = pd.read_csv(data_file)
     
+
+    # filter the df to contain only rows of interest
+    error_data_df = data_df[(data_df['error_type'] == err_type & data_df['num_shots'] == num_shots)]
+    error_data_near_th_df = error_data_df[(error_data_df['p'] < p_th + th_range & error_data_df['p'] > p_th - th_range)]
+
 
     fig, ax = plt.subplots()
     ax.set_title(f"Compass Code Logical Error Rate, Eta={eta}")
@@ -221,15 +177,19 @@ def single_error_graph(d_list, p_list, eta, num_shots, l, err_type, th_range, p_
     ax.set_ylabel("Logical Error Rate")
     
     # Plot the data for all values of d
-    for d, errors in zip(d_list, error_data):
-        ax.plot(p_list, errors, linestyle='dotted', label=f'd={d}')
-        
-        # Fit the data for each d
-        fit_result = get_threshold(error_data_near_th, p_list_near_th, d_list, p_th, 0.001, return_all=True)
+    for d in d_list:
+        d_df = error_data_df[error_data_df['d'] == d]
+        d_df_near_th = error_data_near_th_df[error_data_near_th_df['d'] == d]
+
+        fit_result = get_threshold(d_df_near_th, d_list, p_th, th_range)
         curr_params= fit_result.params
-        fit_values = threshold_fit(np.array(p_list_near_th), curr_params[f'a{d}'].value, curr_params[f'b{d}'].value, curr_params[f'c{d}'].value, curr_params[f'e{d}'].value, p_th, curr_params['mu'].value, d)
-        ax.plot(p_list_near_th, fit_values, linestyle='--', label=f'fit d={d}')
-    
+        fit_values = threshold_fit(np.array(d_df_near_th['p']), curr_params[f'a{d}'].value, 
+                                   curr_params[f'b{d}'].value, curr_params[f'c{d}'].value, 
+                                   curr_params[f'e{d}'].value, p_th, curr_params['mu'].value, d)
+        line, = ax.plot(d_df_near_th['p'], fit_values, linestyle='--', label=f'fit d={d}')
+        color = line.get_color()
+        ax.plot(d_df['p'], d_df['num_log_errors'], linestyle='dotted', color=color, label=f'd={d}')
+
     ax.legend()
     plt.show()
 
