@@ -112,7 +112,7 @@ def get_max_thresh_from_eta(params, num_shots, l, p_list, d_list, err_type, th_r
         full_data_df = pd.read_csv(data_file)
     
     error_data_df = full_data_df[(full_data_df['error_type'] == err_type)]
-    errors_near_th_df = error_data_df[(error_data_df['p'] < p_th0 + th_range & error_data_df['p'] > p_th0 - th_range)]
+    errors_near_th_df = error_data_df[(error_data_df['p'] < p_th0 + th_range) & (error_data_df['p'] > p_th0 - th_range)]
 
     curr_th = get_threshold(errors_near_th_df, d_list, p_th0, th_range)
     
@@ -173,7 +173,7 @@ def single_error_graph(d_list, p_list, eta, num_shots, l, err_type, th_range, p_
 
     # filter the df to contain only rows of interest
     error_data_df = data_df[(data_df['error_type'] == err_type & data_df['num_shots'] == num_shots)]
-    error_data_near_th_df = error_data_df[(error_data_df['p'] < p_th + th_range & error_data_df['p'] > p_th - th_range)]
+    error_data_near_th_df = error_data_df[(error_data_df['p'] < p_th + th_range ) & ( error_data_df['p'] > p_th - th_range)]
     prob_scale = {'x': 2*0.5/(1+eta), 'z': (1+2*eta)/(2*(1+eta)), 'corr_z': 1, 'total':1}
 
     fig, ax = plt.subplots()

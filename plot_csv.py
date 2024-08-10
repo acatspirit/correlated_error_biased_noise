@@ -40,7 +40,7 @@ for i, error_type in enumerate(error_types):
     # Plot each d value
     for d in d_values:
         d_df = error_type_df[error_type_df['d'] == d]
-        ax.scatter(d_df['p']*prob_scale[error_type], d_df['num_log_errors'], label=f'd={d}')
+        ax.scatter(d_df['p']*prob_scale[error_type], d_df['num_log_errors'], s=2, label=f'd={d}')
     
     ax.set_title(f'Error Type: {error_type}')
     ax.set_xlabel('p')
