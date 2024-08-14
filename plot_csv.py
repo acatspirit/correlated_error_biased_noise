@@ -7,13 +7,17 @@ from compass_code_correlated_error import concat_csv
 from datetime import datetime
 
 csv_file = 'corr_err_data.csv'
-concat_csv('corr_err_data/', csv_file)
-df = pd.read_csv(csv_file)
+if not os.listdir('corr_err_data/'):
+    df = pd.read_csv(csv_file)
+else:
+    csv_file = 'corr_err_data.csv'
+    concat_csv('corr_err_data/', csv_file)
+    df = pd.read_csv(csv_file)
 
 
 # Input parameters
-curr_l = 4
-curr_eta = 3
+curr_l = 5
+curr_eta = 4.26
 curr_num_shots = 10000
 
 prob_scale = {'x': 2*0.5/(1+curr_eta), 'z': (1+2*curr_eta)/(2*(1+curr_eta)), 'corr_z': 1, 'total':1}
@@ -47,5 +51,6 @@ for i, error_type in enumerate(error_types):
     ax.set_ylabel('num_log_errors')
     ax.legend()
 
+fig.suptitle(f'Logical Error Rates for eta ={curr_eta} and l={curr_l}')
 plt.tight_layout()
 plt.show()
