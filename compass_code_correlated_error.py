@@ -180,6 +180,21 @@ def get_data(num_shots, d_list, l, p_list, eta):
                 data = pd.concat([data, pd.DataFrame([curr_row])], ignore_index=True)
     return data
 
+def shots_averaging(num_shots, arr_len, l, eta, file='corr_err_data.csv'):
+    """For the inputted number of shots, averages those shots over the array length run on computing cluster.  
+        in: num_shots - int, the number of monte carlo shots in the original simulation
+            arr_len -  int, the number of jobs / averaging interval desired
+            l - int, elongation parameter
+            eta - float, noise bias
+    """
+    df = pd.read_csv(file)
+    data = df[(df['num_shots'] == num_shots) & (df['l'] == l) & (df['eta'] == eta)]
+    print(len(data))
+    data_means = data.groupby(np.arange(len(data)) // arr_len)['num_log_errors'].mean()
+    print(len(data_means))
+
+
+
 def write_data(num_shots, d_list, l, p_list, eta, ID):
     """ Writes data from pandas df to a csv file, for use with SLURM arrays.
         in: num_shots - the number of MC iterations
@@ -246,7 +261,7 @@ def concat_csv(folder_path, output_file):
 #
 
 if __name__ == "__main__":
-    task_id = int(os.environ['SLURM_ARRAY_TASK_ID'])
+    # task_id = int(os.environ['SLURM_ARRAY_TASK_ID'])
 
     num_shots = 10000
     d_list = [11,13,15,17,19]
@@ -254,7 +269,8 @@ if __name__ == "__main__":
     p_list = np.linspace(0.01, 0.5, 40)
     eta = 1.67 # the degree of noise bias
 
-    write_data(num_shots, d_list, l, p_list, eta, task_id)
+    # write_data(num_shots, d_list, l, p_list, eta, task_id)
+    shots_averaging(num_shots, 100, 4, 3)
 
     
 
