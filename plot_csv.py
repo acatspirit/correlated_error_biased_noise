@@ -7,7 +7,7 @@ from compass_code_correlated_error import concat_csv
 from datetime import datetime
 
 csv_file = 'corr_err_data.csv'
-# concat_csv('corr_err_data/', csv_file)
+concat_csv('corr_err_data/', csv_file)
 df = pd.read_csv(csv_file)
 
 
