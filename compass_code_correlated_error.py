@@ -180,18 +180,22 @@ def get_data(num_shots, d_list, l, p_list, eta):
                 data = pd.concat([data, pd.DataFrame([curr_row])], ignore_index=True)
     return data
 
-def shots_averaging(num_shots, arr_len, l, eta, file='corr_err_data.csv'):
+def shots_averaging(num_shots, l, eta, err_type, in_df, file='corr_err_data.csv'):
     """For the inputted number of shots, averages those shots over the array length run on computing cluster.  
         in: num_shots - int, the number of monte carlo shots in the original simulation
             arr_len -  int, the number of jobs / averaging interval desired
             l - int, elongation parameter
             eta - float, noise bias
+            err_type - the type of error to average
+            df - the dataframe of interest. If None, read from the CSV file
     """
-    df = pd.read_csv(file)
-    data = df[(df['num_shots'] == num_shots) & (df['l'] == l) & (df['eta'] == eta)]
-    print(len(data))
-    data_means = data.groupby(np.arange(len(data)) // arr_len)['num_log_errors'].mean()
-    print(len(data_means))
+    if in_df is None:
+        in_data = pd.read_csv(file)
+        data = in_data[(in_data['num_shots'] == num_shots) & (in_data['l'] == l) &(in_data['eta'] == eta) & (in_data['error_type'] == err_type)]
+    else:
+        data = in_df
+    data_mean = data.groupby('p', as_index=False)['num_log_errors'].mean()
+    return data_mean
 
 
 
@@ -221,6 +225,7 @@ def write_data(num_shots, d_list, l, p_list, eta, ID):
         all_data = data
     # Save the combined data to the CSV file
     all_data.to_csv(data_file, index=False)
+
 
 def concat_csv(folder_path, output_file):
     """Combines all CSV files is in folder 'folder_path' and writes them to one common 
@@ -270,7 +275,12 @@ if __name__ == "__main__":
     eta = 1.67 # the degree of noise bias
 
     # write_data(num_shots, d_list, l, p_list, eta, task_id)
-    shots_averaging(num_shots, 100, 4, 3)
+    # series = shots_averaging(num_shots, 100, 4, 3, 'x', None)
+    # print(len(series))
+    df = pd.read_csv('corr_err_data.csv')
+    # 13.0,10000.0,0.0225641025641025,3.0,1.67,x
+    # print(df[(df['d'] == 13) & (df['num_shots'] == 10000.0) &(df['l'] == 3.0) &(df['eta'] == 1.67) &(df['error_type'] == 'x') &(df['p'] == 0.0225641025641025)])
+
 
     
 
