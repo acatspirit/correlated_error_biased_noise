@@ -258,6 +258,47 @@ def concat_csv(folder_path, output_file):
     for file in data_files:
         os.remove(file)
 
+def full_error_plot(full_df, curr_eta, curr_l, curr_num_shots, averaging=True):
+    """Make a plot of all 4 errors given a df with unedited contents"""
+
+    prob_scale = {'x': 0.5/(1+curr_eta), 'z': (1+2*curr_eta)/(2*(1+curr_eta)), 'corr_z': 1, 'total':1}
+
+    # Filter the DataFrame based on the input parameters
+    filtered_df = full_df[(full_df['l'] == curr_l) & (full_df['eta'] == curr_eta) & (full_df['num_shots'] == curr_num_shots) 
+                    # & (df['time_stamp'].apply(lambda x: x[0:10]) == datetime.today().date())
+                    ]
+
+
+    # Get unique error types and unique d values
+    error_types = filtered_df['error_type'].unique()
+    d_values = filtered_df['d'].unique()
+
+    # Create a figure with subplots for each error type
+    fig, axes = plt.subplots(2, 2, figsize=(15, 10))
+    axes = axes.flatten()
+
+    # Plot each error type in a separate subplot
+    for i, error_type in enumerate(error_types):
+        ax = axes[i]
+        error_type_df = filtered_df[filtered_df['error_type'] == error_type]
+        # Plot each d value
+        for d in d_values:
+            d_df = error_type_df[error_type_df['d'] == d]
+            if averaging:
+                d_df_mean = shots_averaging(curr_num_shots, curr_l, curr_eta, error_type, d_df)
+                ax.plot(d_df_mean['p']*prob_scale[error_type], d_df_mean['num_log_errors'],  label=f'd={d}')
+            else:
+                ax.scatter(d_df['p']*prob_scale[error_type], d_df['num_log_errors'], s=2, label=f'd={d}')
+
+        
+        ax.set_title(f'Error Type: {error_type}')
+        ax.set_xlabel('p')
+        ax.set_ylabel('num_log_errors')
+        ax.legend()
+
+    fig.suptitle(f'Logical Error Rates for eta ={curr_eta} and l={curr_l}')
+    plt.tight_layout()
+    plt.show()
 
 
 
@@ -268,9 +309,9 @@ def concat_csv(folder_path, output_file):
 if __name__ == "__main__":
     task_id = int(os.environ['SLURM_ARRAY_TASK_ID'])
 
-    num_shots = 10000
+    num_shots = 100
     d_list = [11,13,15,17,19]
-    l=6 # elongation parameter of compass code
+    l=5 # elongation parameter of compass code
     p_list = np.linspace(0.01, 0.5, 40)
     eta = 100 # the degree of noise bias
 
@@ -278,6 +319,7 @@ if __name__ == "__main__":
     # series = shots_averaging(num_shots, 100, 4, 3, 'x', None)
     # print(len(series))
     # df = pd.read_csv('corr_err_data.csv')
+    # full_error_plot(df, eta, l, num_shots, averaging=False)
     # 13.0,10000.0,0.0225641025641025,3.0,1.67,x
     # print(df[(df['d'] == 13) & (df['num_shots'] == 10000.0) &(df['l'] == 3.0) &(df['eta'] == 1.67) &(df['error_type'] == 'x') &(df['p'] == 0.0225641025641025)])
 
