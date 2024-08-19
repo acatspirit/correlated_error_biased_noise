@@ -311,7 +311,7 @@ if __name__ == "__main__":
 
     num_shots = 10000
     d_list = [11,13,15,17,19]
-    l=5 # elongation parameter of compass code
+    l=4 # elongation parameter of compass code
     p_list = np.linspace(0.01, 0.5, 40)
     eta = 100 # the degree of noise bias
 
