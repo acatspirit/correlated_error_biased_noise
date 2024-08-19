@@ -309,7 +309,7 @@ def full_error_plot(full_df, curr_eta, curr_l, curr_num_shots, averaging=True):
 if __name__ == "__main__":
     task_id = int(os.environ['SLURM_ARRAY_TASK_ID'])
 
-    num_shots = 100
+    num_shots = 10000
     d_list = [11,13,15,17,19]
     l=5 # elongation parameter of compass code
     p_list = np.linspace(0.01, 0.5, 40)
