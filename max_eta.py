@@ -23,6 +23,8 @@ def combined_residual(params, p_list, d_list, error_list):
         returns: The residuals for global and individual fit variables, designated in the get_threshold function
     """
     residuals = []
+    print(error_list)
+    # now error list should start at the p-val close to the guess ... no longer ind of 0 
     for i in range(len(d_list)):
         curr_d = d_list[i]
 
@@ -213,16 +215,16 @@ def single_error_graph(d_list, p_list, eta, num_shots, l, err_type, th_range, p_
 
 num_shots = 1000
 l = 6
-eta_0 = 1.67
-p_list = np.linspace(0.1, 0.25, 500)
+eta_0 = 5.89
+p_list = np.linspace(0.2, 0.25, 50)
 d_list = [7,9,11]
-err_type = 'z'
+err_type = 'total'
 p_th_range = 0.01
-p_th0_list = [0.065,0.152,0.199, 0.179]
+p_th0_list = [0.033,0.216,0.259, 0.221]
 
 
 
-opt_eta, max_p_th = get_opt_eta(num_shots, l, eta_0, p_list, d_list, err_type, p_th_range, p_th0_list, show_result=True, )
+opt_eta, max_p_th = get_opt_eta(num_shots, l, eta_0, p_list, d_list, err_type, p_th_range, p_th0_list, show_result=True)
 print(opt_eta, max_p_th)
 
 

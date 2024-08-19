@@ -266,18 +266,18 @@ def concat_csv(folder_path, output_file):
 #
 
 if __name__ == "__main__":
-    # task_id = int(os.environ['SLURM_ARRAY_TASK_ID'])
+    task_id = int(os.environ['SLURM_ARRAY_TASK_ID'])
 
     num_shots = 10000
     d_list = [11,13,15,17,19]
-    l=3 # elongation parameter of compass code
+    l=6 # elongation parameter of compass code
     p_list = np.linspace(0.01, 0.5, 40)
-    eta = 1.67 # the degree of noise bias
+    eta = 100 # the degree of noise bias
 
-    # write_data(num_shots, d_list, l, p_list, eta, task_id)
+    write_data(num_shots, d_list, l, p_list, eta, task_id)
     # series = shots_averaging(num_shots, 100, 4, 3, 'x', None)
     # print(len(series))
-    df = pd.read_csv('corr_err_data.csv')
+    # df = pd.read_csv('corr_err_data.csv')
     # 13.0,10000.0,0.0225641025641025,3.0,1.67,x
     # print(df[(df['d'] == 13) & (df['num_shots'] == 10000.0) &(df['l'] == 3.0) &(df['eta'] == 1.67) &(df['error_type'] == 'x') &(df['p'] == 0.0225641025641025)])
 
