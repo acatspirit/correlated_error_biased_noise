@@ -311,9 +311,9 @@ if __name__ == "__main__":
 
     num_shots = 10000
     d_list = [11,13,15,17,19]
-    l=3 # elongation parameter of compass code
+    l=2 # elongation parameter of compass code
     p_list = np.linspace(0.01, 0.5, 40)
-    eta = 100 # the degree of noise bias
+    eta = 0.5 # the degree of noise bias
 
     write_data(num_shots, d_list, l, p_list, eta, task_id)
     # series = shots_averaging(num_shots, 100, 4, 3, 'x', None)
