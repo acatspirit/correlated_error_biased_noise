@@ -1,0 +1,5 @@
+/hpc/group/brownlab/am1155/pymatching_env/lib64/python3.9/site-packages/networkx/utils/backends.py:135: RuntimeWarning: networkx backend defined more than once: nx-loopback
+  backends.update(_get_backends("networkx.backends"))
+/hpc/group/brownlab/am1155/correlated_error_biased_noise/compass_code_correlated_error.py:180: FutureWarning: The behavior of DataFrame concatenation with empty or all-NA entries is deprecated. In a future version, this will no longer exclude empty or all-NA columns when determining the result dtypes. To retain the old behavior, exclude the relevant entries before the concat operation.
+  data = pd.concat([data, pd.DataFrame([curr_row])], ignore_index=True)
+slurmstepd: error: *** JOB 14746564 ON dcc-core-30 CANCELLED AT 2024-08-20T15:53:12 ***
