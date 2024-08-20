@@ -8,7 +8,7 @@ from datetime import datetime
 
 # Input parameters
 curr_l = 6
-curr_eta = 0.5
+curr_eta = 5
 curr_num_shots = 10000
 arr_len = 100
 
