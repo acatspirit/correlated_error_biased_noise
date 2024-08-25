@@ -7,7 +7,7 @@ from compass_code_correlated_error import concat_csv, shots_averaging, full_erro
 from datetime import datetime
 
 # Input parameters
-curr_l = 3
+curr_l = 2
 curr_eta = 5
 curr_num_shots = 10000
 arr_len = 100
