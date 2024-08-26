@@ -23,7 +23,6 @@ def combined_residual(params, p_list, d_list, error_list):
         returns: The residuals for global and individual fit variables, designated in the get_threshold function
     """
     residuals = []
-    print(error_list)
     # now error list should start at the p-val close to the guess ... no longer ind of 0 
     for i in range(len(d_list)):
         curr_d = d_list[i]
@@ -215,17 +214,18 @@ def single_error_graph(d_list, p_list, eta, num_shots, l, err_type, th_range, p_
 
 num_shots = 1000
 l = 6
-eta_0 = 5.89
+eta_0 = 0.01
 p_list = np.linspace(0.2, 0.25, 50)
-d_list = [7,9,11]
-err_type = 'total'
+d_list = [13,15,17, 19]
+err_type = 'corr_z'
 err_dict = {'x':0, 'z':1, 'corr_z':2, 'total':3}
-p_th_range = 0.01
-p_th0_list = [0.033,0.216,0.259, 0.221]
+p_th_range = 0.05
+p_th0_list = [0.033,0.216,0.4, 0.221]
 
 csv_file = 'corr_err_data.csv'
 df = pd.read_csv(csv_file)
-p_range_df = df[(df['p'] > p_th0_list[err_dict[err_type]]-p_th_range) & df['p'] < p_th0_list[err_dict[err_type]]+p_th_range]
+p_range_df = df[(df['p'] > p_th0_list[err_dict[err_type]]-p_th_range) & (df['p'] < p_th0_list[err_dict[err_type]]+p_th_range) & 
+                (df['error_type'] == err_type) & (df['num_shots'] == num_shots)]
 
 threshold = get_threshold(df, d_list, p_th0_list[0], p_th_range, return_all=False)
 # opt_eta, max_p_th = get_opt_eta(num_shots, l, eta_0, p_list, d_list, err_type, p_th_range, p_th0_list, show_result=True)
