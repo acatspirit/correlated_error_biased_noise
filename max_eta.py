@@ -219,13 +219,17 @@ eta_0 = 5.89
 p_list = np.linspace(0.2, 0.25, 50)
 d_list = [7,9,11]
 err_type = 'total'
+err_dict = {'x':0, 'z':1, 'corr_z':2, 'total':3}
 p_th_range = 0.01
 p_th0_list = [0.033,0.216,0.259, 0.221]
 
+csv_file = 'corr_err_data.csv'
+df = pd.read_csv(csv_file)
+p_range_df = df[(df['p'] > p_th0_list[err_dict[err_type]]-p_th_range) & df['p'] < p_th0_list[err_dict[err_type]]+p_th_range]
 
-
-opt_eta, max_p_th = get_opt_eta(num_shots, l, eta_0, p_list, d_list, err_type, p_th_range, p_th0_list, show_result=True)
-print(opt_eta, max_p_th)
+threshold = get_threshold(df, d_list, p_th0_list[0], p_th_range, return_all=False)
+# opt_eta, max_p_th = get_opt_eta(num_shots, l, eta_0, p_list, d_list, err_type, p_th_range, p_th0_list, show_result=True)
+# print(opt_eta, max_p_th)
 
 
 
