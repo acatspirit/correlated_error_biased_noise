@@ -300,8 +300,19 @@ def full_error_plot(full_df, curr_eta, curr_l, curr_num_shots, averaging=True):
     plt.tight_layout()
     plt.show()
 
+def make_error_plot():
+    """ Make a threshold plot for the specified error type
+    """ 
+    fig, axes = plt.subplots(1, 1, figsize=(8, 5))
+    
 
 
+
+def get_prob_scale(error_type, eta):
+    """ extract the amount to be scaled by given a noise bias and the type of error
+    """
+    prob_scale = {'x': 0.5/(1+eta), 'z': (1+2*eta)/(2*(1+eta)), 'corr_z': 1, 'total':1}
+    return prob_scale[error_type]
 #
 # for generating a threshold graph for Z/X too 
 #
