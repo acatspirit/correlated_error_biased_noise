@@ -80,33 +80,34 @@ def make_circuit_from_parity_mat(H_x, H_z):
         circuit.append("DETECTOR", stim.target_rec(-1))
 
     # create the Z parity checks
-    rows, cols, values = sparse.find(H_z)
+    # TODO: fix the detectors for the Z checks
+    # rows, cols, values = sparse.find(H_z)
 
-    for row in range(H_z.shape[0]):
+    # for row in range(H_z.shape[0]):
         
-        # Get the slice of the data corresponding to the current row
-        row_start = H_z.indptr[row]
-        row_end = H_z.indptr[row + 1]
+    #     # Get the slice of the data corresponding to the current row
+    #     row_start = H_z.indptr[row]
+    #     row_end = H_z.indptr[row + 1]
 
-        # Extract the column indices and data values for this row
-        curr_cols = cols[row_start:row_end] 
+    #     # Extract the column indices and data values for this row
+    #     curr_cols = cols[row_start:row_end] 
 
+    #     # get the order of the qubits for the surface code
+    #     mid_qubit = len(curr_cols)//2
+    #     first_half = curr_cols[0:mid_qubit]
+    #     second_half = curr_cols[mid_qubit:]
+    #     if len(curr_cols) == 4:
+    #         sorted_qubits = np.append(np.sort(first_half)[::-1], np.sort(second_half)[::-1])
+    #     else:
+    #         sorted_qubits = np.append(np.sort(second_half)[::-1], np.sort(first_half)[::-1])
 
-        # get the order of the qubits for the surface code
-        mid_qubit = len(curr_cols)//2
-        first_half = curr_cols[0:mid_qubit]
-        second_half = curr_cols[mid_qubit:]
-        if len(curr_cols) == 4:
-            sorted_qubits = np.append(np.sort(first_half)[::-1], np.sort(second_half)[::-1])
-        else:
-            sorted_qubits = np.append(np.sort(second_half)[::-1], np.sort(first_half)[::-1])
+    #     circuit.append("R", curr_ancilla)
 
-
-        for qubit in sorted_qubits:
-            circuit.append("CX", [qubit + num_ancillas, curr_ancilla])
+    #     for qubit in sorted_qubits:
+    #         circuit.append("CX", [qubit + num_ancillas, curr_ancilla])
     
-        circuit.append("MR", curr_ancilla)
-        circuit.append("DETECTOR", stim.target_rec(-1))
+    #     circuit.append("MR", curr_ancilla)
+    #     circuit.append("DETECTOR", stim.target_rec(-1))
             
     return circuit
 
@@ -125,16 +126,18 @@ log_x, log_z = compass_code.logicals['X'], compass_code.logicals['Z']
 
 
 curr_circuit = make_circuit_from_parity_mat(H_x, H_z)
+dem = curr_circuit.detector_error_model(decompose_errors=True)
 print(repr(curr_circuit))
-print(curr_circuit.compile_detector_sampler().sample(shots=4))
+
+# print(curr_circuit.compile_detector_sampler().sample(shots=4))
 
 
-# doing the H_z first, X errors
-matching_from_p = Matching.from_check_matrix(H_z)
-matching_from_c = Matching.from_stim_circuit(curr_circuit)
+# doing the H_x first, Z errors
+# matching_from_p = Matching.from_check_matrix(H_x)
+# matching_from_c = Matching.from_stim_circuit(curr_circuit)
 
-
-print(matching_from_c)
+# matching_from_p.draw()
+# plt.show()
 # num_errors_p = []
 # num_errors_c = []
 
@@ -144,13 +147,18 @@ print(matching_from_c)
 #     err_vec_z = np.array([err[1] for err in err_vec])
 
 #     # generate the syndrome for each shot
-#     syndrome_shots = err_vec_x@H_z.T%2
+#     syndrome_shots = err_vec_z@H_x.T%2
 
 #     # the correction to the errors
 #     correction_p = matching_from_p.decode_batch(syndrome_shots)
 #     correction_c = matching_from_c.decode_batch(syndrome_shots)
 
-#     num_errors_p += [np.sum((correction_p+err_vec_x)@log_z%2)]
-#     num_errors_c += [np.sum((correction_c+err_vec_x)@log_z%2)]
+#     num_errors_p += [np.sum((correction_p+err_vec_z)@log_x%2)]
+#     num_errors_c += [np.sum((correction_c+err_vec_z)@log_x%2)]
 
+
+# plt.plot(p_list,num_errors_p, label="parity H" )
+# plt.plot(p_list, num_errors_c, label="circuit")
+
+# plt.show()
 
