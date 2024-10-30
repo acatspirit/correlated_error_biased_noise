@@ -38,13 +38,13 @@ def make_circuit_from_parity_mat(H_x, H_z):
     circuit = stim.Circuit()
 
     curr_ancilla = 0
-    num_ancillas = 1 # change this based on the number of ancillas needed, maybe different for non-CSS codes
+    num_ancillas = H_x.shape[0] 
 
 
 
     #create the X parity checks
     rows, cols, values = sparse.find(H_x)
-
+    data_qubits = []
     for row in range(H_x.shape[0]):
         
         # Get the slice of the data corresponding to the current row
@@ -53,7 +53,6 @@ def make_circuit_from_parity_mat(H_x, H_z):
 
         # Extract the column indices and data values for this row
         curr_cols = cols[row_start:row_end] 
-        
         # get the order of the qubits for the surface code
         mid_qubit = len(curr_cols)//2
         first_half = curr_cols[0:mid_qubit]
@@ -67,20 +66,31 @@ def make_circuit_from_parity_mat(H_x, H_z):
         
         # initialize the circuit
         circuit.append("R", curr_ancilla)
-        circuit.append("RX", [q + 1 for q in sorted_qubits])
+        circuit.append("RX", [q + num_ancillas for q in sorted_qubits])
 
 
         circuit.append("H", curr_ancilla)
 
         for qubit in sorted_qubits:
             circuit.append("CX", [curr_ancilla, qubit + num_ancillas])
-
+        circuit.append("DEPOLARIZE1", [q + num_ancillas for q in sorted_qubits], 0.05)
         circuit.append("H", curr_ancilla)
         circuit.append("MR", curr_ancilla)
         circuit.append("DETECTOR", stim.target_rec(-1))
+        circuit.append("MX", [q + num_ancillas for q in sorted_qubits])
 
-    # create the Z parity checks
-    # TODO: fix the detectors for the Z checks
+        circuit.append("DETECTOR", [stim.target_rec(-i - 1) for i in range(len(curr_cols))])
+
+    # for anc in range(H_x.shape[0]):
+    #     circuit.append("DETECTOR", stim.target_rec(-anc - 1))
+    
+    # print(data_qubits, "data qubits")
+
+        # add a reset to all data q
+        # add a detector connecting each qubit in plaq to their anc
+
+    # # create the Z parity checks
+    # # TODO: fix the detectors for the Z checks
     # rows, cols, values = sparse.find(H_z)
 
     # for row in range(H_z.shape[0]):
@@ -126,18 +136,21 @@ log_x, log_z = compass_code.logicals['X'], compass_code.logicals['Z']
 
 
 curr_circuit = make_circuit_from_parity_mat(H_x, H_z)
-dem = curr_circuit.detector_error_model(decompose_errors=True)
+# dem = curr_circuit.detector_error_model(decompose_errors=True)
 print(repr(curr_circuit))
 
-# print(curr_circuit.compile_detector_sampler().sample(shots=4))
+print(curr_circuit.compile_detector_sampler().sample(shots=2)) # when I put detectors on all the different plaquettes, the measurement was all the same
+
 
 
 # doing the H_x first, Z errors
-# matching_from_p = Matching.from_check_matrix(H_x)
-# matching_from_c = Matching.from_stim_circuit(curr_circuit)
+matching_from_p = Matching.from_check_matrix(H_x)
+matching_from_c = Matching.from_stim_circuit(curr_circuit)
+print(matching_from_p)
+print(matching_from_c)
 
-# matching_from_p.draw()
-# plt.show()
+matching_from_c.draw()
+plt.show()
 # num_errors_p = []
 # num_errors_c = []
 
@@ -161,4 +174,3 @@ print(repr(curr_circuit))
 # plt.plot(p_list, num_errors_c, label="circuit")
 
 # plt.show()
-
