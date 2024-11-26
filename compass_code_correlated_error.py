@@ -216,7 +216,7 @@ def shots_averaging(num_shots, l, eta, err_type, in_df, file='corr_err_data.csv'
 
 
 
-def write_data(num_shots, d_list, l, p_list, eta, ID):
+def write_data(num_shots, d_list, l, p_list, eta, ID, corr_type):
     """ Writes data from pandas df to a csv file, for use with SLURM arrays. Generates data for each slurm output on a CSV
         in: num_shots - the number of MC iterations
             l - the integer repition of the compass code
@@ -225,7 +225,7 @@ def write_data(num_shots, d_list, l, p_list, eta, ID):
             d_list - the distances of compass code to scan
             ID - SLURM input task_ID number, corresponds to which array element we run
     """
-    data = get_data(num_shots, d_list, l, p_list, eta)
+    data = get_data(num_shots, d_list, l, p_list, eta, corr_type)
     data_file = f'corr_err_data/{ID}.csv'
     # data_file = f"corr_err_data.csv"
     if not os.path.exists('corr_err_data/'):
@@ -342,10 +342,11 @@ if __name__ == "__main__":
     l=5 # elongation parameter of compass code
     p_list = np.linspace(0.01, 0.5, 40)
     eta = 0.01 # the degree of noise bias
+    corr_type = "X"
     folder_path = 'corr_err_data/'
     output_file = 'x_corr_err_data.csv'
 
-    write_data(num_shots, d_list, l, p_list, eta, task_id)
+    write_data(num_shots, d_list, l, p_list, eta, task_id, corr_type)
     # concat_csv(folder_path, output_file)
     # series = shots_averaging(num_shots, 100, 4, 3, 'x', None)
     # print(len(series))
