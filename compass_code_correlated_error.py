@@ -337,7 +337,7 @@ def get_prob_scale(error_type, eta):
 if __name__ == "__main__":
     task_id = int(os.environ['SLURM_ARRAY_TASK_ID'])
 
-    num_shots = 10000
+    num_shots = 1000
     d_list = [11,13,15,17,19]
     l=5 # elongation parameter of compass code
     p_list = np.linspace(0.01, 0.5, 40)
