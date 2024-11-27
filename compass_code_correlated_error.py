@@ -63,7 +63,7 @@ def decoding_failures(H, L, p, eta, shots, err_type):
     return num_errors
 
 
-def decoding_failures_correlated(H_x, H_z, L_x, L_z, p, eta, shots):
+def decoding_failures_correlated(H_x, H_z, L_x, L_z, p, eta, shots, corr_type):
     """ Finds the number of logical errors after decoding.
         H_x - X parity check matrix for Z errors
         H_z - Z parity check matrix for X errors
@@ -72,6 +72,7 @@ def decoding_failures_correlated(H_x, H_z, L_x, L_z, p, eta, shots):
         p - probability of error
         eta - depolarizing channel bias.
         shots - number of shots
+        corr_type - X or Z. Whether to return Z or X correlated errors
     """
     M_z = Matching.from_check_matrix(H_z)
     M_x = Matching.from_check_matrix(H_x)
@@ -92,17 +93,33 @@ def decoding_failures_correlated(H_x, H_z, L_x, L_z, p, eta, shots):
     num_errors_z = np.sum((correction_z + err_vec_z) @ L_x % 2)
     
     
-    # Prepare weights and syndrome for X errors
-    updated_weights = np.logical_not(correction_x).astype(int)
-    syndrome_x = err_vec_z @ H_x.T % 2
     
-    # Decode X errors 
-    num_errors_z_corr = 0
+    
+    # Decode Z errors correlated
+    if corr_type == "Z":
+        # Prepare weights and syndrome for X errors
+        updated_weights = np.logical_not(correction_x).astype(int)
+        
+        num_errors_z_corr = 0
 
-    for i in range(shots):
-        M_x_corr = Matching.from_check_matrix(H_x, weights=updated_weights[i])
-        correction_z_corr = M_x_corr.decode(syndrome_x[i])
-        num_errors_z_corr += np.sum((correction_z_corr + err_vec_z[i]) @ L_x % 2)
+        for i in range(shots):
+            M_x_corr = Matching.from_check_matrix(H_x, weights=updated_weights[i])
+            correction_z_corr = M_x_corr.decode(syndrome_x[i])
+            num_errors_z_corr += np.sum((correction_z_corr + err_vec_z[i]) @ L_x % 2)
+        
+        num_errors_corr = num_errors_z_corr
+
+    if corr_type == "X":
+        # Prepare weights and syndrome for X errors
+        updated_weights = np.logical_not(correction_z).astype(int)
+        num_errors_x_corr = 0
+
+        for i in range(shots):
+            M_z_corr = Matching.from_check_matrix(H_z, weights=updated_weights[i])
+            correction_x_corr = M_z_corr.decode(syndrome_z[i])
+            num_errors_x_corr += np.sum((correction_x_corr + err_vec_x[i]) @ L_z % 2)
+        
+        num_errors_corr = num_errors_x_corr
 
     # how do we make this perform the same as above
 
@@ -114,10 +131,10 @@ def decoding_failures_correlated(H_x, H_z, L_x, L_z, p, eta, shots):
     #     correction_z = M_x.decode(syndrome_x[i])
     #     num_errors_z_corr += np.sum((correction_z + err_vec_z[i]) @ L_x % 2)
 
-
+    
     num_errors_tot = num_errors_x + num_errors_z
 
-    return num_errors_x, num_errors_z, num_errors_z_corr, num_errors_tot
+    return num_errors_x, num_errors_z, num_errors_corr, num_errors_tot
 
 def decoding_failures_uncorr(H_x, H_z, L_x, L_z, p, eta, shots):
     """ Finds the number of logical errors after decoding.
@@ -150,7 +167,7 @@ def decoding_failures_uncorr(H_x, H_z, L_x, L_z, p, eta, shots):
     
     return num_errors_x, num_errors_z
 
-def get_data(num_shots, d_list, l, p_list, eta):
+def get_data(num_shots, d_list, l, p_list, eta, corr_type):
     """ Generate logical error rates for x,z, correlatex z, and total errors
         via MC sim in decoding_failures_correlated and add it to a shared pandas df
         
@@ -174,7 +191,7 @@ def get_data(num_shots, d_list, l, p_list, eta):
         log_x, log_z = compass_code.logicals['X'], compass_code.logicals['Z']
 
         for p in p_list:
-            errors = decoding_failures_correlated(H_x, H_z, log_x, log_z, p, eta, num_shots)
+            errors = decoding_failures_correlated(H_x, H_z, log_x, log_z, p, eta, num_shots, corr_type)
             for i in range(len(errors)):
                 curr_row = {"d":d, "num_shots":num_shots, "p":p, "l": l, "eta":eta, "error_type":err_type[i], "num_log_errors":errors[i]/num_shots, "time_stamp":datetime.now()}
                 data = pd.concat([data, pd.DataFrame([curr_row])], ignore_index=True)
@@ -199,8 +216,8 @@ def shots_averaging(num_shots, l, eta, err_type, in_df, file='corr_err_data.csv'
 
 
 
-def write_data(num_shots, d_list, l, p_list, eta, ID):
-    """ Writes data from pandas df to a csv file, for use with SLURM arrays.
+def write_data(num_shots, d_list, l, p_list, eta, ID, corr_type):
+    """ Writes data from pandas df to a csv file, for use with SLURM arrays. Generates data for each slurm output on a CSV
         in: num_shots - the number of MC iterations
             l - the integer repition of the compass code
             eta - the float bias ratio of the error model
@@ -208,9 +225,9 @@ def write_data(num_shots, d_list, l, p_list, eta, ID):
             d_list - the distances of compass code to scan
             ID - SLURM input task_ID number, corresponds to which array element we run
     """
-    data = get_data(num_shots, d_list, l, p_list, eta)
+    data = get_data(num_shots, d_list, l, p_list, eta, corr_type)
     data_file = f'corr_err_data/{ID}.csv'
-    
+    # data_file = f"corr_err_data.csv"
     if not os.path.exists('corr_err_data/'):
         os.mkdir('corr_err_data')
 
@@ -300,8 +317,19 @@ def full_error_plot(full_df, curr_eta, curr_l, curr_num_shots, averaging=True):
     plt.tight_layout()
     plt.show()
 
+def make_error_plot():
+    """ Make a threshold plot for the specified error type
+    """ 
+    fig, axes = plt.subplots(1, 1, figsize=(8, 5))
+    
 
 
+
+def get_prob_scale(error_type, eta):
+    """ extract the amount to be scaled by given a noise bias and the type of error
+    """
+    prob_scale = {'x': 0.5/(1+eta), 'z': (1+2*eta)/(2*(1+eta)), 'corr_z': 1, 'total':1}
+    return prob_scale[error_type]
 #
 # for generating a threshold graph for Z/X too 
 #
@@ -309,13 +337,17 @@ def full_error_plot(full_df, curr_eta, curr_l, curr_num_shots, averaging=True):
 if __name__ == "__main__":
     task_id = int(os.environ['SLURM_ARRAY_TASK_ID'])
 
-    num_shots = 10000
+    num_shots = 1000
     d_list = [11,13,15,17,19]
     l=5 # elongation parameter of compass code
     p_list = np.linspace(0.01, 0.5, 40)
     eta = 0.01 # the degree of noise bias
+    corr_type = "X"
+    folder_path = 'corr_err_data/'
+    output_file = 'x_corr_err_data.csv'
 
-    write_data(num_shots, d_list, l, p_list, eta, task_id)
+    write_data(num_shots, d_list, l, p_list, eta, task_id, corr_type)
+    # concat_csv(folder_path, output_file)
     # series = shots_averaging(num_shots, 100, 4, 3, 'x', None)
     # print(len(series))
     # df = pd.read_csv('corr_err_data.csv')
