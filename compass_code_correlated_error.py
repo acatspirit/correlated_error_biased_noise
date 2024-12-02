@@ -275,7 +275,7 @@ def concat_csv(folder_path, output_file):
     for file in data_files:
         os.remove(file)
 
-def full_error_plot(full_df, curr_eta, curr_l, curr_num_shots, file,  averaging=True ):
+def full_error_plot(full_df, curr_eta, curr_l, curr_num_shots, file, averaging=True ):
     """Make a plot of all 4 errors given a df with unedited contents"""
 
     prob_scale = {'x': 0.5/(1+curr_eta), 'z': (1+2*curr_eta)/(2*(1+curr_eta)), 'corr_z': 1, 'total':1}
@@ -340,7 +340,7 @@ if __name__ == "__main__":
     d_list = [11,13,15,17,19]
     l=5 # elongation parameter of compass code
     p_list = np.linspace(0.01, 0.5, 40)
-    eta = 1 # the degree of noise bias
+    eta = 5 # the degree of noise bias
     corr_type = "X"
     folder_path = 'corr_err_data/'
     output_file = 'x_corr_err_data.csv'
@@ -354,10 +354,6 @@ if __name__ == "__main__":
     # to plot the data
     # df = pd.read_csv(output_file)
     # full_error_plot(df, eta, l, num_shots, output_file, averaging=True)
-    # 13.0,10000.0,0.0225641025641025,3.0,1.67,x
-    # print(df[(df['d'] == 13) & (df['num_shots'] == 10000.0) &(df['l'] == 3.0) &(df['eta'] == 1.67) &(df['error_type'] == 'x') &(df['p'] == 0.0225641025641025)])
-
-
     
 
 
