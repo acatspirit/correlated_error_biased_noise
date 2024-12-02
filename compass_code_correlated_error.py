@@ -197,7 +197,7 @@ def get_data(num_shots, d_list, l, p_list, eta, corr_type):
                 data = pd.concat([data, pd.DataFrame([curr_row])], ignore_index=True)
     return data
 
-def shots_averaging(num_shots, l, eta, err_type, in_df, file='corr_err_data.csv'):
+def shots_averaging(num_shots, l, eta, err_type, in_df, file):
     """For the inputted number of shots, averages those shots over the array length run on computing cluster.  
         in: num_shots - int, the number of monte carlo shots in the original simulation
             arr_len -  int, the number of jobs / averaging interval desired
@@ -275,7 +275,7 @@ def concat_csv(folder_path, output_file):
     for file in data_files:
         os.remove(file)
 
-def full_error_plot(full_df, curr_eta, curr_l, curr_num_shots, averaging=True):
+def full_error_plot(full_df, curr_eta, curr_l, curr_num_shots, file,  averaging=True ):
     """Make a plot of all 4 errors given a df with unedited contents"""
 
     prob_scale = {'x': 0.5/(1+curr_eta), 'z': (1+2*curr_eta)/(2*(1+curr_eta)), 'corr_z': 1, 'total':1}
@@ -284,7 +284,6 @@ def full_error_plot(full_df, curr_eta, curr_l, curr_num_shots, averaging=True):
     filtered_df = full_df[(full_df['l'] == curr_l) & (full_df['eta'] == curr_eta) & (full_df['num_shots'] == curr_num_shots) 
                     # & (df['time_stamp'].apply(lambda x: x[0:10]) == datetime.today().date())
                     ]
-
 
     # Get unique error types and unique d values
     error_types = filtered_df['error_type'].unique()
@@ -302,7 +301,7 @@ def full_error_plot(full_df, curr_eta, curr_l, curr_num_shots, averaging=True):
         for d in d_values:
             d_df = error_type_df[error_type_df['d'] == d]
             if averaging:
-                d_df_mean = shots_averaging(curr_num_shots, curr_l, curr_eta, error_type, d_df)
+                d_df_mean = shots_averaging(curr_num_shots, curr_l, curr_eta, error_type, d_df, file)
                 ax.plot(d_df_mean['p']*prob_scale[error_type], d_df_mean['num_log_errors'],  label=f'd={d}')
             else:
                 ax.scatter(d_df['p']*prob_scale[error_type], d_df['num_log_errors'], s=2, label=f'd={d}')
@@ -335,7 +334,7 @@ def get_prob_scale(error_type, eta):
 #
 
 if __name__ == "__main__":
-    task_id = int(os.environ['SLURM_ARRAY_TASK_ID'])
+    # task_id = int(os.environ['SLURM_ARRAY_TASK_ID'])
 
     num_shots = 10000
     d_list = [11,13,15,17,19]
@@ -346,12 +345,18 @@ if __name__ == "__main__":
     folder_path = 'corr_err_data/'
     output_file = 'x_corr_err_data.csv'
 
-    write_data(num_shots, d_list, l, p_list, eta, task_id, corr_type)
+    # run this to get data from the dcc
+    # write_data(num_shots, d_list, l, p_list, eta, task_id, corr_type)
+    # run this once you have data and want to combo it to one csv
     # concat_csv(folder_path, output_file)
+
+    # get mean for multiple shots of data
     # series = shots_averaging(num_shots, 100, 4, 3, 'x', None)
     # print(len(series))
-    # df = pd.read_csv('corr_err_data.csv')
-    # full_error_plot(df, eta, l, num_shots, averaging=False)
+
+    # to plot the data
+    df = pd.read_csv(output_file)
+    full_error_plot(df, eta, l, num_shots, output_file, averaging=True)
     # 13.0,10000.0,0.0225641025641025,3.0,1.67,x
     # print(df[(df['d'] == 13) & (df['num_shots'] == 10000.0) &(df['l'] == 3.0) &(df['eta'] == 1.67) &(df['error_type'] == 'x') &(df['p'] == 0.0225641025641025)])
 
