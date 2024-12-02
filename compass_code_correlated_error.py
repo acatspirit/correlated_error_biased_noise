@@ -340,7 +340,7 @@ if __name__ == "__main__":
     d_list = [11,13,15,17,19]
     l=5 # elongation parameter of compass code
     p_list = np.linspace(0.01, 0.5, 40)
-    eta = 5 # the degree of noise bias
+    eta = 100 # the degree of noise bias
     corr_type = "X"
     folder_path = 'corr_err_data/'
     output_file = 'x_corr_err_data.csv'
@@ -351,7 +351,7 @@ if __name__ == "__main__":
     # concat_csv(folder_path, output_file)
 
 
-    # to plot the data
+    # # to plot the data
     # df = pd.read_csv(output_file)
     # full_error_plot(df, eta, l, num_shots, output_file, averaging=True)
     
