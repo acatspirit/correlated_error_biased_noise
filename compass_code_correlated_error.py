@@ -346,14 +346,14 @@ if __name__ == "__main__":
     output_file = 'x_corr_err_data.csv'
 
     # run this to get data from the dcc
-    # write_data(num_shots, d_list, l, p_list, eta, task_id, corr_type)
+    write_data(num_shots, d_list, l, p_list, eta, task_id, corr_type)
     # run this once you have data and want to combo it to one csv
     # concat_csv(folder_path, output_file)
 
 
     # to plot the data
-    df = pd.read_csv(output_file)
-    full_error_plot(df, eta, l, num_shots, output_file, averaging=True)
+    # df = pd.read_csv(output_file)
+    # full_error_plot(df, eta, l, num_shots, output_file, averaging=True)
     # 13.0,10000.0,0.0225641025641025,3.0,1.67,x
     # print(df[(df['d'] == 13) & (df['num_shots'] == 10000.0) &(df['l'] == 3.0) &(df['eta'] == 1.67) &(df['error_type'] == 'x') &(df['p'] == 0.0225641025641025)])
 
