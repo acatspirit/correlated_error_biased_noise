@@ -350,9 +350,6 @@ if __name__ == "__main__":
     # run this once you have data and want to combo it to one csv
     # concat_csv(folder_path, output_file)
 
-    # get mean for multiple shots of data
-    # series = shots_averaging(num_shots, 100, 4, 3, 'x', None)
-    # print(len(series))
 
     # to plot the data
     df = pd.read_csv(output_file)
