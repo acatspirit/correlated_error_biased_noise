@@ -338,9 +338,9 @@ if __name__ == "__main__":
 
     num_shots = 10000
     d_list = [11,13,15,17,19]
-    l=5 # elongation parameter of compass code
+    l=4 # elongation parameter of compass code
     p_list = np.linspace(0.01, 0.5, 40)
-    eta = 100 # the degree of noise bias
+    eta = 0.01 # the degree of noise bias
     corr_type = "X"
     folder_path = 'corr_err_data/'
     output_file = 'x_corr_err_data.csv'
