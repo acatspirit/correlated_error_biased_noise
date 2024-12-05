@@ -334,13 +334,13 @@ def get_prob_scale(error_type, eta):
 #
 
 if __name__ == "__main__":
-    task_id = int(os.environ['SLURM_ARRAY_TASK_ID'])
+    # task_id = int(os.environ['SLURM_ARRAY_TASK_ID'])
 
     num_shots = 10000
     d_list = [11,13,15,17,19]
     l=6 # elongation parameter of compass code
     p_list = np.linspace(0.01, 0.5, 40)
-    eta = 5 # the degree of noise bias
+    eta = 1 # the degree of noise bias
     corr_type = "X"
     folder_path = 'corr_err_data/'
     output_file = 'x_corr_err_data.csv'
