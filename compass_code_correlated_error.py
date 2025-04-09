@@ -97,8 +97,11 @@ def decoding_failures_correlated(H_x, H_z, L_x, L_z, p, eta, shots, corr_type):
     
     # Decode Z errors correlated
     if corr_type == "CORR_XZ": # correct Z errors after correcting X errors
+        cond_prob = 0.5 # the conditional probability of Z error given a X error
         # Prepare weights and syndrome for X errors
-        updated_weights = np.logical_not(correction_x).astype(int)
+        # updated_weights = cond_prob*np.logical_not(correction_x).astype(int)
+        updated_weights = np.ones(correction_x.shape)
+        updated_weights[np.nonzero(correction_x)] = cond_prob
         
         num_errors_xz_corr = 0
 
@@ -107,11 +110,14 @@ def decoding_failures_correlated(H_x, H_z, L_x, L_z, p, eta, shots, corr_type):
             correction_xz_corr = M_xz_corr.decode(syndrome_x[i])
             num_errors_xz_corr += np.sum((correction_xz_corr + err_vec_z[i]) @ L_x % 2)
         
-        num_errors_corr = num_errors_xz_corr 
+        num_errors_corr = num_errors_xz_corr + num_errors_x
     # Decode X errors correlated
     if corr_type == "CORR_ZX": # correct X errors after correcting Z errors
+        cond_prob = 1/(2*eta+1) # the conditional probability of X error given a Z error
+
         # Prepare weights and syndrome for X errors
-        updated_weights = np.logical_not(correction_z).astype(int)
+        updated_weights = np.ones(correction_z.shape)
+        updated_weights[np.nonzero(correction_z)] = cond_prob
         num_errors_zx_corr = 0
 
         for i in range(shots):
@@ -475,7 +481,7 @@ if __name__ == "__main__":
     num_shots = 10000
     d_list = [11,13,15,17,19]
     l=6 # elongation parameter of compass code
-    p_list = np.linspace(0.01, 0.5, 40)
+    p_list = np.linspace(0.01, 0.5, 15)
     eta = 10 # the degree of noise bias
     corr_type = "CORR_ZX"
     folder_path = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/corr_err_data/'
