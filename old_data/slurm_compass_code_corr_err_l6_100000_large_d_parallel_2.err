@@ -1,8 +1,0 @@
-  File "/hpc/group/brownlab/am1155/correlated_error_biased_noise/compass_code_correlated_error.py", line 223
-    folder = f"l{l}_shots{num_shots}_d{"_".join(map(str, d_list))}"
-                                        ^
-SyntaxError: f-string: expecting '}'
-  File "/hpc/group/brownlab/am1155/correlated_error_biased_noise/compass_code_correlated_error.py", line 223
-    folder = f"l{l}_shots{num_shots}_d{"_".join(map(str, d_list))}"
-                                        ^
-SyntaxError: f-string: expecting '}'

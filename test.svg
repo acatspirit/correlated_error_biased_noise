@@ -1,54 +1,30 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
-     width="910.0" height="910.0" viewBox="0 0 910.0 910.0" style="background-color:white">
+     width="650.0" height="650.0" viewBox="0 0 650.0 650.0" style="background-color:white">
 <defs>
 </defs>
-<path d="M170,50 L170,50 L290,50 L410,50 L530,50 L530,170 L410,170 L290,170 L170,170" stroke="None" fill="firebrick" fill-opacity="0.6" />
-<path d="M650,50 L650,50 L770,50 L770,170 L650,170" stroke="None" fill="firebrick" fill-opacity="0.6" />
+<path d="M170,50 L170,50 L290,50 L290,170 L170,170" stroke="None" fill="firebrick" fill-opacity="0.6" />
+<path d="M410,50 L410,50 L530,50 L530,170 L410,170" stroke="None" fill="firebrick" fill-opacity="0.6" />
 <path d="M50,170 L50,170 L170,170 L170,290 L50,290" stroke="None" fill="firebrick" fill-opacity="0.6" />
-<path d="M290,170 L290,170 L410,170 L530,170 L650,170 L650,290 L530,290 L410,290 L290,290" stroke="None" fill="firebrick" fill-opacity="0.6" />
-<path d="M50,290 L50,290 L170,290 L290,290 L290,410 L170,410 L50,410" stroke="None" fill="firebrick" fill-opacity="0.6" />
-<path d="M410,290 L410,290 L530,290 L650,290 L770,290 L770,410 L650,410 L530,410 L410,410" stroke="None" fill="firebrick" fill-opacity="0.6" />
-<path d="M50,410 L50,410 L170,410 L290,410 L410,410 L410,530 L290,530 L170,530 L50,530" stroke="None" fill="firebrick" fill-opacity="0.6" />
-<path d="M530,410 L530,410 L650,410 L770,410 L770,530 L650,530 L530,530" stroke="None" fill="firebrick" fill-opacity="0.6" />
-<path d="M170,530 L170,530 L290,530 L410,530 L530,530 L530,650 L410,650 L290,650 L170,650" stroke="None" fill="firebrick" fill-opacity="0.6" />
-<path d="M650,530 L650,530 L770,530 L770,650 L650,650" stroke="None" fill="firebrick" fill-opacity="0.6" />
-<path d="M50,650 L50,650 L170,650 L170,770 L50,770" stroke="None" fill="firebrick" fill-opacity="0.6" />
-<path d="M290,650 L290,650 L410,650 L530,650 L650,650 L650,770 L530,770 L410,770 L290,770" stroke="None" fill="firebrick" fill-opacity="0.6" />
+<path d="M290,170 L290,170 L410,170 L410,290 L290,290" stroke="None" fill="firebrick" fill-opacity="0.6" />
+<path d="M170,290 L170,290 L290,290 L290,410 L170,410" stroke="None" fill="firebrick" fill-opacity="0.6" />
+<path d="M410,290 L410,290 L530,290 L530,410 L410,410" stroke="None" fill="firebrick" fill-opacity="0.6" />
+<path d="M50,410 L50,410 L170,410 L170,530 L50,530" stroke="None" fill="firebrick" fill-opacity="0.6" />
+<path d="M290,410 L290,410 L410,410 L410,530 L290,530" stroke="None" fill="firebrick" fill-opacity="0.6" />
 <path d="M50,50 L50,50 L50,170 L170,170 L170,50" stroke="None" fill="cornflowerblue" fill-opacity="0.7" />
-<rect x="50" y="282.5" width="120" height="15" stroke="None" fill="cornflowerblue" fill-opacity="1" />
-<rect x="50" y="402.5" width="120" height="15" stroke="None" fill="cornflowerblue" fill-opacity="1" />
-<path d="M50,530 L50,530 L50,650 L170,650 L170,530" stroke="None" fill="cornflowerblue" fill-opacity="0.7" />
-<rect x="50" y="762.5" width="120" height="15" stroke="None" fill="cornflowerblue" fill-opacity="1" />
+<path d="M50,290 L50,290 L50,410 L170,410 L170,290" stroke="None" fill="cornflowerblue" fill-opacity="0.7" />
+<rect x="50" y="522.5" width="120" height="15" stroke="None" fill="cornflowerblue" fill-opacity="1" />
 <rect x="170" y="42.5" width="120" height="15" stroke="None" fill="cornflowerblue" fill-opacity="1" />
 <path d="M170,170 L170,170 L170,290 L290,290 L290,170" stroke="None" fill="cornflowerblue" fill-opacity="0.7" />
-<rect x="170" y="402.5" width="120" height="15" stroke="None" fill="cornflowerblue" fill-opacity="1" />
-<rect x="170" y="522.5" width="120" height="15" stroke="None" fill="cornflowerblue" fill-opacity="1" />
-<path d="M170,650 L170,650 L170,770 L290,770 L290,650" stroke="None" fill="cornflowerblue" fill-opacity="0.7" />
-<rect x="290" y="42.5" width="120" height="15" stroke="None" fill="cornflowerblue" fill-opacity="1" />
-<rect x="290" y="162.5" width="120" height="15" stroke="None" fill="cornflowerblue" fill-opacity="1" />
+<path d="M170,410 L170,410 L170,530 L290,530 L290,410" stroke="None" fill="cornflowerblue" fill-opacity="0.7" />
+<path d="M290,50 L290,50 L290,170 L410,170 L410,50" stroke="None" fill="cornflowerblue" fill-opacity="0.7" />
 <path d="M290,290 L290,290 L290,410 L410,410 L410,290" stroke="None" fill="cornflowerblue" fill-opacity="0.7" />
 <rect x="290" y="522.5" width="120" height="15" stroke="None" fill="cornflowerblue" fill-opacity="1" />
-<rect x="290" y="642.5" width="120" height="15" stroke="None" fill="cornflowerblue" fill-opacity="1" />
-<rect x="290" y="762.5" width="120" height="15" stroke="None" fill="cornflowerblue" fill-opacity="1" />
 <rect x="410" y="42.5" width="120" height="15" stroke="None" fill="cornflowerblue" fill-opacity="1" />
-<rect x="410" y="162.5" width="120" height="15" stroke="None" fill="cornflowerblue" fill-opacity="1" />
-<rect x="410" y="282.5" width="120" height="15" stroke="None" fill="cornflowerblue" fill-opacity="1" />
+<path d="M410,170 L410,170 L410,290 L530,290 L530,170" stroke="None" fill="cornflowerblue" fill-opacity="0.7" />
 <path d="M410,410 L410,410 L410,530 L530,530 L530,410" stroke="None" fill="cornflowerblue" fill-opacity="0.7" />
-<rect x="410" y="642.5" width="120" height="15" stroke="None" fill="cornflowerblue" fill-opacity="1" />
-<rect x="410" y="762.5" width="120" height="15" stroke="None" fill="cornflowerblue" fill-opacity="1" />
-<path d="M530,50 L530,50 L530,170 L650,170 L650,50" stroke="None" fill="cornflowerblue" fill-opacity="0.7" />
-<rect x="530" y="282.5" width="120" height="15" stroke="None" fill="cornflowerblue" fill-opacity="1" />
-<rect x="530" y="402.5" width="120" height="15" stroke="None" fill="cornflowerblue" fill-opacity="1" />
-<path d="M530,530 L530,530 L530,650 L650,650 L650,530" stroke="None" fill="cornflowerblue" fill-opacity="0.7" />
-<rect x="530" y="762.5" width="120" height="15" stroke="None" fill="cornflowerblue" fill-opacity="1" />
-<rect x="650" y="42.5" width="120" height="15" stroke="None" fill="cornflowerblue" fill-opacity="1" />
-<path d="M650,170 L650,170 L650,290 L770,290 L770,170" stroke="None" fill="cornflowerblue" fill-opacity="0.7" />
-<rect x="650" y="402.5" width="120" height="15" stroke="None" fill="cornflowerblue" fill-opacity="1" />
-<rect x="650" y="522.5" width="120" height="15" stroke="None" fill="cornflowerblue" fill-opacity="1" />
-<path d="M650,650 L650,650 L650,770 L770,770 L770,650" stroke="None" fill="cornflowerblue" fill-opacity="0.7" />
 <rect x="42.5" y="50" width="15" height="120" stroke="None" fill="firebrick" fill-opacity="0.8" />
-<rect x="762.5" y="170" width="15" height="120" stroke="None" fill="firebrick" fill-opacity="0.8" />
-<rect x="42.5" y="530" width="15" height="120" stroke="None" fill="firebrick" fill-opacity="0.8" />
-<rect x="762.5" y="650" width="15" height="120" stroke="None" fill="firebrick" fill-opacity="0.8" />
+<rect x="522.5" y="170" width="15" height="120" stroke="None" fill="firebrick" fill-opacity="0.8" />
+<rect x="42.5" y="290" width="15" height="120" stroke="None" fill="firebrick" fill-opacity="0.8" />
+<rect x="522.5" y="410" width="15" height="120" stroke="None" fill="firebrick" fill-opacity="0.8" />
 </svg>

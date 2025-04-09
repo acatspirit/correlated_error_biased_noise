@@ -371,12 +371,12 @@ def CompassModel(code, filename):
         d.as_svg(f)   
    
 if __name__ == "__main__":
-    L = 7
-    ell = 4
+    L = 5
+    ell = 2
     code = CompassCode(L, l=ell)
     
     CD_data = np.zeros(L**2)
-    CDtype= "I"
+    CDtype= "XZZX"
     if CDtype =="XZZX": 
         #XZZX 
         for i in range(L**2):
