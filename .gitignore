@@ -1,3 +1,6 @@
 # Ignore large CSV files
-corr_err_data.csv
-x_corr_err_data.csv
+full_erasure_data/
+
+xz_corr_err_data.csv 
+zx_corr_err_data.csv
+
