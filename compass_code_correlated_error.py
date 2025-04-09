@@ -476,7 +476,7 @@ def get_prob_scale(corr_type, eta):
 #
 
 if __name__ == "__main__":
-    # task_id = int(os.environ['SLURM_ARRAY_TASK_ID'])
+    task_id = int(os.environ['SLURM_ARRAY_TASK_ID'])
 
     num_shots = 10000
     d_list = [11,13,15,17,19]
@@ -491,20 +491,20 @@ if __name__ == "__main__":
         output_file = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/corr_err_data.csv'
 
     # run this to get data from the dcc
-    # write_data(num_shots, d_list, l, p_list, eta, task_id, corr_type)
+    write_data(num_shots, d_list, l, p_list, eta, task_id, corr_type)
     # run this once you have data and want to combo it to one csv
     # concat_csv(folder_path, output_file)
 
 
     # to plot the data
-    df = pd.read_csv(output_file)
-    p_th_init = 0.21
-    p_diff = 0.05
+    # df = pd.read_csv(output_file)
+    # p_th_init = 0.21
+    # p_diff = 0.05
 
-    # p_list_smol = [p for p in p_list if (p_th - p_diff) < p < (p_th + p_diff)]
-    df_smol = df[(df['p'] < p_th_init + p_diff) & ( df['p'] > p_th_init - p_diff) & (df['l'] == l) & (df['eta'] == eta) & (df['error_type'] == corr_type)]
-    pth, pth_error = get_threshold(df_smol)
-    print(pth, pth_error)
+    # # p_list_smol = [p for p in p_list if (p_th - p_diff) < p < (p_th + p_diff)]
+    # df_smol = df[(df['p'] < p_th_init + p_diff) & ( df['p'] > p_th_init - p_diff) & (df['l'] == l) & (df['eta'] == eta) & (df['error_type'] == corr_type)]
+    # pth, pth_error = get_threshold(df_smol)
+    # print(pth, pth_error)
     # print(len(df_smol), len(df))
     # df_smol = df
     # full_error_plot(df, eta, l, num_shots, corr_type, output_file, loglog=False, averaging=True)
