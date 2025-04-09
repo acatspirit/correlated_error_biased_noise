@@ -10,7 +10,7 @@ from datetime import datetime
 import sys
 import glob
 from scipy.optimize import curve_fit
-from lmfit import Minimizer, Parameters, report_fit
+# from lmfit import Minimizer, Parameters, report_fit
 
 
 
