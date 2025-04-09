@@ -491,7 +491,7 @@ if __name__ == "__main__":
         output_file = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/xz_corr_err_data.csv'
 
     # run this to get data from the dcc
-    # write_data(num_shots, d_list, l, p_list, eta, task_id, corr_type)
+    write_data(num_shots, d_list, l, p_list, eta, task_id, corr_type)
     # run this once you have data and want to combo it to one csv
     # concat_csv(folder_path, output_file)
 
@@ -501,10 +501,10 @@ if __name__ == "__main__":
 
 
     # to plot the data
-    df = pd.read_csv(output_file)
-    df['time_stamp'] = pd.to_datetime(df['time_stamp'])
-    today = datetime.now().date()
-    df_today = df[df['time_stamp'].dt.date != today]
+    # df = pd.read_csv(output_file)
+    # df['time_stamp'] = pd.to_datetime(df['time_stamp'])
+    # today = datetime.now().date()
+    # df_today = df[df['time_stamp'].dt.date != today]
 
     # print(df['time_stamp'].dtype)
     # p_th_init = 0.21
@@ -516,7 +516,7 @@ if __name__ == "__main__":
     # print(pth, pth_error)
     # print(len(df_smol), len(df))
     # df_smol = df
-    full_error_plot(df_today, eta, l, num_shots, corr_type, output_file, loglog=False, averaging=True)
+    # full_error_plot(df_today, eta, l, num_shots, corr_type, output_file, loglog=False, averaging=True)
     # filtered_df = df[df['error_type'] == 'TOTAL'
     # d_list = filtered_df['d'].unique()
     # threshold = get_threshold(filtered_df, d_list, 0.19, 0.1, return_all=True)
