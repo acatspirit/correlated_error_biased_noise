@@ -264,7 +264,7 @@ def concat_csv(folder_path, output_file):
         all_data = new_data
 
     # change this for XZ
-    all_data.loc[all_data['error_type'] == 'corr_z', 'error_type'] = 'CORR_ZX'
+    # all_data.loc[all_data['error_type'] == 'corr_z', 'error_type'] = 'CORR_ZX'
 
     
     all_data.to_csv(output_file, index=False)
@@ -335,7 +335,7 @@ def make_threshold_plot(df, pth_0, p_range, eta, l, corr_type):
         curr_params= fit_result.params
         fit_values = threshold_fit(np.array(d_df_near_th['p']), curr_params[f'a{d}'].value, 
                                 curr_params[f'b{d}'].value, curr_params[f'c{d}'].value, 
-                                curr_params[f'e{d}'].value, p_th, curr_params['mu'].value, d)
+                                curr_params[f'e{d}'].value, pth_0, curr_params['mu'].value, d)
         line, = ax.plot(d_df_near_th['p']*get_prob_scale(corr_type, eta), fit_values, linestyle='--', label=f'fit d={d}')
         color = line.get_color()
         ax.plot(d_df['p']*get_prob_scale(corr_type, eta), d_df['num_log_errors'], linestyle='dotted', color=color, label=f'd={d}')
@@ -476,11 +476,11 @@ def get_prob_scale(corr_type, eta):
 #
 
 if __name__ == "__main__":
-    task_id = int(os.environ['SLURM_ARRAY_TASK_ID'])
+    # task_id = int(os.environ['SLURM_ARRAY_TASK_ID'])
 
     num_shots = 10000
     d_list = [11,13,15,17,19]
-    l=6 # elongation parameter of compass code
+    l=5 # elongation parameter of compass code
     p_list = np.linspace(0.01, 0.5, 15)
     eta = 10 # the degree of noise bias
     corr_type = "CORR_ZX"
@@ -491,17 +491,17 @@ if __name__ == "__main__":
         output_file = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/xz_corr_err_data.csv'
 
     # run this to get data from the dcc
-    write_data(num_shots, d_list, l, p_list, eta, task_id, corr_type)
+    # write_data(num_shots, d_list, l, p_list, eta, task_id, corr_type)
     # run this once you have data and want to combo it to one csv
     # concat_csv(folder_path, output_file)
 
-    # threshold today - 0.21 ZX, 0.22
+    # threshold today - 0.2075 ZX, 0.217
     # threshold old - 0.20 ZX, 0.22 
 
 
 
     # to plot the data
-    # df = pd.read_csv(output_file)
+    df = pd.read_csv(output_file)
     # df['time_stamp'] = pd.to_datetime(df['time_stamp'])
     # today = datetime.now().date()
     # df_today = df[df['time_stamp'].dt.date != today]
@@ -516,7 +516,7 @@ if __name__ == "__main__":
     # print(pth, pth_error)
     # print(len(df_smol), len(df))
     # df_smol = df
-    # full_error_plot(df_today, eta, l, num_shots, corr_type, output_file, loglog=False, averaging=True)
+    full_error_plot(df, eta, l, num_shots, corr_type, output_file, loglog=False, averaging=True)
     # filtered_df = df[df['error_type'] == 'TOTAL'
     # d_list = filtered_df['d'].unique()
     # threshold = get_threshold(filtered_df, d_list, 0.19, 0.1, return_all=True)
