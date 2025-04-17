@@ -1,6 +1,8 @@
 import numpy as np
 from pymatching import Matching
 import matplotlib.pyplot as plt
+from matplotlib import colormaps
+from matplotlib.colors import Normalize
 from scipy import sparse, linalg
 import CompassCodes as cc
 import csv
@@ -98,10 +100,11 @@ def decoding_failures_correlated(H_x, H_z, L_x, L_z, p, eta, shots, corr_type):
     # Decode Z errors correlated
     if corr_type == "CORR_XZ": # correct Z errors after correcting X errors
         cond_prob = 0.5 # the conditional probability of Z error given a X error
+        new_weight = np.log((1-cond_prob)/cond_prob)
         # Prepare weights and syndrome for X errors
         # updated_weights = cond_prob*np.logical_not(correction_x).astype(int)
         updated_weights = np.ones(correction_x.shape)
-        updated_weights[np.nonzero(correction_x)] = cond_prob
+        updated_weights[np.nonzero(correction_x)] = new_weight
         
         num_errors_xz_corr = 0
 
@@ -114,10 +117,11 @@ def decoding_failures_correlated(H_x, H_z, L_x, L_z, p, eta, shots, corr_type):
     # Decode X errors correlated
     if corr_type == "CORR_ZX": # correct X errors after correcting Z errors
         cond_prob = 1/(2*eta+1) # the conditional probability of X error given a Z error
+        new_weight = np.log((1-cond_prob)/cond_prob)
 
         # Prepare weights and syndrome for X errors
         updated_weights = np.ones(correction_z.shape)
-        updated_weights[np.nonzero(correction_z)] = cond_prob
+        updated_weights[np.nonzero(correction_z)] = new_weight
         num_errors_zx_corr = 0
 
         for i in range(shots):
@@ -322,142 +326,72 @@ def full_error_plot(full_df, curr_eta, curr_l, curr_num_shots, corr_type, file, 
     plt.tight_layout()
     plt.show()
 
-def make_threshold_plot(df, pth_0, p_range, eta, l, corr_type):
-    error_data_near_th_df = df[(df['p'] < pth_0 + p_range ) & ( df['p'] > pth_0 - p_range)]
-    filtered_df = df[(df['l'] == l) & (df['eta'] == eta)]
+def threshold_plot(full_df, p_th0, p_range, curr_eta, curr_l, curr_num_shots, corr_type, file, loglog=False, averaging=True, show_threshold=True):
+    """Make a plot of all 4 errors given a df with unedited contents"""
+
+    prob_scale = get_prob_scale(corr_type, curr_eta)
+
+    # Filter the DataFrame based on the input parameters
+    filtered_df = full_df[(full_df['p'] > p_th0 - p_range)&(full_df['p'] < p_th0 + p_range)&(full_df['error_type'] == corr_type)&(full_df['l'] == curr_l) & (full_df['eta'] == curr_eta) & (full_df['num_shots'] == curr_num_shots)]
+
     d_values = filtered_df['d'].unique()
+    num_lines = len(d_values)
+    cmap = colormaps['Blues_r']
+    color_values = np.linspace(0.1, 0.8, num_lines)
+    colors = [cmap(val) for val in color_values]
+    # colors = [cmap(i) for i in range(num_lines)]
 
-    fig, ax = plt.subplots()
-    for d in d_list:
-        d_df = filtered_df[filtered_df['d'] == d]
-        d_df_near_th = error_data_near_th_df[error_data_near_th_df['d'] == d]
-        fit_result = get_threshold(d_df_near_th, d_list, pth_0, p_range)
-        curr_params= fit_result.params
-        fit_values = threshold_fit(np.array(d_df_near_th['p']), curr_params[f'a{d}'].value, 
-                                curr_params[f'b{d}'].value, curr_params[f'c{d}'].value, 
-                                curr_params[f'e{d}'].value, pth_0, curr_params['mu'].value, d)
-        line, = ax.plot(d_df_near_th['p']*get_prob_scale(corr_type, eta), fit_values, linestyle='--', label=f'fit d={d}')
-        color = line.get_color()
-        ax.plot(d_df['p']*get_prob_scale(corr_type, eta), d_df['num_log_errors'], linestyle='dotted', color=color, label=f'd={d}')
+    # Create a figure with subplots for each error type
+    fig, ax = plt.subplots(1, 1, figsize=(10, 8))
+    
+    # Plot each d value
+    for i,d in enumerate(d_values):
+        d_df = full_df[full_df['d'] == d]
+        if averaging:
+            d_df_mean = shots_averaging(curr_num_shots, curr_l, curr_eta, corr_type, d_df, file)
+            if loglog:
+                ax.loglog(d_df_mean['p']*prob_scale[corr_type], d_df_mean['num_log_errors'],  label=f'd={d}', color=colors[i])
+                error_bars = 10**(-6)*np.ones(len(d_df_mean['num_log_errors']))
+                ax.fill_between(d_df_mean['p']*prob_scale[corr_type], d_df_mean['num_log_errors'] - error_bars, d_df_mean['num_log_errors'] + error_bars, alpha=0.2, color=colors[i])
+            else:
+                ax.plot(d_df_mean['p']*prob_scale[corr_type], d_df_mean['num_log_errors'],  label=f'd={d}', color=colors[i])
+        else:
+            ax.scatter(d_df['p']*prob_scale[corr_type], d_df['num_log_errors'], s=2, label=f'd={d}',color=colors[i])
 
-def threshold_fit(p, pth, nu, ell, a, b, c):
-    X = (ell**(1/nu))*(p-pth)
+    pth, pth_error = get_threshold(filtered_df, p_th0, p_range, curr_l, curr_eta, corr_type)
+    
+    if show_threshold:
+        ax.vlines(pth, ymin=0, ymax=0.5, color='red', linestyles='--', label=f'pth = {pth:.3f} +/- {pth_error:.3f}')
+    
+    ax.set_title(f'Error Type: {corr_type}', fontsize=20)
+    ax.set_xlabel('p', fontsize=14)
+    ax.set_ylabel('num_log_errors', fontsize=20)
+    ax.legend()
+
+    fig.suptitle(f'Logical Error Rates for eta = {curr_eta} and l = {curr_l}')
+    plt.tight_layout()
+    plt.show()
+
+def threshold_fit(x, pth, nu, a, b, c):
+    p,d = x
+    X = (d**(1/nu))*(p-pth)
     return c + b*X + a*X**2
 
-# def combined_residual(params, p_list, d_list, error_list):
-#     """ Gets the residuals for a global fit of data with many different d's
-#         in: params - the input parameters to the fitting model
-#             p_list - list of physical error probabilities to scan
-#             d_list - list of lattice distances
-#             error_list - the list of lists of logical errors for each distance scanning over each probability.
-#                         Obtained from get_data function.
-#         returns: The residuals for global and individual fit variables, designated in the get_threshold function
-#     """
-#     residuals = []
-#     # now error list should start at the p-val close to the guess ... no longer ind of 0 
-#     for i in range(len(d_list)):
-#         curr_d = int(d_list[i])
 
-#         # Get the local parameters for the current dataset
-#         a = params[f'a{curr_d}']
-#         b = params[f'b{curr_d}']
-#         c = params[f'c{curr_d}']
-#         d = params[f'd{curr_d}']
-#         e = params[f'e{curr_d}']
-        
-#         # Get the shared global parameter
-#         pth = params['pth']
-#         mu = params['mu']
-        
-#         # Calculate the model and residual
-#         model_value = threshold_fit(p_list, a, b, c, e, pth, mu, d)
-#         # model_value = threshold_fit(p_list, a, b, c, pth, mu, d)
-#         residuals.append(error_list[i] - model_value)
-#     return np.concatenate(residuals)
-
-# # find the intersection point of the lines within a range
-# def get_threshold(error_count_df, d_list, pth_0, p_range, return_all = False):
-#     """ Using the list of logical error rates for different distances in errors_array,
-#         finds the intersection in p_list of the lines
-#         in: error_count_df - the dataframe containing all data, filtered for one error_type
-#             d_list - list of lattice distances
-#             p_list - list of probabilites scanned over to produce errors_array
-#             pth_0 - the current threshold probability guess for designated logical error
-#             return_all - indicates whether or not to return all fitting parameters or just the probability threshold
-#         out: p_thr - a float, the probability where intersection of different lattice distances occurred
-#             (or) result - the minimized object with all variables for each iteration
-#         used "Confinement-Higgs transition in a disordered gauge theory and the
-#             accuracy threshold for quantum memory" (2002) section 4.2 by Wang, Harrington, Preskill for fitting model
-#     """
-
-#     params = Parameters()
-#     error_list = []
-#     for d in d_list:
-        
-#         curr_d = int(d)
-#         # local params to vary for each d
-#         params.add(f"a{curr_d}", value = 0)
-#         params.add(f"b{curr_d}", value = 1)
-#         params.add(f"c{curr_d}", value = 1)
-#         params.add(f"e{curr_d}", value = 0)
-
-#         # local param to fix
-#         params.add(f"d{curr_d}", value=curr_d, vary=False) # lattice size, have been calling this d
-
-#         # global params
-#         params.add("pth", value=pth_0, vary=True)
-#         params['pth'].min = pth_0 - p_range
-#         params['pth'].max = pth_0 + p_range
-
-#         params.add("mu", value=1, vary=True)
-        
-#         # print(error_count_df.loc[error_count_df['d' == d]])
-#         error_list.append((error_count_df.loc[error_count_df['d'] == curr_d]['num_log_errors']).to_numpy().flatten())
-
-#         p_list_zoomed = error_count_df.loc[error_count_df['d'] == curr_d]['p'].to_numpy().flatten()
-#         print(p_list_zoomed.shape, "p_list")
-#         print(error_list[-1].shape, "error_list")
-    
-
-
-#     minimizer = Minimizer(combined_residual, params, fcn_args=(p_list_zoomed, d_list, error_list))
-#     result = minimizer.minimize()
-    
-    
-#     if return_all:
-#         return result
-#     else:
-#         return result.params['pth'].value 
-
-def get_threshold(df):
+def get_threshold(full_df, pth0, p_range, l, eta, corr_type):
     """ returns the threshold and confidence given a df 
         in: df - the dataframe containing all data, filtered for one error_type, l eta, and probability range
-            pth_0 - the current threshold probability guess for designated logical error
-            p_range - the range of probabilities to search for the threshold
-            eta - the noise bias
-            l - the elongation parameter
-            corr_type - the type of correlated error
         out: p_thr - a float, the probability where intersection of different lattice distances occurred
     """
+    df = full_df[(full_df['p'] < pth0 + p_range) & ( full_df['p'] > pth0 - p_range) & (full_df['l'] == l) & (full_df['eta'] == eta) & (full_df['error_type'] == corr_type)]
     
     # get the p_list and d_list from the dataframe
     p_list = df['p'].to_numpy().flatten()
     d_list = df['d'].to_numpy().flatten()
-    error_list = df['num_log_errors']
-
-    # format p_list and error_list so that it is (2, p*d) and (p*d,)
-    p_list_distances = np.zeros(p_list.shape[0]*d_list.shape[0])
-    d_list_distances = np.zeros(p_list.shape[0]*d_list.shape[0])
-    error_list_distances = np.zeros(p_list.shape[0]*d_list.shape[0]) # this should be the logical errors for each p, d
-    # error_list_distances = np.zeros(p_list.shape[0]*d_list.shape[0])
-
-
-    p_list_distances = np.tile(p_list, d_list.shape[0])
-    d_list_distances = np.repeat(d_list, p_list.shape[0])
-    error_list_distances = np.tile(error_list, d_list.shape[0])
+    error_list = df['num_log_errors'].to_numpy().flatten()
 
     # run the fitting function
-    popt, pcov = curve_fit(threshold_fit, (p_list_distances, d_list_distances), error_list_distances)
+    popt, pcov = curve_fit(threshold_fit, (p_list, d_list), error_list,p0=[pth0, 1, 0.5, 0.5, 0.5])
     
     pth = popt[0] # the threshold probability
     pth_error = np.sqrt(pcov[0][0])
@@ -480,9 +414,9 @@ if __name__ == "__main__":
 
     num_shots = 10000
     d_list = [11,13,15,17,19]
-    l=5 # elongation parameter of compass code
+    l=6 # elongation parameter of compass code
     p_list = np.linspace(0.01, 0.5, 15)
-    eta = 10 # the degree of noise bias
+    eta = 0.5 # the degree of noise bias
     corr_type = "CORR_ZX"
     folder_path = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/corr_err_data/'
     if corr_type == "CORR_ZX":
@@ -493,7 +427,7 @@ if __name__ == "__main__":
     # run this to get data from the dcc
     # write_data(num_shots, d_list, l, p_list, eta, task_id, corr_type)
     # run this once you have data and want to combo it to one csv
-    # concat_csv(folder_path, output_file)
+    concat_csv(folder_path, output_file)
 
     # threshold today - 0.2075 ZX, 0.217
     # threshold old - 0.20 ZX, 0.22 
@@ -501,26 +435,19 @@ if __name__ == "__main__":
 
 
     # to plot the data
-    df = pd.read_csv(output_file)
-    # df['time_stamp'] = pd.to_datetime(df['time_stamp'])
-    # today = datetime.now().date()
-    # df_today = df[df['time_stamp'].dt.date != today]
+    # df = pd.read_csv(output_file)
+    # # df['time_stamp'] = pd.to_datetime(df['time_stamp'])
+    # # today = datetime.now().date()
+    # # df_today = df[df['time_stamp'].dt.date != today]
 
-    # print(df['time_stamp'].dtype)
-    # p_th_init = 0.21
+    # # print(df['time_stamp'].dtype)
+    # p_th_init = 0.15
     # p_diff = 0.05
 
-    # # p_list_smol = [p for p in p_list if (p_th - p_diff) < p < (p_th + p_diff)]
-    # df_smol = df[(df['p'] < p_th_init + p_diff) & ( df['p'] > p_th_init - p_diff) & (df['l'] == l) & (df['eta'] == eta) & (df['error_type'] == corr_type)]
-    # pth, pth_error = get_threshold(df_smol)
-    # print(pth, pth_error)
-    # print(len(df_smol), len(df))
-    # df_smol = df
-    full_error_plot(df, eta, l, num_shots, corr_type, output_file, loglog=False, averaging=True)
-    # filtered_df = df[df['error_type'] == 'TOTAL'
-    # d_list = filtered_df['d'].unique()
-    # threshold = get_threshold(filtered_df, d_list, 0.19, 0.1, return_all=True)
-    # print(threshold)
+    # threshold, confidence = get_threshold(df, p_th_init, p_diff, l, eta, corr_type)
+    # print(threshold, confidence)
+
+    # threshold_plot(df, p_th_init, p_diff, eta, l, num_shots, corr_type, output_file, loglog=False, averaging=True,show_threshold=True)
 
 
 

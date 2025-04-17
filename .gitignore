@@ -1,6 +1,8 @@
 # Ignore large CSV files
 full_erasure_data/
+data_no_log_probs/
 
 xz_corr_err_data.csv 
 zx_corr_err_data.csv
+
 
