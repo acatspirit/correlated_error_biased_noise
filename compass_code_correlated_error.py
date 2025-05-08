@@ -391,7 +391,7 @@ def get_threshold(full_df, pth0, p_range, l, eta, corr_type):
     error_list = df['num_log_errors'].to_numpy().flatten()
 
     # run the fitting function
-    popt, pcov = curve_fit(threshold_fit, (p_list, d_list), error_list,p0=[pth0, 1, 0.5, 0.5, 0.5])
+    popt, pcov = curve_fit(threshold_fit, (p_list, d_list), error_list,p0=[pth0, 1, 1, 1, 1])
     
     pth = popt[0] # the threshold probability
     pth_error = np.sqrt(pcov[0][0])
@@ -414,9 +414,9 @@ if __name__ == "__main__":
 
     num_shots = 10000
     d_list = [11,13,15,17,19]
-    l=6 # elongation parameter of compass code
+    l=3 # elongation parameter of compass code
     p_list = np.linspace(0.01, 0.5, 15)
-    eta = 0.5 # the degree of noise bias
+    eta = 0.5 # the dfegree of noise bias
     corr_type = "CORR_ZX"
     folder_path = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/corr_err_data/'
     if corr_type == "CORR_ZX":
@@ -427,7 +427,7 @@ if __name__ == "__main__":
     # run this to get data from the dcc
     # write_data(num_shots, d_list, l, p_list, eta, task_id, corr_type)
     # run this once you have data and want to combo it to one csv
-    concat_csv(folder_path, output_file)
+    # concat_csv(folder_path, output_file)
 
     # threshold today - 0.2075 ZX, 0.217
     # threshold old - 0.20 ZX, 0.22 
@@ -435,19 +435,21 @@ if __name__ == "__main__":
 
 
     # to plot the data
-    # df = pd.read_csv(output_file)
+    df = pd.read_csv(output_file)
+    df_larger_p = df[df['p'] > 0.05]
     # # df['time_stamp'] = pd.to_datetime(df['time_stamp'])
     # # today = datetime.now().date()
     # # df_today = df[df['time_stamp'].dt.date != today]
 
     # # print(df['time_stamp'].dtype)
-    # p_th_init = 0.15
-    # p_diff = 0.05
+    p_th_init = 0.16
+    p_diff = 0.03
 
     # threshold, confidence = get_threshold(df, p_th_init, p_diff, l, eta, corr_type)
     # print(threshold, confidence)
 
-    # threshold_plot(df, p_th_init, p_diff, eta, l, num_shots, corr_type, output_file, loglog=False, averaging=True,show_threshold=True)
+    # threshold_plot(df, p_th_init, p_diff, eta, l, num_shots, corr_type, output_file, loglog=True, averaging=True,show_threshold=True)
+    full_error_plot(df_larger_p, eta, l, num_shots, corr_type, output_file, loglog=True, averaging=True)
 
 
 
