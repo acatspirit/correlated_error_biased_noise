@@ -58,6 +58,34 @@ def check_order_d(H, type):
                 
     return order_d
 
+def check_order_d_elongated(H, type):
+    """ Change this for longer codes
+        Right now (from STIM ex): 
+         HX: 0 - TR, 1 - TL, 2 - BR, 3 - BL
+         HZ: 0 - TR, 1 - BR, 2 - TL, 3 - BL
+    """
+    # create the order dictionary to store the qubit ordering for each plaquette
+    order_d = {}
+    for row in range(H.shape[0]):
+        order_d[row] = []
+
+    # get the qubit ordering for each plaquette
+    for row in range(H.shape[0]):
+        start = H.indptr[row]
+        end = H.indptr[row+1]
+        qubits = sorted(H.indices[start:end]) # the qubits in the plaquette
+        
+        if type == "Z":
+            for i in range(len(qubits)//2):
+                match_qubit_ind = np.where(qubits == (qubits[i] + d))[0][0]
+                order_d[row] += [(qubits[i], row)]
+                order_d[row] += [(qubits[match_qubit_ind], row)]
+
+        if type == "X":
+            for qubit in qubits:
+                order_d[row] += [(qubit, row)]
+    return order_d
+
 def qubit_to_plaq_d(H):
     rows, cols, values = sparse.find(H)
     d = {}
@@ -120,10 +148,10 @@ def get_num_log_errors(circuit, matching, num_shots):
             num_errors += 1
     return num_errors
 
-def get_log_error_p(p_list, H_x,H_z, num_shots):
+def get_log_error_p(p_list, H_x,H_z, type, eta, d, num_shots):
     log_error_L = []
     for p in p_list:
-        circuit = make_circuit_from_parity(H_x,H_z, p, type)
+        circuit = make_elongated_circuit_from_parity(H_x,H_z, d, p, eta, type)
         matching = Matching.from_stim_circuit(circuit)
         
         log_errors = get_num_log_errors(circuit, matching, num_shots)
@@ -247,27 +275,146 @@ def make_circuit_from_parity(H_x, H_z, p_err, type):
     print(repr(circuit))
     return circuit
 
+def make_elongated_circuit_from_parity(H_x, H_z, d, p_err, eta, type):
+    """ 
+    create a surface code memory experiment circuit from a parity check matrix
 
-p_list = np.linspace(0,0.5, 50)
-d_dict = {3:[]}
-num_shots = 100000
-l = 2
-type_d = {0:"X", 1:"Z"}
-type=type_d[0]
+    I think the error type I wanna use is pauli_channel_1(px, py, pz)
+    """
+    px = 0.5*p_err/(1+eta)
+    pz = p_err*(eta/(1+eta))
 
-print(sys.version) # 3.8.19
-for d in list(d_dict.keys()):
-    compass_code = cc.CompassCode(d=d, l=l)
-    H_x, H_z = compass_code.H['X'], compass_code.H['Z']
-    log_x, log_z = compass_code.logicals['X'], compass_code.logicals['Z']
+    # make the circuit
+    circuit = stim.Circuit()
 
+    # get the qubit ordering
+    plaq_d_x = convert_sparse_to_d(H_x)
+    plaq_d_z = convert_sparse_to_d(H_z)
     
-    d_dict[d] = get_log_error_p(p_list, H_x,H_z, num_shots)
+    # get the qubit ordered properly for each plaquette
+    order_d_x = check_order_d_elongated(H_x, "X")
+    order_d_z = check_order_d_elongated(H_z, "Z")
+    
+    # get the plaquettes that belong to each qubit
+    qubit_d_x = qubit_to_plaq_d(H_x)
+    qubit_d_z = qubit_to_plaq_d(H_z)
+    
+    # general parameters
+    num_ancillas = len(plaq_d_x) + len(plaq_d_z) # total number of plaquettes to initialize
+    num_qubits_x = len(qubit_d_x)
+    num_qubits_z = len(qubit_d_z)
+    
+    data_q_x_list = [num_ancillas + q for q in list(qubit_d_x.keys())] # all the x data qubits
+    data_q_z_list = [num_ancillas + q for q in list(qubit_d_z.keys())] # all the z data qubits
+    data_q_list = data_q_x_list # change this later when wanna do X and Z seperately
 
-for d in d_dict:
-    plt.plot(p_list, d_dict[d], label=f"d={d}")
-plt.xlabel("p")
-plt.ylabel(f"{[v for k, v in type_d.items() if v != type][0]} Logical Errors ")
-plt.legend()
-plt.savefig("l2_eta05_zmem.png", dpi=300)
-plt.show()
+
+    # convention - X plaqs first, then Z plaqs starting with 0
+    full_plaq_L = range(num_ancillas)
+    
+    # reset the ancillas
+    circuit.append("R", full_plaq_L)
+    circuit.append("H", plaq_d_x) # only the X plaqs need H
+
+    # reset the qubits
+    for q in range(len(qubit_d_x)): # go through all the qubits, might need to change when qubit_d_x doesn't have all the qubits
+        if type == "X":
+            circuit.append("RX", q + num_ancillas)
+        if type == "Z":
+            circuit.append("R", q + num_ancillas)
+ 
+    
+    # TODO: this is making the CX gates differently from the other file
+    for order in order_d_x: # go through the qubits in order of gates
+        q_x_list = order_d_x[order] # (qubit, ancilla)
+        
+        for q,p in q_x_list:
+            circuit.append("CX", [p, q + num_ancillas])
+        
+        circuit.append("TICK")
+
+
+    for order in order_d_z: # go through the qubits in order of gates
+        q_z_list = order_d_z[order]
+
+        for q,p in q_z_list:
+            circuit.append("CX", [q + num_ancillas, p + len(plaq_d_x)])
+    
+    circuit.append("H", plaq_d_x)
+    # circuit.append("PAULI_CHANNEL_1", full_plaq_L, [px,px,pz]) # measurement errors???
+    circuit.append("MR", full_plaq_L)
+
+    # for X mem measure X plaqs
+    if type == "X":
+        for i in range(len(plaq_d_x)):
+            circuit.append("DETECTOR", stim.target_rec(-num_ancillas + i))
+
+        circuit.append("PAULI_CHANNEL_1", data_q_x_list, [px,px,pz])
+        # circuit.append("Z_ERROR", data_q_x_list, p_err) # errors on the data qubits
+        circuit.append("MX", data_q_x_list)
+
+        # reconstruct each plaquette
+        for i in plaq_d_x: 
+            q_x_list = plaq_d_x[i] # get the qubits in the plaq
+            anc = i 
+            detector_list =  [-num_qubits_x + q for q in q_x_list] + [-num_ancillas + anc - num_qubits_x]
+            
+            circuit.append("DETECTOR", [stim.target_rec(d) for d in detector_list])
+    
+        # construct the logical observable to include - pick the top line of qubits since this is an X meas
+        circuit.append("OBSERVABLE_INCLUDE", [stim.target_rec(- num_qubits_x + d*q) for q in range(d)], 0) # parity of the whole line needs to be the same
+    
+    # Z mem measure Z plaqs
+    if type == "Z":
+        for i in range(len(plaq_d_z)):
+            circuit.append("DETECTOR", stim.target_rec(-num_ancillas + i + len(plaq_d_x)))
+
+        circuit.append("PAULI_CHANNEL_1", data_q_z_list, [px,px,pz])
+        # circuit.append("X_ERROR", data_q_list, p_err) # errors on the data qubits
+        circuit.append("M", data_q_list)
+
+        # time to reconstruct each plaquette
+        for i in plaq_d_z: 
+            
+            q_z_list = plaq_d_z[i] # get the qubits in the plaq
+            anc = i 
+            detector_list =  [-num_qubits_z + q for q in q_z_list] + [-num_ancillas +len(plaq_d_x)+ anc - num_qubits_z]
+            circuit.append("DETECTOR", [stim.target_rec(d) for d in detector_list])
+    
+        # construct the logical observable to include - pick the top line of qubits since this is an X meas
+        circuit.append("OBSERVABLE_INCLUDE", [stim.target_rec(-num_qubits_z + q) for q in range(d)], 0)
+    return circuit
+
+
+# p_list = np.linspace(0,0.5, 50)
+# d_dict = {5:[], 7:[], 9:[], 11:[]}
+# num_shots = 100000
+# l = 3
+# type_d = {0:"X", 1:"Z"}
+# type=type_d[0]
+# eta = 1.67
+# prob_scale = {'X': 0.5/(1+eta), 'Z': (1+2*eta)/(2*(1+eta)), 'CORR_XZ': 1, 'TOTAL':1}
+
+
+
+
+# for d in list(d_dict.keys()):
+#     compass_code = cc.CompassCode(d=d, l=l)
+#     H_x, H_z = compass_code.H['X'], compass_code.H['Z']
+#     # print(H_x) same between files
+#     log_x, log_z = compass_code.logicals['X'], compass_code.logicals['Z']
+#     # print('circuit:')
+#     # my_c = make_elongated_circuit_from_parity(H_x, H_z, d, 0.05, 0.5, type)
+#     # print(repr(my_c)) same between files
+#     d_dict[d] = get_log_error_p(p_list, H_x,H_z, type, eta, d, num_shots)
+
+
+# # matching = Matching.from_stim_circuit(my_c)
+# # matching.draw()
+# for d in d_dict:
+#     plt.plot(p_list*prob_scale[type], d_dict[d], label=f"d={d}")
+# plt.xlabel("p")
+# plt.ylabel(f"{[v for k, v in type_d.items() if v != type][0]} Logical Errors ")
+# plt.legend()
+# # plt.savefig("l3_eta1.67_zmem.png", dpi=300)
+# plt.show()
