@@ -58,7 +58,7 @@ def check_order_d(H, type):
                 
     return order_d
 
-def check_order_d_elongated(H, type):
+def check_order_d_elongated(H,d, type):
     """ Change this for longer codes
         Right now (from STIM ex): 
          HX: 0 - TR, 1 - TL, 2 - BR, 3 - BL
@@ -128,6 +128,7 @@ def clifford_deform_parity_mats(H_x, H_z, d, l):
     """
     return H_x, H_z
 
+
 ############################################
 #
 # Functions to test the circuit outputs
@@ -148,15 +149,52 @@ def get_num_log_errors(circuit, matching, num_shots):
             num_errors += 1
     return num_errors
 
+def get_num_log_errors_DEM(circuit, num_shots):
+    """
+    Get the number of logical errors from the detector error model
+    :param circuit: stim.Circuit object
+    :param num_shots: number of shots to sample
+    :return: number of logical errors
+    """
+    dem = circuit.detector_error_model(approximate_disjoint_errors=True) # what does the decompose do?
+    matchgraph = Matching.from_detector_error_model(dem)
+    sampler = circuit.compile_detector_sampler()
+    syndrome, obersvable_flips = sampler.sample(num_shots, separate_observables=True)
+    predictions = matchgraph.decode_batch(syndrome)
+    num_errors = np.sum(np.any(np.array(obersvable_flips) != np.array(predictions), axis=1))
+    return num_errors
+
+def get_log_error_circuit_level(p_list, H_x,H_z, type, eta, d, num_shots):
+    """
+    Get the logical error rate for a list of p values at the circuit level
+    :param p_list: list of p values
+    :param H_x: X parity check matrix
+    :param H_z: Z parity check matrix
+    :param type: type of memory experiment(X or Z)
+    :param eta: error rate
+    :param d: code distance
+    :param num_shots: number of shots to sample
+    :return: list of logical error rates
+    """
+    log_error_L = []
+    for p in p_list:
+        circuit = make_elongated_circuit_from_parity(H_x,H_z,d, p, eta, type)
+        log_errors = get_num_log_errors_DEM(circuit, num_shots)
+        log_error_L.append(log_errors/num_shots)
+    # print(log_error_L)
+    return log_error_L
+
 def get_log_error_p(p_list, H_x,H_z, type, eta, d, num_shots):
     log_error_L = []
     for p in p_list:
         circuit = make_elongated_circuit_from_parity(H_x,H_z, d, p, eta, type)
         matching = Matching.from_stim_circuit(circuit)
-        
         log_errors = get_num_log_errors(circuit, matching, num_shots)
         log_error_L += [log_errors/num_shots]
     return log_error_L
+
+
+
 
 ############################################
 # 
@@ -292,8 +330,8 @@ def make_elongated_circuit_from_parity(H_x, H_z, d, p_err, eta, type):
     plaq_d_z = convert_sparse_to_d(H_z)
     
     # get the qubit ordered properly for each plaquette
-    order_d_x = check_order_d_elongated(H_x, "X")
-    order_d_z = check_order_d_elongated(H_z, "Z")
+    order_d_x = check_order_d_elongated(H_x, d,"X")
+    order_d_z = check_order_d_elongated(H_z, d, "Z")
     
     # get the plaquettes that belong to each qubit
     qubit_d_x = qubit_to_plaq_d(H_x)
@@ -314,43 +352,62 @@ def make_elongated_circuit_from_parity(H_x, H_z, d, p_err, eta, type):
     
     # reset the ancillas
     circuit.append("R", full_plaq_L)
+    circuit.append("X_ERROR", full_plaq_L, px) # add the error to the ancillas
     circuit.append("H", plaq_d_x) # only the X plaqs need H
 
-    # reset the qubits
+    # reset the data qubits
     for q in range(len(qubit_d_x)): # go through all the qubits, might need to change when qubit_d_x doesn't have all the qubits
         if type == "X":
             circuit.append("RX", q + num_ancillas)
+            circuit.append("Z_ERROR", q + num_ancillas, pz) # add the error to the data qubits
         if type == "Z":
             circuit.append("R", q + num_ancillas)
+            circuit.append("X_ERROR", q + num_ancillas, px)
  
-    
-    # TODO: this is making the CX gates differently from the other file
+
     for order in order_d_x: # go through the qubits in order of gates
         q_x_list = order_d_x[order] # (qubit, ancilla)
+        # q_z_list = order_d_z[order] # for the idling error on the Z qubits
         
         for q,p in q_x_list:
             circuit.append("CX", [p, q + num_ancillas])
         
+        for q,p in q_x_list:
+            # CNOT gate errors
+            # circuit.append("PAULI_CHANNEL_2", [p, q + num_ancillas], [px, px,pz,px,px**2, px**2, px*pz, px,px**2, px**2, px*pz, pz, pz*px, pz*px, pz**2]) # how do I do the 2-qubit error?
+            circuit.append("DEPOLARIZE2", [q + num_ancillas, p + len(plaq_d_x)], p_err)
+        # for q,p in q_z_list:
+        #     # Idling error on the Z qubits
+        #     circuit.append("PAULI_CHANNEL_1", [q + num_ancillas], [px, px,pz]) 
         circuit.append("TICK")
 
 
     for order in order_d_z: # go through the qubits in order of gates
         q_z_list = order_d_z[order]
+        # q_x_list = order_d_x[order] # for the idling error on the X qubits
 
         for q,p in q_z_list:
             circuit.append("CX", [q + num_ancillas, p + len(plaq_d_x)])
+        for q,p in q_z_list:
+            # circuit.append("PAULI_CHANNEL_2", [q + num_ancillas, p + len(plaq_d_x)], [px, px,pz,px,px**2, px**2, px*pz, px,px**2, px**2, px*pz, pz, pz*px, pz*px, pz**2]) # CNOT gate errors
+            circuit.append("DEPOLARIZE2", [q + num_ancillas, p + len(plaq_d_x)], p_err) # CNOT gate errors
+
+        # for q,p in q_x_list:
+        #     circuit.append("PAULI_CHANNEL_1", [q + num_ancillas], [px, px,pz]) # Idling error on the X qubits
     
     circuit.append("H", plaq_d_x)
-    # circuit.append("PAULI_CHANNEL_1", full_plaq_L, [px,px,pz]) # measurement errors???
+    circuit.append("PAULI_CHANNEL_1", full_plaq_L, [px,px,pz])
+
+    circuit.append("X_ERROR", full_plaq_L, px) # add the error to the ancillas
     circuit.append("MR", full_plaq_L)
+    circuit.append("X_ERROR", full_plaq_L, px) # add the error to the ancillas
+    circuit.append("PAULI_CHANNEL_1", data_q_x_list, [px,px,pz]) # add the error to the ancillas
 
     # for X mem measure X plaqs
     if type == "X":
         for i in range(len(plaq_d_x)):
             circuit.append("DETECTOR", stim.target_rec(-num_ancillas + i))
 
-        circuit.append("PAULI_CHANNEL_1", data_q_x_list, [px,px,pz])
-        # circuit.append("Z_ERROR", data_q_x_list, p_err) # errors on the data qubits
         circuit.append("MX", data_q_x_list)
 
         # reconstruct each plaquette
@@ -369,8 +426,6 @@ def make_elongated_circuit_from_parity(H_x, H_z, d, p_err, eta, type):
         for i in range(len(plaq_d_z)):
             circuit.append("DETECTOR", stim.target_rec(-num_ancillas + i + len(plaq_d_x)))
 
-        circuit.append("PAULI_CHANNEL_1", data_q_z_list, [px,px,pz])
-        # circuit.append("X_ERROR", data_q_list, p_err) # errors on the data qubits
         circuit.append("M", data_q_list)
 
         # time to reconstruct each plaquette
@@ -386,35 +441,35 @@ def make_elongated_circuit_from_parity(H_x, H_z, d, p_err, eta, type):
     return circuit
 
 
-# p_list = np.linspace(0,0.5, 50)
-# d_dict = {5:[], 7:[], 9:[], 11:[]}
-# num_shots = 100000
-# l = 3
-# type_d = {0:"X", 1:"Z"}
-# type=type_d[0]
-# eta = 1.67
-# prob_scale = {'X': 0.5/(1+eta), 'Z': (1+2*eta)/(2*(1+eta)), 'CORR_XZ': 1, 'TOTAL':1}
+p_list = np.linspace(0,0.5, 30)
+d_dict = {5:[], 7:[], 9:[], 11:[]}
+num_shots = 100000
+l = 3
+type_d = {0:"X", 1:"Z"}
+type=type_d[1]
+eta = 1.67
+prob_scale = {'X': 0.5/(1+eta), 'Z': (1+2*eta)/(2*(1+eta)), 'CORR_XZ': 1, 'TOTAL':1}
 
 
 
 
-# for d in list(d_dict.keys()):
-#     compass_code = cc.CompassCode(d=d, l=l)
-#     H_x, H_z = compass_code.H['X'], compass_code.H['Z']
-#     # print(H_x) same between files
-#     log_x, log_z = compass_code.logicals['X'], compass_code.logicals['Z']
-#     # print('circuit:')
-#     # my_c = make_elongated_circuit_from_parity(H_x, H_z, d, 0.05, 0.5, type)
-#     # print(repr(my_c)) same between files
-#     d_dict[d] = get_log_error_p(p_list, H_x,H_z, type, eta, d, num_shots)
+for d in list(d_dict.keys()):
+    compass_code = cc.CompassCode(d=d, l=l)
+    H_x, H_z = compass_code.H['X'], compass_code.H['Z']
+    # print(H_x) same between files
+    log_x, log_z = compass_code.logicals['X'], compass_code.logicals['Z']
+    # print('circuit:')
+    # my_c = make_elongated_circuit_from_parity(H_x, H_z, d, 0.05, 0.5, type)
+    # print(repr(my_c)) same between files
+    d_dict[d] = get_log_error_circuit_level(p_list, H_x,H_z, type, eta, d, num_shots)
 
 
-# # matching = Matching.from_stim_circuit(my_c)
-# # matching.draw()
-# for d in d_dict:
-#     plt.plot(p_list*prob_scale[type], d_dict[d], label=f"d={d}")
-# plt.xlabel("p")
-# plt.ylabel(f"{[v for k, v in type_d.items() if v != type][0]} Logical Errors ")
-# plt.legend()
-# # plt.savefig("l3_eta1.67_zmem.png", dpi=300)
-# plt.show()
+# matching = Matching.from_stim_circuit(my_c)
+# matching.draw()
+for d in d_dict:
+    plt.plot(p_list*prob_scale[type], d_dict[d], label=f"d={d}")
+plt.xlabel("p")
+plt.ylabel(f"{[v for k, v in type_d.items() if v != type][0]} Logical Errors ")
+plt.legend()
+# plt.savefig("l3_eta1.67_zmem.png", dpi=300)
+plt.show()

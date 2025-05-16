@@ -346,7 +346,7 @@ def threshold_plot(full_df, p_th0, p_range, curr_eta, curr_l, curr_num_shots, co
     
     # Plot each d value
     for i,d in enumerate(d_values):
-        d_df = full_df[full_df['d'] == d]
+        d_df = full_df[(full_df['d'] == d)&(full_df['error_type'] == corr_type)&(full_df['l'] == curr_l) & (full_df['eta'] == curr_eta) & (full_df['num_shots'] == curr_num_shots)]
         if averaging:
             d_df_mean = shots_averaging(curr_num_shots, curr_l, curr_eta, corr_type, d_df, file)
             if loglog:
@@ -358,7 +358,7 @@ def threshold_plot(full_df, p_th0, p_range, curr_eta, curr_l, curr_num_shots, co
         else:
             ax.scatter(d_df['p']*prob_scale[corr_type], d_df['num_log_errors'], s=2, label=f'd={d}',color=colors[i])
 
-    pth, pth_error = get_threshold(filtered_df, p_th0, p_range, curr_l, curr_eta, corr_type)
+    pth, pth_error = get_threshold(filtered_df, p_th0, p_range, curr_l, curr_eta, corr_type,curr_num_shots)
     
     if show_threshold:
         ax.vlines(pth, ymin=0, ymax=0.5, color='red', linestyles='--', label=f'pth = {pth:.3f} +/- {pth_error:.3f}')
@@ -378,7 +378,7 @@ def threshold_fit(x, pth, nu, a, b, c):
     return c + b*X + a*X**2
 
 
-def get_threshold(full_df, pth0, p_range, l, eta, corr_type):
+def get_threshold(full_df, pth0, p_range, l, eta, corr_type, num_shots):
     """ returns the threshold and confidence given a df 
         in: df - the dataframe containing all data, filtered for one error_type, l eta, and probability range
         out: p_thr - a float, the probability where intersection of different lattice distances occurred
@@ -391,7 +391,7 @@ def get_threshold(full_df, pth0, p_range, l, eta, corr_type):
     error_list = df['num_log_errors'].to_numpy().flatten()
 
     # run the fitting function
-    popt, pcov = curve_fit(threshold_fit, (p_list, d_list), error_list,p0=[pth0, 1, 1, 1, 1])
+    popt, pcov = curve_fit(threshold_fit, (p_list, d_list), error_list, p0=[pth0, 1, 1, 1, 1])
     
     pth = popt[0] # the threshold probability
     pth_error = np.sqrt(pcov[0][0])
@@ -414,9 +414,9 @@ if __name__ == "__main__":
 
     num_shots = 10000
     d_list = [11,13,15,17,19]
-    l=3 # elongation parameter of compass code
+    l=4 # elongation parameter of compass code
     p_list = np.linspace(0.01, 0.5, 15)
-    eta = 0.5 # the dfegree of noise bias
+    eta = 1 # the dfegree of noise bias
     corr_type = "CORR_ZX"
     folder_path = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/corr_err_data/'
     if corr_type == "CORR_ZX":
@@ -436,20 +436,20 @@ if __name__ == "__main__":
 
     # to plot the data
     df = pd.read_csv(output_file)
-    df_larger_p = df[df['p'] > 0.05]
+    # df_larger_p = df[df['p'] > 0.05]
     # # df['time_stamp'] = pd.to_datetime(df['time_stamp'])
     # # today = datetime.now().date()
     # # df_today = df[df['time_stamp'].dt.date != today]
 
     # # print(df['time_stamp'].dtype)
-    p_th_init = 0.16
+    p_th_init = 0.187
     p_diff = 0.03
 
     # threshold, confidence = get_threshold(df, p_th_init, p_diff, l, eta, corr_type)
     # print(threshold, confidence)
 
-    # threshold_plot(df, p_th_init, p_diff, eta, l, num_shots, corr_type, output_file, loglog=True, averaging=True,show_threshold=True)
-    full_error_plot(df_larger_p, eta, l, num_shots, corr_type, output_file, loglog=True, averaging=True)
+    threshold_plot(df, p_th_init, p_diff, eta, l, num_shots, corr_type, output_file, loglog=True, averaging=True,show_threshold=True)
+    # full_error_plot(df, eta, l, num_shots, corr_type, output_file, loglog=True, averaging=True)
 
 
 
