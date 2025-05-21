@@ -12,159 +12,181 @@ from datetime import datetime
 import sys
 import glob
 from scipy.optimize import curve_fit
+import clifford_deformed_cc_circuit as cc_circuit
 # from lmfit import Minimizer, Parameters, report_fit
 
 
+##############################################
+#
+# CorrelatedDecoder class
+#
+##############################################
+
+class CorrelatedDecoder:
+    def __init__(self, eta, d, l, corr_type):
+        self.eta = eta # the noise bias
+        self.d = d # the distance of the compass code
+        self.l = l # the elongation parameter
+        self.corr_type = corr_type # the type of correlation for decoder
+
+        compass_code = cc.CompassCode(d=self.d, l=self.l)
+        self.H_x, self.H_z = compass_code.H['X'], compass_code.H['Z'] # parity check matrices from compass code class
+        self.log_x, self.log_z = compass_code.logicals['X'], compass_code.logicals['Z'] # logical operators from compass code class
 
 
-def depolarizing_err(p, H, eta=0.5):
-    """Generates the error vector for one shot according to depolarizing noise model.
-       Args:
-       - p: Error probability.
-       - num_qubits: Number of qubits.
-       - eta: depolarizing channel bias. Recover unbiased depolarizing noise eta = 0.5. 
-                Px, py, pz are determined according to 2D Compass Codes paper (2019) defn of eta
-       
-       Returns:
-       - A list containing error vectors for no error, X, Z, and Y errors.
-    """
-    num_qubits = H.shape[1]
-    # Error vectors for I, X, Z, and Y errors
-    errors = np.zeros((2, num_qubits), dtype=int)
 
-    # p = px + py + pz, px=py, eta = pz/(px + py)
-    px = 0.5*p/(1+eta)
-    pz = p*(eta/(1+eta))
-    probs = [1 - p, px, pz, px]  # Probabilities for I, X, Z, and Y errors
-
-    # Randomly choose error types for all qubits
-    # np.random.seed(10)
-    choices = np.random.choice(4, size=num_qubits, p=probs)
-    # Assign errors based on the chosen types
-    errors[0] = np.where((choices == 1) | (choices == 3), 1, 0)  # X or Y error
-    errors[1] = np.where((choices == 2) | (choices == 3), 1, 0)  # Z or Y error
-    return errors
-
-
-def decoding_failures(H, L, p, eta, shots, err_type):
-    """ finds the number of logical errors after decoding
-        H - parity check matrix
-        L - logical operator vector
-        p - probability of error
-        eta - depolarizing channel bias
-        shots - number of shots
-        err_type - the type of error that you hope to decode, X = 0, Z = 1
-    """
-    M = Matching.from_check_matrix(H)
-    # get the depolarizing error vector 
-    err_vec = [depolarizing_err(p, H, eta=eta)[err_type] for _ in range(shots)]
-    # generate the syndrome for each shot
-    syndrome_shots = err_vec@H.T%2
-    # the correction to the errors
-    correction = M.decode_batch(syndrome_shots)
-    num_errors = np.sum((correction+err_vec)@L%2)
-    return num_errors
-
-
-def decoding_failures_correlated(H_x, H_z, L_x, L_z, p, eta, shots, corr_type):
-    """ Finds the number of logical errors after decoding.
-        H_x - X parity check matrix for Z errors
-        H_z - Z parity check matrix for X errors
-        L_x - logical operator vector for X operators
-        L_z - logical operator vector for X operators
-        p - probability of error
-        eta - depolarizing channel bias.
-        shots - number of shots
-        corr_type - CORR_XZ or CORR_ZX. Whether to return X then Z or Z then X correlated errors.
-    """
-    M_z = Matching.from_check_matrix(H_z)
-    M_x = Matching.from_check_matrix(H_x)
-    
-    # Generate error vectors
-    err_vec = [depolarizing_err(p, H_x, eta=eta) for _ in range(shots)]
-    err_vec_x = np.array([err[0] for err in err_vec])
-    err_vec_z = np.array([err[1] for err in err_vec])
-    
-    # Syndrome for Z errors and decoding
-    syndrome_z = err_vec_x @ H_z.T % 2
-    correction_x = M_z.decode_batch(syndrome_z)
-    num_errors_x = np.sum((correction_x + err_vec_x) @ L_z % 2)
-    
-    # Syndrome for X errors and decoding
-    syndrome_x = err_vec_z @ H_x.T % 2
-    correction_z = M_x.decode_batch(syndrome_x)
-    num_errors_z = np.sum((correction_z + err_vec_z) @ L_x % 2)
-
-    # num_errors_tot = sum(((correction_x + err_vec_x) @ L_z % 2) | ((correction_z + err_vec_z) @ L_x % 2))
-    
-    # Decode Z errors correlated
-    if corr_type == "CORR_XZ": # correct Z errors after correcting X errors
-        cond_prob = 0.5 # the conditional probability of Z error given a X error
-        new_weight = np.log((1-cond_prob)/cond_prob)
-        # Prepare weights and syndrome for X errors
-        # updated_weights = cond_prob*np.logical_not(correction_x).astype(int)
-        updated_weights = np.ones(correction_x.shape)
-        updated_weights[np.nonzero(correction_x)] = new_weight
+    def depolarizing_err(self, p):
+        """Generates the error vector for one shot according to depolarizing noise model.
+        Args:
+        - p: Error probability.
+        - num_qubits: Number of qubits.
+        - eta: depolarizing channel bias. Recover unbiased depolarizing noise eta = 0.5. 
+                    Px, py, pz are determined according to 2D Compass Codes paper (2019) defn of eta
         
-        num_errors_xz_corr = 0
+        Returns:
+        - A list containing error vectors for no error, X, Z, and Y errors.
+        """
+        H = self.H_x
+        eta = self.eta
 
-        for i in range(shots):
-            M_xz_corr = Matching.from_check_matrix(H_x, weights=updated_weights[i]) # updated weights set erasure to 0
-            correction_xz_corr = M_xz_corr.decode(syndrome_x[i])
-            num_errors_xz_corr += np.sum((correction_xz_corr + err_vec_z[i]) @ L_x % 2)
+        num_qubits = H.shape[1]
+        # Error vectors for I, X, Z, and Y errors
+        errors = np.zeros((2, num_qubits), dtype=int)
+
+        # p = px + py + pz, px=py, eta = pz/(px + py)
+        px = 0.5*p/(1+eta)
+        pz = p*(eta/(1+eta))
+        probs = [1 - p, px, pz, px]  # Probabilities for I, X, Z, and Y errors
+
+        # Randomly choose error types for all qubits
+        # np.random.seed(10)
+        choices = np.random.choice(4, size=num_qubits, p=probs)
+        # Assign errors based on the chosen types
+        errors[0] = np.where((choices == 1) | (choices == 3), 1, 0)  # X or Y error
+        errors[1] = np.where((choices == 2) | (choices == 3), 1, 0)  # Z or Y error
+        return errors
+
+
+    def decoding_failures(self,p, shots, error_type):
+        """ finds the number of logical errors after decoding
+            p - probability of error
+            shots - number of shots
+            error_type - the type of error that you hope to decode, X = 0, Z = 1
+        """
+        if error_type == "X": 
+            H = self.H_x
+            L = self.log_x
+        elif error_type == "Z":
+            H = self.H_z
+            L = self.log_z
+        M = Matching.from_check_matrix(H)
+        # get the depolarizing error vector 
+        err_vec = [self.depolarizing_err(p)[error_type] for _ in range(shots)]
+        # generate the syndrome for each shot
+        syndrome_shots = err_vec@H.T%2
+        # the correction to the errors
+        correction = M.decode_batch(syndrome_shots)
+        num_errors = np.sum((correction+err_vec)@L%2)
+        return num_errors
+
+
+    def decoding_failures_correlated(self, p, shots):
+        """ Finds the number of logical errors after decoding.
+            p - probability of error
+            shots - number of shots
+            corr_type - CORR_XZ or CORR_ZX. Whether to return X then Z or Z then X correlated errors.
+        """
+        M_z = Matching.from_check_matrix(self.H_z)
+        M_x = Matching.from_check_matrix(self.H_x)
         
-        num_errors_corr = num_errors_xz_corr + num_errors_x
-    # Decode X errors correlated
-    if corr_type == "CORR_ZX": # correct X errors after correcting Z errors
-        cond_prob = 1/(2*eta+1) # the conditional probability of X error given a Z error
-        new_weight = np.log((1-cond_prob)/cond_prob)
-
-        # Prepare weights and syndrome for X errors
-        updated_weights = np.ones(correction_z.shape)
-        updated_weights[np.nonzero(correction_z)] = new_weight
-        num_errors_zx_corr = 0
-
-        for i in range(shots):
-            M_zx_corr = Matching.from_check_matrix(H_z, weights=updated_weights[i]) # updated weights set erasure to 0
-            correction_zx_corr = M_zx_corr.decode(syndrome_z[i])
-            num_errors_zx_corr += np.sum((correction_zx_corr + err_vec_x[i]) @ L_z % 2)
+        # Generate error vectors
+        err_vec = [self.depolarizing_err(p) for _ in range(shots)]
+        err_vec_x = np.array([err[0] for err in err_vec])
+        err_vec_z = np.array([err[1] for err in err_vec])
         
-        num_errors_corr = num_errors_zx_corr + num_errors_z
-    
-    num_errors_tot = num_errors_x + num_errors_z
+        # Syndrome for Z errors and decoding
+        syndrome_z = err_vec_x @ self.H_z.T % 2
+        correction_x = M_z.decode_batch(syndrome_z)
+        num_errors_x = np.sum((correction_x + err_vec_x) @ self.L_z % 2)
+        
+        # Syndrome for X errors and decoding
+        syndrome_x = err_vec_z @ self.H_x.T % 2
+        correction_z = M_x.decode_batch(syndrome_x)
+        num_errors_z = np.sum((correction_z + err_vec_z) @ self.L_x % 2)
 
-    return num_errors_x, num_errors_z, num_errors_corr, num_errors_tot
+        
+        # Decode Z errors correlated
+        if self.corr_type == "CORR_XZ": # correct Z errors after correcting X errors
+            cond_prob = 0.5 # the conditional probability of Z error given a X error
+            new_weight = np.log((1-cond_prob)/cond_prob)
+            
+            # Prepare weights and syndrome for X errors
+            updated_weights = np.ones(correction_x.shape)
+            updated_weights[np.nonzero(correction_x)] = new_weight
+            
+            num_errors_xz_corr = 0
 
-def decoding_failures_uncorr(H_x, H_z, L_x, L_z, p, eta, shots):
-    """ Finds the number of logical errors after decoding.
-        H_x - X parity check matrix for Z errors
-        H_z - Z parity check matrix for X errors
-        L_x - logical operator vector for X operators
-        L_z - logical operator vector for X operators
-        p - probability of error
-        eta - depolarizing channel bias
-        shots - number of shots
-    """
-    # create a matching graph
-    M_z = Matching.from_check_matrix(H_z)
-    M_x = Matching.from_check_matrix(H_x)
-    
-    # Generate error vectors
-    err_vec = [depolarizing_err(p, H_x, eta=eta) for _ in range(shots)]
-    err_vec_x = np.array([err[0] for err in err_vec])
-    err_vec_z = np.array([err[1] for err in err_vec])
-    
-    # Syndrome for Z errors and decoding
-    syndrome_z = err_vec_x @ H_z.T % 2
-    correction_z = M_z.decode_batch(syndrome_z)
-    num_errors_x = np.sum((correction_z + err_vec_x) @ L_z % 2)
-    
-    # Syndrome for X errors and decoding
-    syndrome_x = err_vec_z @ H_x.T % 2
-    correction_x = M_x.decode_batch(syndrome_x)
-    num_errors_z = np.sum((correction_x + err_vec_z) @ L_x % 2)
-    
-    return num_errors_x, num_errors_z
+            for i in range(shots):
+                M_xz_corr = Matching.from_check_matrix(self.H_x, weights=updated_weights[i]) # updated weights set erasure to 0
+                correction_xz_corr = M_xz_corr.decode(syndrome_x[i])
+                num_errors_xz_corr += np.sum((correction_xz_corr + err_vec_z[i]) @ self.L_x % 2)
+            
+            num_errors_corr = num_errors_xz_corr + num_errors_x
+        
+        # Decode X errors correlated
+        if self.corr_type == "CORR_ZX": # correct X errors after correcting Z errors
+            cond_prob = 1/(2*self.eta+1) # the conditional probability of X error given a Z error
+            new_weight = np.log((1-cond_prob)/cond_prob)
+
+            # Prepare weights and syndrome for X errors
+            updated_weights = np.ones(correction_z.shape)
+            updated_weights[np.nonzero(correction_z)] = new_weight
+            num_errors_zx_corr = 0
+
+            for i in range(shots):
+                M_zx_corr = Matching.from_check_matrix(self.H_z, weights=updated_weights[i]) # updated weights set erasure to 0
+                correction_zx_corr = M_zx_corr.decode(syndrome_z[i])
+                num_errors_zx_corr += np.sum((correction_zx_corr + err_vec_x[i]) @ self.L_z % 2)
+            
+            num_errors_corr = num_errors_zx_corr + num_errors_z
+        
+        num_errors_tot = num_errors_x + num_errors_z
+
+        return num_errors_x, num_errors_z, num_errors_corr, num_errors_tot
+
+    def decoding_failures_uncorr(self,p, shots):
+        """ Finds the number of logical errors after decoding.
+            p - probability of error
+            shots - number of shots
+        """
+        # create a matching graph
+        M_z = Matching.from_check_matrix(self.H_z)
+        M_x = Matching.from_check_matrix(self.H_x)
+        
+        # Generate error vectors
+        err_vec = [self.depolarizing_err(p) for _ in range(shots)]
+        err_vec_x = np.array([err[0] for err in err_vec])
+        err_vec_z = np.array([err[1] for err in err_vec])
+        
+        # Syndrome for Z errors and decoding
+        syndrome_z = err_vec_x @ self.H_z.T % 2
+        correction_z = M_z.decode_batch(syndrome_z)
+        num_errors_x = np.sum((correction_z + err_vec_x) @ self.L_z % 2)
+        
+        # Syndrome for X errors and decoding
+        syndrome_x = err_vec_z @ self.H_x.T % 2
+        correction_x = M_x.decode_batch(syndrome_x)
+        num_errors_z = np.sum((correction_x + err_vec_z) @ self.L_x % 2)
+        
+        return num_errors_x, num_errors_z
+
+
+
+############################################
+#
+# Functions for getting data from DCC
+#
+############################################
 
 def get_data(num_shots, d_list, l, p_list, eta, corr_type):
     """ Generate logical error rates for x,z, correlatex z, and total errors
@@ -416,7 +438,7 @@ if __name__ == "__main__":
     d_list = [11,13,15,17,19]
     l=4 # elongation parameter of compass code
     p_list = np.linspace(0.01, 0.5, 15)
-    eta = 1 # the dfegree of noise bias
+    eta = 1 # the degree of noise bias
     corr_type = "CORR_ZX"
     folder_path = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/corr_err_data/'
     if corr_type == "CORR_ZX":
