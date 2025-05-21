@@ -273,7 +273,7 @@ class CorrelatedDecoder:
 #
 ############################################
 
-def get_data(num_shots, d_list, l, p_list, eta, corr_type):
+def get_data(num_shots, d_list, l, p_list, eta, corr_type, circuit_data=False):
     """ Generate logical error rates for x,z, correlatex z, and total errors
         via MC sim in decoding_failures_correlated and add it to a shared pandas df
         
@@ -291,16 +291,32 @@ def get_data(num_shots, d_list, l, p_list, eta, corr_type):
     data = pd.DataFrame(data_dict)
 
     for d in d_list:
-        compass_code = cc.CompassCode(d=d, l=l)
-        H_x, H_z = compass_code.H['X'], compass_code.H['Z']
-        log_x, log_z = compass_code.logicals['X'], compass_code.logicals['Z']
+        if circuit_data:
+            for p in p_list:
+                circuit_x = cc_circuit.CDCompassCodeCircuit(d, l, eta, p, "X")
+                circuit_z = cc_circuit.CDCompassCodeCircuit(d, l, eta, p, "Z")
 
-        for p in p_list:
-            errors = decoding_failures_correlated(H_x, H_z, log_x, log_z, p, eta, num_shots, corr_type)
-            for i in range(len(errors)):
-                curr_row = {"d":d, "num_shots":num_shots, "p":p, "l": l, "eta":eta, "error_type":err_type[i], "num_log_errors":errors[i]/num_shots, "time_stamp":datetime.now()}
-                data = pd.concat([data, pd.DataFrame([curr_row])], ignore_index=True)
+                log_errors_x = circuit_x.get_num_log_errors_DEM(circuit_x.circuit, num_shots)
+                log_errors_z = circuit_z.get_num_log_errors_DEM(circuit_z.circuit, num_shots)
+
+                for i in range(len(log_errors_x)):
+                    curr_row = {"d":d, "num_shots":num_shots, "p":p, "l": l, "eta":eta, "error_type":"X Mem", "num_log_errors":log_errors_x[i]/num_shots, "time_stamp":datetime.now()}
+                    data = pd.concat([data, pd.DataFrame([curr_row])], ignore_index=True)
+                
+                for i in range(len(log_errors_z)):
+                    curr_row = {"d":d, "num_shots":num_shots, "p":p, "l": l, "eta":eta, "error_type":"Z Mem", "num_log_errors":log_errors_z[i]/num_shots, "time_stamp":datetime.now()}
+                    data = pd.concat([data, pd.DataFrame([curr_row])], ignore_index=True)
+
+        else:
+            decoder = CorrelatedDecoder(eta, d, l, corr_type)
+
+            for p in p_list:
+                errors = decoder.decoding_failures_correlated(p, num_shots)
+                for i in range(len(errors)):
+                    curr_row = {"d":d, "num_shots":num_shots, "p":p, "l": l, "eta":eta, "error_type":err_type[i], "num_log_errors":errors[i]/num_shots, "time_stamp":datetime.now()}
+                    data = pd.concat([data, pd.DataFrame([curr_row])], ignore_index=True)
     return data
+
 
 def shots_averaging(num_shots, l, eta, err_type, in_df, file):
     """For the inputted number of shots, averages those shots over the array length run on computing cluster.  
@@ -321,7 +337,7 @@ def shots_averaging(num_shots, l, eta, err_type, in_df, file):
 
 
 
-def write_data(num_shots, d_list, l, p_list, eta, ID, corr_type):
+def write_data(num_shots, d_list, l, p_list, eta, ID, corr_type, circuit_data=False):
     """ Writes data from pandas df to a csv file, for use with SLURM arrays. Generates data for each slurm output on a CSV
         in: num_shots - the number of MC iterations
             l - the integer repition of the compass code
@@ -330,11 +346,17 @@ def write_data(num_shots, d_list, l, p_list, eta, ID, corr_type):
             d_list - the distances of compass code to scan
             ID - SLURM input task_ID number, corresponds to which array element we run
     """
-    data = get_data(num_shots, d_list, l, p_list, eta, corr_type)
-    data_file = f'corr_err_data/{ID}.csv'
-    # data_file = f"corr_err_data.csv"
-    if not os.path.exists('corr_err_data/'):
-        os.mkdir('corr_err_data')
+    data = get_data(num_shots, d_list, l, p_list, eta, corr_type, circuit_data)
+    if circuit_data:
+        data_file = f'circuit_data/{ID}.csv'
+        if not os.path.exists('circuit_data/'):
+            os.mkdir('circuit_data')
+    else:
+        data_file = f'corr_err_data/{ID}.csv'
+        if not os.path.exists('corr_err_data/'):
+            os.mkdir('corr_err_data')
+   
+    
 
     # Check if the CSV file exists
     if os.path.isfile(data_file):
@@ -354,7 +376,7 @@ def concat_csv(folder_path, output_file):
         'output_file'. The CSV files in folder_path are deleted.
         in: folder_path - the folder that stores all the csv files to be combined
             output_file - the file that the CSV files will be combined into
-        out: no output. The folder_path files are deleted and the output_file is added to
+        out: no output. The folder_path files are deleted and the output_file has the files in folder_path added to it
     """
     data_files = glob.glob(os.path.join(folder_path, '*.csv'))
     df_list = []
@@ -446,7 +468,6 @@ def threshold_plot(full_df, p_th0, p_range, curr_eta, curr_l, curr_num_shots, co
     cmap = colormaps['Blues_r']
     color_values = np.linspace(0.1, 0.8, num_lines)
     colors = [cmap(val) for val in color_values]
-    # colors = [cmap(i) for i in range(num_lines)]
 
     # Create a figure with subplots for each error type
     fig, ax = plt.subplots(1, 1, figsize=(10, 8))
@@ -490,7 +511,7 @@ def get_threshold(full_df, pth0, p_range, l, eta, corr_type, num_shots):
         in: df - the dataframe containing all data, filtered for one error_type, l eta, and probability range
         out: p_thr - a float, the probability where intersection of different lattice distances occurred
     """
-    df = full_df[(full_df['p'] < pth0 + p_range) & ( full_df['p'] > pth0 - p_range) & (full_df['l'] == l) & (full_df['eta'] == eta) & (full_df['error_type'] == corr_type)]
+    df = full_df[(full_df['p'] < pth0 + p_range) & ( full_df['p'] > pth0 - p_range) & (full_df['l'] == l) & (full_df['eta'] == eta) & (full_df['error_type'] == corr_type) & (full_df['num_shots'] == num_shots)]
     
     # get the p_list and d_list from the dataframe
     p_list = df['p'].to_numpy().flatten()

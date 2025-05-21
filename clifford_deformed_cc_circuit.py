@@ -432,14 +432,11 @@ prob_scale = {'X': 0.5/(1+eta), 'Z': (1+2*eta)/(2*(1+eta)), 'CORR_XZ': 1, 'TOTAL
 
 
 for d in list(d_dict.keys()):
-    compass_code = cc.CompassCode(d=d, l=l)
-    H_x, H_z = compass_code.H['X'], compass_code.H['Z']
-    # print(H_x) same between files
-    log_x, log_z = compass_code.logicals['X'], compass_code.logicals['Z']
+    circuit = CDCompassCodeCircuit(d, l, eta, 0.05, type)
     # print('circuit:')
     # my_c = make_elongated_circuit_from_parity(H_x, H_z, d, 0.05, 0.5, type)
     # print(repr(my_c)) same between files
-    d_dict[d] = get_log_error_circuit_level(p_list, H_x,H_z, type, eta, d, num_shots)
+    # d_dict[d] = circuit.get_log_error_circuit_level(p_list, H_x,H_z, type, eta, d, num_shots)
 
 
 # matching = Matching.from_stim_circuit(my_c)
