@@ -16,16 +16,18 @@ import sys
 # (3) modify to work on clifford deformed compass codes
 
 class CDCompassCodeCircuit:
-    def __init__(self, d, l, eta, type):
+    def __init__(self, d, l, eta, p, type):
         self.d = d
         self.l = l
         self.eta = eta
+        self.p = p # gate failure rate
         self.code = cc.CompassCode(d=d, l=l)
         self.H_x, self.H_z = self.code.H['X'], self.code.H['Z']
         self.log_x, self.log_z = self.code.logicals['X'], self.code.logicals['Z']
         self.type = type # str "X" or "Z", indicates the type of memory experiment / which stabilizer to measure
 
         self.qubit_order_d = self.check_order_d_elongated(type)
+        self.circuit = self.make_elongated_circuit_from_parity(p)
 
     #
     # Helper functions to make surface code circuits
@@ -410,71 +412,6 @@ class CDCompassCodeCircuit:
                     https://arxiv.org/pdf/1404.3747
         """
         pass
-
-
-############################################
-#
-# Functions to test the circuit outputs
-#
-############################################
-
-def get_num_log_errors(circuit, matching, num_shots):
-    sampler = circuit.compile_detector_sampler()
-    detection_events, observable_flips = sampler.sample(num_shots, separate_observables=True)
-    predictions = matching.decode_batch(detection_events)
-    
-    
-    num_errors = 0
-    for shot in range(num_shots):
-        actual_for_shot = observable_flips[shot]
-        predicted_for_shot = predictions[shot]
-        if not np.array_equal(actual_for_shot, predicted_for_shot):
-            num_errors += 1
-    return num_errors
-
-def get_num_log_errors_DEM(circuit, num_shots):
-    """
-    Get the number of logical errors from the detector error model
-    :param circuit: stim.Circuit object
-    :param num_shots: number of shots to sample
-    :return: number of logical errors
-    """
-    dem = circuit.detector_error_model(approximate_disjoint_errors=True) # what does the decompose do?
-    matchgraph = Matching.from_detector_error_model(dem)
-    sampler = circuit.compile_detector_sampler()
-    syndrome, obersvable_flips = sampler.sample(num_shots, separate_observables=True)
-    predictions = matchgraph.decode_batch(syndrome)
-    num_errors = np.sum(np.any(np.array(obersvable_flips) != np.array(predictions), axis=1))
-    return num_errors
-
-def get_log_error_circuit_level(p_list, H_x,H_z, type, eta, d, num_shots):
-    """
-    Get the logical error rate for a list of p values at the circuit level
-    :param p_list: list of p values
-    :param H_x: X parity check matrix
-    :param H_z: Z parity check matrix
-    :param type: type of memory experiment(X or Z)
-    :param eta: error rate
-    :param d: code distance
-    :param num_shots: number of shots to sample
-    :return: list of logical error rates
-    """
-    log_error_L = []
-    for p in p_list:
-        circuit = make_elongated_circuit_from_parity(H_x,H_z,d, p, eta, type)
-        log_errors = get_num_log_errors_DEM(circuit, num_shots)
-        log_error_L.append(log_errors/num_shots)
-    # print(log_error_L)
-    return log_error_L
-
-def get_log_error_p(p_list, H_x,H_z, type, eta, d, num_shots):
-    log_error_L = []
-    for p in p_list:
-        circuit = make_elongated_circuit_from_parity(H_x,H_z, d, p, eta, type)
-        matching = Matching.from_stim_circuit(circuit)
-        log_errors = get_num_log_errors(circuit, matching, num_shots)
-        log_error_L += [log_errors/num_shots]
-    return log_error_L
 
 
 

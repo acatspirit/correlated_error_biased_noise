@@ -33,6 +33,8 @@ class CorrelatedDecoder:
         self.H_x, self.H_z = compass_code.H['X'], compass_code.H['Z'] # parity check matrices from compass code class
         self.log_x, self.log_z = compass_code.logicals['X'], compass_code.logicals['Z'] # logical operators from compass code class
 
+        
+
 
 
     def depolarizing_err(self, p):
@@ -65,7 +67,12 @@ class CorrelatedDecoder:
         errors[0] = np.where((choices == 1) | (choices == 3), 1, 0)  # X or Y error
         errors[1] = np.where((choices == 2) | (choices == 3), 1, 0)  # Z or Y error
         return errors
-
+    
+    #
+    #
+    # Decoder functions
+    #
+    #
 
     def decoding_failures(self,p, shots, error_type):
         """ finds the number of logical errors after decoding
@@ -179,6 +186,84 @@ class CorrelatedDecoder:
         num_errors_z = np.sum((correction_x + err_vec_z) @ self.L_x % 2)
         
         return num_errors_x, num_errors_z
+    
+
+    #
+    #
+    # Circuit functions
+    #
+    #
+
+    def get_num_log_errors(self, circuit, num_shots):
+        """
+        Get the number of logical errors from a circuit phenom. model, not the detector error model
+        :param circuit: stim.Circuit object
+        :param num_shots: number of shots to sample
+        :return: number of logical errors
+        """
+        matching = Matching.from_stim_circuit(circuit)
+        sampler = circuit.compile_detector_sampler()
+        detection_events, observable_flips = sampler.sample(num_shots, separate_observables=True)
+        predictions = matching.decode_batch(detection_events)
+        
+        
+        num_errors = 0
+        for shot in range(num_shots):
+            actual_for_shot = observable_flips[shot]
+            predicted_for_shot = predictions[shot]
+            if not np.array_equal(actual_for_shot, predicted_for_shot):
+                num_errors += 1
+        return num_errors
+
+    def get_num_log_errors_DEM(self, circuit, num_shots):
+        """
+        Get the number of logical errors from the detector error model
+        :param circuit: stim.Circuit object
+        :param num_shots: number of shots to sample
+        :return: number of logical errors
+        """
+        dem = circuit.detector_error_model(approximate_disjoint_errors=True) # what does the decompose do?
+        matchgraph = Matching.from_detector_error_model(dem)
+        sampler = circuit.compile_detector_sampler()
+        syndrome, obersvable_flips = sampler.sample(num_shots, separate_observables=True)
+        predictions = matchgraph.decode_batch(syndrome)
+        num_errors = np.sum(np.any(np.array(obersvable_flips) != np.array(predictions), axis=1))
+        return num_errors
+
+    def get_log_error_circuit_level(self, p_list, meas_type, num_shots):
+        """
+        Get the logical error rate for a list of physical error rates of gates at the circuit level
+        :param p_list: list of p values
+        :param meas_type: type of memory experiment(X or Z), stabilizers measured
+        :param num_shots: number of shots to sample
+        :return: list of logical error rates
+        """
+
+        log_error_L = []
+        for p in p_list:
+            # make the circuit
+            circuit = cc_circuit.CDCompassCodeCircuit(self.d, self.l, self.eta, p, meas_type)
+
+            log_errors = self.get_num_log_errors_DEM(circuit.circuit, num_shots)
+            log_error_L.append(log_errors/num_shots)
+
+        return log_error_L
+
+    def get_log_error_p(self, p_list, meas_type, num_shots):
+        """ 
+        Get the logical error rate for a list of physical error rates of gates at code cap using a circuit
+        :param p_list: list of p values
+        :param meas_type: type of memory experiment(X or Z), stabilizers measured
+        :param num_shots: number of shots to sample
+        :return: list of logical error rates
+        """
+        log_error_L = []
+        for p in p_list:
+            # make the circuit
+            circuit = cc_circuit.CDCompassCodeCircuit(self.d, self.l, self.eta, p, meas_type)
+            log_errors = self.get_num_log_errors(circuit.circuit, num_shots)
+            log_error_L += [log_errors/num_shots]
+        return log_error_L
 
 
 
