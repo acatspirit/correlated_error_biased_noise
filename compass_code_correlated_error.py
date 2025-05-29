@@ -305,7 +305,7 @@ def get_data(num_shots, d_list, l, p_list, eta, corr_type, circuit_data):
                 curr_row = {"d":d, "num_shots":num_shots, "p":p_list[i], "l": l, "eta":eta, "error_type":"X_Mem", "num_log_errors":log_error/num_shots, "time_stamp":datetime.now()}
                 data = pd.concat([data, pd.DataFrame([curr_row])], ignore_index=True)
             for i,log_error in enumerate(log_errors_z):
-                curr_row = {"d":d, "num_shots":num_shots, "p":p, "l": l, "eta":eta, "error_type":"Z_Mem", "num_log_errors":log_error/num_shots, "time_stamp":datetime.now()}
+                curr_row = {"d":d, "num_shots":num_shots, "p":p_list[i], "l": l, "eta":eta, "error_type":"Z_Mem", "num_log_errors":log_error/num_shots, "time_stamp":datetime.now()}
                 data = pd.concat([data, pd.DataFrame([curr_row])], ignore_index=True)
 
         else:
@@ -540,6 +540,7 @@ def get_prob_scale(corr_type, eta):
 
 if __name__ == "__main__":
     task_id = int(os.environ['SLURM_ARRAY_TASK_ID'])
+    # task_id = "N/A" # for testing purposes, set to N/A
 
     # num_shots = 100000 # number of shots to sample
     num_shots = 100
