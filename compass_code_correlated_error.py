@@ -296,9 +296,11 @@ def get_data(num_shots, d_list, l, p_list, eta, corr_type, circuit_data):
                 circuit_x = cc_circuit.CDCompassCodeCircuit(d, l, eta, [0.003, 0.001, p], "X")
                 circuit_z = cc_circuit.CDCompassCodeCircuit(d, l, eta, [0.003, 0.001, p], "Z")
     
-
-                log_errors_z = circuit_x.get_num_log_errors_DEM(circuit_x.circuit, num_shots)
-                log_errors_x = circuit_z.get_num_log_errors_DEM(circuit_z.circuit, num_shots)
+                decoder = CorrelatedDecoder(eta, d, l, corr_type)
+                log_errors_x = decoder.get_num_log_errors_DEM(circuit_x.circuit, num_shots)
+                log_errors_z = decoder.get_num_log_errors_DEM(circuit_z.circuit, num_shots)
+                # log_errors_z = circuit_x.get_num_log_errors_DEM(circuit_x.circuit, num_shots)
+                # log_errors_x = circuit_z.get_num_log_errors_DEM(circuit_z.circuit, num_shots)
 
                 for i in range(len(log_errors_x)):
                     curr_row = {"d":d, "num_shots":num_shots, "p":p, "l": l, "eta":eta, "error_type":"X_Mem", "num_log_errors":log_errors_x[i]/num_shots, "time_stamp":datetime.now()}
