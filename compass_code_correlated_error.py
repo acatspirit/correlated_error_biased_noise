@@ -539,15 +539,13 @@ def get_prob_scale(corr_type, eta):
 #
 
 if __name__ == "__main__":
-    # task_id = int(os.environ['SLURM_ARRAY_TASK_ID'])
-    # task_id = "N/A" # for testing purposes, set to N/A
+    task_id = int(os.environ['SLURM_ARRAY_TASK_ID'])
 
-    # num_shots = 100000 # number of shots to sample
-    num_shots = 100
+    num_shots = 100000 # number of shots to sample
     circuit_data = True # whether circuit level or code cap data is desired
     d_list = [7, 9, 11]
     d_dict = {}
-    l=3 # elongation parameter of compass code
+    l=2 # elongation parameter of compass code
     p_list = np.linspace(0.001, 0.01, 20)
     eta = 0.5 # the degree of noise bias
     corr_type = "CORR_ZX"
@@ -564,25 +562,11 @@ if __name__ == "__main__":
         elif corr_type == "CORR_XZ":
             output_file = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/xz_corr_err_data.csv'
 
-    # ps = [0.003, 0.001, 0.001] # the ps for the circuit, not the p_list
-    # # testing the circuit
-    # circuit = cc_circuit.CDCompassCodeCircuit(d_list[2], l, eta, ps, "X")
-    # decoder = CorrelatedDecoder(eta, d_list[2], l, corr_type)
-    # prob_scale = get_prob_scale(corr_type, eta)
-
-    # d_dict[d_list[2]] = decoder.get_log_error_circuit_level(p_list, "X", num_shots) # z logical errors
-
-    # for d in d_dict:
-    #     plt.plot(p_list*prob_scale["Z"], d_dict[d], label=f"d={d}")
-    # plt.xlabel("p")
-    # plt.ylabel(f"Z Logical Errors ")
-    # plt.legend()
-    # plt.show()
 
 
     
     # run this to get data from the dcc
-    # write_data(num_shots, d_list, l, p_list, eta, task_id, corr_type, circuit_data=circuit_data)
+    write_data(num_shots, d_list, l, p_list, eta, task_id, corr_type, circuit_data=circuit_data)
     # run this once you have data and want to combo it to one csv
     # concat_csv(folder_path, output_file)
 
@@ -593,7 +577,7 @@ if __name__ == "__main__":
 
 
     # to plot the data
-    df = pd.read_csv(output_file)
+    # df = pd.read_csv(output_file)
     # df_larger_p = df[df['p'] > 0.05]
     # # df['time_stamp'] = pd.to_datetime(df['time_stamp'])
     # # today = datetime.now().date()
@@ -607,7 +591,7 @@ if __name__ == "__main__":
     # print(threshold, confidence)
 
     # threshold_plot(df, p_th_init, p_diff, eta, l, num_shots, "Z", output_file, loglog=True, averaging=True,show_threshold=True)
-    full_error_plot(df, eta, l, num_shots, corr_type, output_file, loglog=False, averaging=True)
+    # full_error_plot(df, eta, l, num_shots, corr_type, output_file, loglog=False, averaging=True)
 
 
 
