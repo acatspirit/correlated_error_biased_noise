@@ -5,7 +5,6 @@ from scipy import sparse, linalg
 import CompassCodes as cc
 import stim 
 import pandas as pd
-from compass_code_correlated_error import depolarizing_err
 import sys
 
 #
@@ -16,18 +15,18 @@ import sys
 # (3) modify to work on clifford deformed compass codes
 
 class CDCompassCodeCircuit:
-    def __init__(self, d, l, eta, p, type):
+    def __init__(self, d, l, eta, p_params, type):
         self.d = d
         self.l = l
         self.eta = eta
-        self.p = p # gate failure rate
+        self.ps = p_params # list: [gate error rate, measurement error rate, idling error rate]
         self.code = cc.CompassCode(d=d, l=l)
         self.H_x, self.H_z = self.code.H['X'], self.code.H['Z']
         self.log_x, self.log_z = self.code.logicals['X'], self.code.logicals['Z']
-        self.type = type # str "X" or "Z", indicates the type of memory experiment / which stabilizer to measure
+        self.type = type # str "X" or "Z", indicates the type of memory experiment / which stabilizer you measure
 
-        self.qubit_order_d = self.check_order_d_elongated(type)
-        self.circuit = self.make_elongated_circuit_from_parity(p)
+        self.qubit_order_d = self.check_order_d_elongated()
+        self.circuit = self.make_elongated_circuit_from_parity()
 
     #
     # Helper functions to make surface code circuits
@@ -78,81 +77,123 @@ class CDCompassCodeCircuit:
     def check_order_d_elongated(self):
         """ New order based on zigzag pattern in PRA (101)042312, 2020
         """
-        if self.type == "X": H = self.H_x
-        elif self.type == "Z": H = self.H_z
+        stab_size = (self.l)*2# the size of the largest stabilizer
 
         # create the order dictionary to store the qubit ordering for each plaquette
-        order_d = {}
-        for row in range(H.shape[0]):
-            order_d[row] = []
+        order_d_x = {}
+        order_d_z = {}
+        for i in range(stab_size):
+            order_d_x[i] = []
+            order_d_z[i] = []
 
         # get the qubit ordering for each plaquette
-        for row in range(H.shape[0]):
-            start = H.indptr[row]
-            end = H.indptr[row+1]
-            qubits = sorted(H.indices[start:end]) # the qubits in the plaquette
+        for row in range(self.H_x.shape[0]):
+            start = self.H_x.indptr[row]
+            end = self.H_x.indptr[row+1]
+            qubits = sorted(self.H_x.indices[start:end]) # the qubits in the plaquette
+
+
+            for i, qubit in enumerate(qubits):
+                order_d_x[i] += [(qubit, row)]
+        
+        
+        for row in range(self.H_z.shape[0]):
+            start = self.H_z.indptr[row]
+            end = self.H_z.indptr[row+1]
+            qubits = sorted(self.H_z.indices[start:end])
+
+            if len(qubits) == 2 and (qubits[0]-qubits[1])%self.d == 0 and qubits[0]%self.d == 0: # if the two qubit stabilizer is on the left bndry
+                order_d_z[stab_size//2] += [(qubits[0], row)]
+                order_d_z[stab_size - 1] += [(qubits[1], row)]
+
+            elif len(qubits) == 2 and (qubits[0]-qubits[1])%self.d == 0 and qubits[0]%self.d != 0: # if the two qubit stabilizer is on right bndry
+                order_d_z[0] += [(qubits[0], row)]
+                order_d_z[stab_size//2 + 1] += [(qubits[1], row)]
             
-            if type == "Z":
-                for i in range(len(qubits)//2):
-                    match_qubit_ind = np.where(qubits == (qubits[i] + d))[0][0]
-                    order_d[row] += [(qubits[i], row)]
-                    order_d[row] += [(qubits[match_qubit_ind], row)]
+            else:
+                for i in range(len(qubits)//2): # bulk of the stabilizers
+                    match_qubit_ind = np.where(qubits == (qubits[i] + self.d))[0][0]
+                    order_d_z[i] += [(qubits[i], row)]
+                    order_d_z[i+(len(qubits)//2)] += [(qubits[match_qubit_ind], row)]
 
-            if type == "X":
-                for qubit in qubits:
-                    order_d[row] += [(qubit, row)]
-        return order_d
+        return order_d_x, order_d_z
 
-    def qubit_to_plaq_d(self):
+    def qubit_to_stab_d(self):  
         """ Given a parity check matrix, returns a dictionary of qubits to plaquettes
             Returns: (dict) qubit to plaquette mapping
         """
-        if self.type == "X": H = self.H_x
-        elif self.type == "Z": H = self.H_z
+        rows_x, cols_x, values = sparse.find(self.H_x)
+        rows_z, cols_z, values = sparse.find(self.H_z)
+        d_x = {}
+        d_z = {}
+        for i in range(len(cols_x)):
+            q = cols_x[i]
+            plaq = rows_x[i]
 
-        rows, cols, values = sparse.find(H)
-        d = {}
-        for i in range(len(cols)):
-            q = cols[i]
-            plaq = rows[i]
-
-            if q not in d:
-                d[q] = [plaq]
+            if q not in d_x:
+                d_x[q] = [plaq]
             else:
-                d[q] += [plaq]
-        return d
+                d_x[q] += [plaq]
+        
+        for i in range(len(cols_z)):
+            q = cols_z[i]
+            plaq = rows_z[i]
 
+            if q not in d_z:
+                d_z[q] = [plaq]
+            else:
+                d_z[q] += [plaq]
+
+        return d_x, d_z
+    
+    
     def convert_sparse_to_d(self):
-        if self.type == "X": H = self.H_x
-        elif self.type == "Z": H = self.H_z
 
-        rows, cols, values = sparse.find(H)
-        d = {}
+        rows_x, cols_x, values = sparse.find(self.H_x)
+        rows_z, cols_z, values = sparse.find(self.H_z)
+        d_x = {}
+        d_z = {}
 
-        for i in range(len(rows)):
-            plaq = rows[i]
-            qubit = cols[i]
+        for i in range(len(rows_x)):
+            plaq = rows_x[i]
+            qubit = cols_x[i]
 
-            if plaq not in d:
-                d[plaq] = [cols[i]]
+            if plaq not in d_x:
+                d_x[plaq] = [cols_x[i]]
             else:
-                d[plaq] += [cols[i]]
-        sorted_d = dict(sorted(zip(d.keys(),d.values())))
-        return sorted_d
+                d_x[plaq] += [cols_x[i]]
+        sorted_d_x = dict(sorted(zip(d_x.keys(),d_x.values())))
+
+
+        for i in range(len(rows_z)):
+            plaq = rows_z[i]
+            qubit = cols_z[i]
+
+            if plaq not in d_z:
+                d_z[plaq] = [cols_z[i]]
+            else:
+                d_z[plaq] += [cols_z[i]]
+        sorted_d_z = dict(sorted(zip(d_z.keys(),d_z.values())))
+        return sorted_d_x, sorted_d_z
 
 
     def clifford_deform_parity_mats(self):
         """ Add clifford deformation to parity matrices for elongated compass code with elongation l and
-            distance d. Clifford deformations are added according to Julie's model (i.e. each weight 4
+            distance d. Clifford deformations are added according to Julie's model by the transformation XZZXonSq, or transform 2 (i.e. each weight 4
             X stabilizer has 2 H applied to antidiagonal)
-            inputs:
-                H_x - (scipy sparse mat) the X parity check matrix
-                H_z - (scipy sparse mat) the Z parity check matrix
-                d - (int) code distance, must be odd
-                l - (int) elongation parameter
             returns: (np array) H_x and H_z with clifford deformations
         """
-        return self.H_x, self.H_z
+        H_x, H_z = self.H_x, self.H_z
+
+        # apply transformation row by row
+        for row in range(H_x.shape[0]):
+            start = self.H_x.indptr[row]
+            end = self.H_x.indptr[row+1]
+            qubit_inds = self.H_x.indices[start:end] # the qubits in the stabilizer
+            
+
+
+        return H_x, H_z
     
 
 
@@ -271,48 +312,64 @@ class CDCompassCodeCircuit:
             circuit.append("OBSERVABLE_INCLUDE", [stim.target_rec(- num_qubits + q) for q in range(d)], 0)
         print(repr(circuit))
         return circuit
+    
 
-    def make_elongated_circuit_from_parity(self, p_err):
+    def make_elongated_circuit_from_parity(self):
         """ 
         create a surface code memory experiment circuit from a parity check matrix
+        Inputs:
+                circuit - (stim.Circuit) the circuit to add noise to
+                p_gate - (float) the probability of a gate error
+                p_meas - (float) the probability of a measurement error
+                p_i - (float) the probability of an idling error
+            Returns: (stim.Circuit) the circuit with noise added
 
-        I think the error type I wanna use is pauli_channel_1(px, py, pz)
+            The error model is the biased noise model from the paper: PRA (101)042312, 2020
+            - 2-qubit gates are followed by 2-qubit depolarizing channel with p = p_gate (x)
+            - measurement outcomes are followed by a bit flip with probability p_meas (x)
+            - idling qubits are followed by a dephasing channel with probability p_i (x)
+
         """
-        px = 0.5*p_err/(1+self.eta)
-        pz = p_err*(self.eta/(1+self.eta))
+        p_gate = self.ps[0] # gate error on two-qubit gates
+        p_meas = self.ps[1] # measurement error
+        p_i = self.ps[2] # idling error, to be scanned over 
+        
+        px = 0.5*p_i/(1+self.eta)
+        pz = p_i*(self.eta/(1+self.eta))
 
         # make the circuit
         circuit = stim.Circuit()
 
         # get the qubit ordering
-        plaq_d_x = self.convert_sparse_to_d()
-        plaq_d_z = self.convert_sparse_to_d()
+        stab_d_x,stab_d_z = self.convert_sparse_to_d()
         
-        # get the qubit ordered properly for each plaquette
-        order_d_x = self.check_order_d_elongated()
-        order_d_z = self.check_order_d_elongated()
+        # get the qubit ordered properly for each stabilizer
+        order_d_x, order_d_z = self.check_order_d_elongated()
         
-        # get the plaquettes that belong to each qubit
-        qubit_d_x = self.qubit_to_plaq_d()
-        qubit_d_z = self.qubit_to_plaq_d()
+        # get the stabilizer that belong to each qubit
+        qubit_d_x,qubit_d_z = self.qubit_to_stab_d()
         
         # general parameters
-        num_ancillas = len(plaq_d_x) + len(plaq_d_z) # total number of plaquettes to initialize
+        num_ancillas = len(stab_d_x) + len(stab_d_z) # total number of stabilizer to initialize
         num_qubits_x = len(qubit_d_x)
         num_qubits_z = len(qubit_d_z)
+
+        # print(num_ancillas, num_qubits_x, num_qubits_z)
+        # print(self.H_x.shape, self.H_z.shape)
+        # print(stab_d_x, stab_d_z)
         
         data_q_x_list = [num_ancillas + q for q in list(qubit_d_x.keys())] # all the x data qubits
         data_q_z_list = [num_ancillas + q for q in list(qubit_d_z.keys())] # all the z data qubits
         data_q_list = data_q_x_list # change this later when wanna do X and Z seperately
 
 
-        # convention - X plaqs first, then Z plaqs starting with 0
-        full_plaq_L = range(num_ancillas)
+        # convention - X stabs first, then Z stabs starting with 0
+        full_stab_L = range(num_ancillas)
         
         # reset the ancillas
-        circuit.append("R", full_plaq_L)
-        circuit.append("X_ERROR", full_plaq_L, px) # add the error to the ancillas
-        circuit.append("H", plaq_d_x) # only the X plaqs need H
+        circuit.append("R", full_stab_L)
+        circuit.append("X_ERROR", full_stab_L, px) # add the error to the ancillas
+        circuit.append("H", stab_d_x) # only the X stabs need H
 
         # reset the data qubits
         for q in range(len(qubit_d_x)): # go through all the qubits, might need to change when qubit_d_x doesn't have all the qubits
@@ -326,80 +383,85 @@ class CDCompassCodeCircuit:
 
         for order in order_d_x: # go through the qubits in order of gates
             q_x_list = order_d_x[order] # (qubit, ancilla)
-            # q_z_list = order_d_z[order] # for the idling error on the Z qubits
+            q_idling_list = []
+            for inactive_ord, q_list in order_d_z.items():
+                if inactive_ord != order:
+                    q_idling_list.extend(q_list)
+            
             
             for q,p in q_x_list:
                 circuit.append("CX", [p, q + num_ancillas])
             
             for q,p in q_x_list:
                 # CNOT gate errors
-                # circuit.append("PAULI_CHANNEL_2", [p, q + num_ancillas], [px, px,pz,px,px**2, px**2, px*pz, px,px**2, px**2, px*pz, pz, pz*px, pz*px, pz**2]) # how do I do the 2-qubit error?
-                circuit.append("DEPOLARIZE2", [q + num_ancillas, p + len(plaq_d_x)], p_err)
-            # for q,p in q_z_list:
-            #     # Idling error on the Z qubits
-            #     circuit.append("PAULI_CHANNEL_1", [q + num_ancillas], [px, px,pz]) 
+                circuit.append("DEPOLARIZE2", [q + num_ancillas, p + len(stab_d_x)], p_gate) # CNOT gate errors
+            for q,p in q_idling_list:
+                # Idling error on the Z qubits
+                circuit.append("PAULI_CHANNEL_1", [q + num_ancillas], [0, 0, p_i]) 
             circuit.append("TICK")
 
 
         for order in order_d_z: # go through the qubits in order of gates
             q_z_list = order_d_z[order]
-            # q_x_list = order_d_x[order] # for the idling error on the X qubits
+            q_idling_list = []
+            for inactive_ord, q_list in order_d_z.items():
+                if inactive_ord != order:
+                    q_idling_list.extend(q_list)
 
             for q,p in q_z_list:
-                circuit.append("CX", [q + num_ancillas, p + len(plaq_d_x)])
+                circuit.append("CX", [q + num_ancillas, p + len(stab_d_x)])
             for q,p in q_z_list:
-                # circuit.append("PAULI_CHANNEL_2", [q + num_ancillas, p + len(plaq_d_x)], [px, px,pz,px,px**2, px**2, px*pz, px,px**2, px**2, px*pz, pz, pz*px, pz*px, pz**2]) # CNOT gate errors
-                circuit.append("DEPOLARIZE2", [q + num_ancillas, p + len(plaq_d_x)], p_err) # CNOT gate errors
+                circuit.append("DEPOLARIZE2", [q + num_ancillas, p + len(stab_d_x)], p_gate) # CNOT gate errors
 
-            # for q,p in q_x_list:
-            #     circuit.append("PAULI_CHANNEL_1", [q + num_ancillas], [px, px,pz]) # Idling error on the X qubits
+            for q,p in q_idling_list:
+                # Idling error on the qubits
+                circuit.append("PAULI_CHANNEL_1", [q + num_ancillas], [0, 0, p_i]) 
         
-        circuit.append("H", plaq_d_x)
-        circuit.append("PAULI_CHANNEL_1", full_plaq_L, [px,px,pz])
+        circuit.append("H", stab_d_x)
+        circuit.append("PAULI_CHANNEL_1", data_q_z_list, [0,0,p_i])
 
-        circuit.append("X_ERROR", full_plaq_L, px) # add the error to the ancillas
-        circuit.append("MR", full_plaq_L)
-        circuit.append("X_ERROR", full_plaq_L, px) # add the error to the ancillas
-        circuit.append("PAULI_CHANNEL_1", data_q_x_list, [px,px,pz]) # add the error to the ancillas
+        circuit.append("X_ERROR", full_stab_L, p_meas) # add the error to the ancillas
+        circuit.append("MR", full_stab_L)
+        circuit.append("X_ERROR", full_stab_L, p_meas) # add the error to the ancillas
 
-        # for X mem measure X plaqs
+        # for X mem measure X stabs
         if type == "X":
-            for i in range(len(plaq_d_x)):
+            for i in range(len(stab_d_x)):
                 circuit.append("DETECTOR", stim.target_rec(-num_ancillas + i))
 
             circuit.append("MX", data_q_x_list)
 
-            # reconstruct each plaquette
-            for i in plaq_d_x: 
-                q_x_list = plaq_d_x[i] # get the qubits in the plaq
+            # reconstruct each stabuette
+            for i in stab_d_x: 
+                q_x_list = stab_d_x[i] # get the qubits in the stab
                 anc = i 
                 detector_list =  [-num_qubits_x + q for q in q_x_list] + [-num_ancillas + anc - num_qubits_x]
                 
                 circuit.append("DETECTOR", [stim.target_rec(d) for d in detector_list])
         
             # construct the logical observable to include - pick the top line of qubits since this is an X meas
-            circuit.append("OBSERVABLE_INCLUDE", [stim.target_rec(- num_qubits_x + d*q) for q in range(d)], 0) # parity of the whole line needs to be the same
+            circuit.append("OBSERVABLE_INCLUDE", [stim.target_rec(- num_qubits_x + self.d*q) for q in range(self.d)], 0) # parity of the whole line needs to be the same
         
-        # Z mem measure Z plaqs
+        # Z mem measure Z stabs
         if type == "Z":
-            for i in range(len(plaq_d_z)):
-                circuit.append("DETECTOR", stim.target_rec(-num_ancillas + i + len(plaq_d_x)))
+            for i in range(len(stab_d_z)):
+                circuit.append("DETECTOR", stim.target_rec(-num_ancillas + i + len(stab_d_x)))
 
             circuit.append("M", data_q_list)
 
-            # time to reconstruct each plaquette
-            for i in plaq_d_z: 
+            # time to reconstruct each stabuette
+            for i in stab_d_z: 
                 
-                q_z_list = plaq_d_z[i] # get the qubits in the plaq
+                q_z_list = stab_d_z[i] # get the qubits in the stab
                 anc = i 
-                detector_list =  [-num_qubits_z + q for q in q_z_list] + [-num_ancillas +len(plaq_d_x)+ anc - num_qubits_z]
+                detector_list =  [-num_qubits_z + q for q in q_z_list] + [-num_ancillas +len(stab_d_x)+ anc - num_qubits_z]
                 circuit.append("DETECTOR", [stim.target_rec(d) for d in detector_list])
         
             # construct the logical observable to include - pick the top line of qubits since this is an X meas
-            circuit.append("OBSERVABLE_INCLUDE", [stim.target_rec(-num_qubits_z + q) for q in range(d)], 0)
+            circuit.append("OBSERVABLE_INCLUDE", [stim.target_rec(-num_qubits_z + q) for q in range(self.d)], 0)
         return circuit
 
-    def make_clifford_deformed_circuit_from_parity(self, p_err):
+    def make_clifford_deformed_circuit_from_parity(self):
         """ Given a parity check matrix pair, generates a STIM circuit and detectors to implement the outlined code.
             Inputs:
                 H - (scipy sparse mat) the parity check matrix
@@ -411,7 +473,11 @@ class CDCompassCodeCircuit:
                     require integrating the circuits to avoid hook errors. See fig 3. of this paper: 
                     https://arxiv.org/pdf/1404.3747
         """
-        pass
+        circuit = stim.Circuit()
+        
+
+
+        return circuit
 
 
 
@@ -424,16 +490,21 @@ d_dict = {5:[], 7:[], 9:[], 11:[]}
 num_shots = 100000
 l = 3
 type_d = {0:"X", 1:"Z"}
-type=type_d[1]
+type=type_d[0]
 eta = 1.67
 prob_scale = {'X': 0.5/(1+eta), 'Z': (1+2*eta)/(2*(1+eta)), 'CORR_XZ': 1, 'TOTAL':1}
 
 
+circuit = CDCompassCodeCircuit(5, l, eta, [0.003, 0.001, 0.05], type)
+circuit.clifford_deform_parity_mats()
 
 
-for d in list(d_dict.keys()):
-    circuit = CDCompassCodeCircuit(d, l, eta, 0.05, type)
-    # print('circuit:')
+# order_d = circuit.check_order_d_elongated() # looks mostly good
+# print(circuit.H_x)
+# print(order_d)
+# for d in list(d_dict.keys()):
+#     circuit = CDCompassCodeCircuit(d, l, eta, 0.05, type)
+#     # print('circuit:')
     # my_c = make_elongated_circuit_from_parity(H_x, H_z, d, 0.05, 0.5, type)
     # print(repr(my_c)) same between files
     # d_dict[d] = circuit.get_log_error_circuit_level(p_list, H_x,H_z, type, eta, d, num_shots)
@@ -441,10 +512,10 @@ for d in list(d_dict.keys()):
 
 # matching = Matching.from_stim_circuit(my_c)
 # matching.draw()
-for d in d_dict:
-    plt.plot(p_list*prob_scale[type], d_dict[d], label=f"d={d}")
-plt.xlabel("p")
-plt.ylabel(f"{[v for k, v in type_d.items() if v != type][0]} Logical Errors ")
-plt.legend()
-# plt.savefig("l3_eta1.67_zmem.png", dpi=300)
-plt.show()
+# for d in d_dict:
+#     plt.plot(p_list*prob_scale[type], d_dict[d], label=f"d={d}")
+# plt.xlabel("p")
+# plt.ylabel(f"{[v for k, v in type_d.items() if v != type][0]} Logical Errors ")
+# plt.legend()
+# # plt.savefig("l3_eta1.67_zmem.png", dpi=300)
+# plt.show()

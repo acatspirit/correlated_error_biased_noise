@@ -242,7 +242,7 @@ class CorrelatedDecoder:
         log_error_L = []
         for p in p_list:
             # make the circuit
-            circuit = cc_circuit.CDCompassCodeCircuit(self.d, self.l, self.eta, p, meas_type)
+            circuit = cc_circuit.CDCompassCodeCircuit(self.d, self.l, self.eta, [0.003, 0.001, p], meas_type) # change list of ps dependent on model
 
             log_errors = self.get_num_log_errors_DEM(circuit.circuit, num_shots)
             log_error_L.append(log_errors/num_shots)
@@ -260,7 +260,7 @@ class CorrelatedDecoder:
         log_error_L = []
         for p in p_list:
             # make the circuit
-            circuit = cc_circuit.CDCompassCodeCircuit(self.d, self.l, self.eta, p, meas_type)
+            circuit = cc_circuit.CDCompassCodeCircuit(self.d, self.l, self.eta, [0.003, 0.001, p], meas_type)
             log_errors = self.get_num_log_errors(circuit.circuit, num_shots)
             log_error_L += [log_errors/num_shots]
         return log_error_L
@@ -273,7 +273,7 @@ class CorrelatedDecoder:
 #
 ############################################
 
-def get_data(num_shots, d_list, l, p_list, eta, corr_type, circuit_data=False):
+def get_data(num_shots, d_list, l, p_list, eta, corr_type, circuit_data):
     """ Generate logical error rates for x,z, correlatex z, and total errors
         via MC sim in decoding_failures_correlated and add it to a shared pandas df
         
@@ -293,18 +293,19 @@ def get_data(num_shots, d_list, l, p_list, eta, corr_type, circuit_data=False):
     for d in d_list:
         if circuit_data:
             for p in p_list:
-                circuit_x = cc_circuit.CDCompassCodeCircuit(d, l, eta, p, "X")
-                circuit_z = cc_circuit.CDCompassCodeCircuit(d, l, eta, p, "Z")
+                circuit_x = cc_circuit.CDCompassCodeCircuit(d, l, eta, [0.003, 0.001, p], "X")
+                circuit_z = cc_circuit.CDCompassCodeCircuit(d, l, eta, [0.003, 0.001, p], "Z")
+    
 
-                log_errors_x = circuit_x.get_num_log_errors_DEM(circuit_x.circuit, num_shots)
-                log_errors_z = circuit_z.get_num_log_errors_DEM(circuit_z.circuit, num_shots)
+                log_errors_z = circuit_x.get_num_log_errors_DEM(circuit_x.circuit, num_shots)
+                log_errors_x = circuit_z.get_num_log_errors_DEM(circuit_z.circuit, num_shots)
 
                 for i in range(len(log_errors_x)):
-                    curr_row = {"d":d, "num_shots":num_shots, "p":p, "l": l, "eta":eta, "error_type":"X Mem", "num_log_errors":log_errors_x[i]/num_shots, "time_stamp":datetime.now()}
+                    curr_row = {"d":d, "num_shots":num_shots, "p":p, "l": l, "eta":eta, "error_type":"X_Mem", "num_log_errors":log_errors_x[i]/num_shots, "time_stamp":datetime.now()}
                     data = pd.concat([data, pd.DataFrame([curr_row])], ignore_index=True)
                 
                 for i in range(len(log_errors_z)):
-                    curr_row = {"d":d, "num_shots":num_shots, "p":p, "l": l, "eta":eta, "error_type":"Z Mem", "num_log_errors":log_errors_z[i]/num_shots, "time_stamp":datetime.now()}
+                    curr_row = {"d":d, "num_shots":num_shots, "p":p, "l": l, "eta":eta, "error_type":"Z_Mem", "num_log_errors":log_errors_z[i]/num_shots, "time_stamp":datetime.now()}
                     data = pd.concat([data, pd.DataFrame([curr_row])], ignore_index=True)
 
         else:
@@ -337,7 +338,7 @@ def shots_averaging(num_shots, l, eta, err_type, in_df, file):
 
 
 
-def write_data(num_shots, d_list, l, p_list, eta, ID, corr_type, circuit_data=False):
+def write_data(num_shots, d_list, l, p_list, eta, ID, corr_type, circuit_data):
     """ Writes data from pandas df to a csv file, for use with SLURM arrays. Generates data for each slurm output on a CSV
         in: num_shots - the number of MC iterations
             l - the integer repition of the compass code
@@ -538,22 +539,49 @@ def get_prob_scale(corr_type, eta):
 #
 
 if __name__ == "__main__":
-    # task_id = int(os.environ['SLURM_ARRAY_TASK_ID'])
+    task_id = int(os.environ['SLURM_ARRAY_TASK_ID'])
 
-    num_shots = 10000
-    d_list = [11,13,15,17,19]
-    l=4 # elongation parameter of compass code
-    p_list = np.linspace(0.01, 0.5, 15)
-    eta = 1 # the degree of noise bias
+    # num_shots = 100000 # number of shots to sample
+    num_shots = 100
+    circuit_data = True # whether circuit level or code cap data is desired
+    d_list = [7, 9, 11]
+    d_dict = {}
+    l=2 # elongation parameter of compass code
+    p_list = np.linspace(0.001, 0.01, 20)
+    eta = 0.5 # the degree of noise bias
     corr_type = "CORR_ZX"
-    folder_path = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/corr_err_data/'
-    if corr_type == "CORR_ZX":
-        output_file = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/zx_corr_err_data.csv'
-    elif corr_type == "CORR_XZ":
-        output_file = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/xz_corr_err_data.csv'
+    if circuit_data:
+        folder_path = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/circuit_level_data/'
+        if corr_type == "CORR_ZX":
+            output_file = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/zx_circuit_data.csv'
+        elif corr_type == "CORR_XZ":
+            output_file = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/xz_circuit_data.csv'
+    else:
+        folder_path = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/corr_err_data/'
+        if corr_type == "CORR_ZX":
+            output_file = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/zx_corr_err_data.csv'
+        elif corr_type == "CORR_XZ":
+            output_file = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/xz_corr_err_data.csv'
 
+    # ps = []
+    # # testing the circuit
+    # circuit = cc_circuit.CDCompassCodeCircuit(d_list[0], l, eta, [0.003, 0.001, 0.05], "X")
+    # decoder = CorrelatedDecoder(eta, d_list[0], l, corr_type)
+    # prob_scale = get_prob_scale(corr_type, eta)
+
+    # d_dict[d_list[0]] = decoder.get_log_error_circuit_level(p_list, "X", num_shots)
+
+    # for d in d_dict:
+    #     plt.plot(p_list*prob_scale["X"], d_dict[d], label=f"d={d}")
+    # plt.xlabel("p")
+    # plt.ylabel(f"Z Logical Errors ")
+    # plt.legend()
+    # plt.show()
+
+
+    
     # run this to get data from the dcc
-    # write_data(num_shots, d_list, l, p_list, eta, task_id, corr_type)
+    write_data(num_shots, d_list, l, p_list, eta, task_id, corr_type, circuit_data=circuit_data)
     # run this once you have data and want to combo it to one csv
     # concat_csv(folder_path, output_file)
 
@@ -563,20 +591,20 @@ if __name__ == "__main__":
 
 
     # to plot the data
-    df = pd.read_csv(output_file)
+    # df = pd.read_csv(output_file)
     # df_larger_p = df[df['p'] > 0.05]
     # # df['time_stamp'] = pd.to_datetime(df['time_stamp'])
     # # today = datetime.now().date()
     # # df_today = df[df['time_stamp'].dt.date != today]
 
     # # print(df['time_stamp'].dtype)
-    p_th_init = 0.187
-    p_diff = 0.03
+    # p_th_init = 0.187
+    # p_diff = 0.03
 
     # threshold, confidence = get_threshold(df, p_th_init, p_diff, l, eta, corr_type)
     # print(threshold, confidence)
 
-    threshold_plot(df, p_th_init, p_diff, eta, l, num_shots, corr_type, output_file, loglog=True, averaging=True,show_threshold=True)
+    # threshold_plot(df, p_th_init, p_diff, eta, l, num_shots, corr_type, output_file, loglog=True, averaging=True,show_threshold=True)
     # full_error_plot(df, eta, l, num_shots, corr_type, output_file, loglog=True, averaging=True)
 
 
