@@ -406,7 +406,7 @@ def concat_csv(folder_path, output_file):
     for file in data_files:
         os.remove(file)
 
-def full_error_plot(full_df, curr_eta, curr_l, curr_num_shots, corr_type, file, loglog=False, averaging=True):
+def full_error_plot(full_df, curr_eta, curr_l, curr_num_shots, corr_type, file, loglog=False, averaging=True, circuit_level=False):
     """Make a plot of all 4 errors given a df with unedited contents"""
 
     prob_scale = get_prob_scale(corr_type, curr_eta)
@@ -422,7 +422,7 @@ def full_error_plot(full_df, curr_eta, curr_l, curr_num_shots, corr_type, file, 
     d_values = filtered_df['d'].unique()
 
     # Create a figure with subplots for each error type
-    fig, axes = plt.subplots(2, 2, figsize=(15, 10))
+    fig, axes = plt.subplots(len(error_types)//2, 2, figsize=(15, 5*len(error_types)//2))
     axes = axes.flatten()
     
 
@@ -531,7 +531,7 @@ def get_threshold(full_df, pth0, p_range, l, eta, corr_type, num_shots):
 def get_prob_scale(corr_type, eta):
     """ extract the amount to be scaled by given a noise bias and the type of error
     """
-    prob_scale = {'X': 0.5/(1+eta), 'Z': (1+2*eta)/(2*(1+eta)), corr_type: 1, 'TOTAL':1}
+    prob_scale = {'X': 0.5/(1+eta), 'Z': (1+2*eta)/(2*(1+eta)), corr_type: 1, 'TOTAL':1, 'X_Mem':  1, 'Z_Mem': 1}
     return prob_scale
 
 #
@@ -539,7 +539,7 @@ def get_prob_scale(corr_type, eta):
 #
 
 if __name__ == "__main__":
-    task_id = int(os.environ['SLURM_ARRAY_TASK_ID'])
+    # task_id = int(os.environ['SLURM_ARRAY_TASK_ID'])
     # task_id = "N/A" # for testing purposes, set to N/A
 
     # num_shots = 100000 # number of shots to sample
@@ -552,7 +552,7 @@ if __name__ == "__main__":
     eta = 0.5 # the degree of noise bias
     corr_type = "CORR_ZX"
     if circuit_data:
-        folder_path = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/circuit_level_data/'
+        folder_path = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/circuit_data/'
         if corr_type == "CORR_ZX":
             output_file = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/zx_circuit_data.csv'
         elif corr_type == "CORR_XZ":
@@ -582,9 +582,10 @@ if __name__ == "__main__":
 
     
     # run this to get data from the dcc
-    write_data(num_shots, d_list, l, p_list, eta, task_id, corr_type, circuit_data=circuit_data)
+    # write_data(num_shots, d_list, l, p_list, eta, task_id, corr_type, circuit_data=circuit_data)
     # run this once you have data and want to combo it to one csv
     # concat_csv(folder_path, output_file)
+
 
     # threshold today - 0.2075 ZX, 0.217
     # threshold old - 0.20 ZX, 0.22 
@@ -592,7 +593,7 @@ if __name__ == "__main__":
 
 
     # to plot the data
-    # df = pd.read_csv(output_file)
+    df = pd.read_csv(output_file)
     # df_larger_p = df[df['p'] > 0.05]
     # # df['time_stamp'] = pd.to_datetime(df['time_stamp'])
     # # today = datetime.now().date()
@@ -605,8 +606,8 @@ if __name__ == "__main__":
     # threshold, confidence = get_threshold(df, p_th_init, p_diff, l, eta, corr_type)
     # print(threshold, confidence)
 
-    # threshold_plot(df, p_th_init, p_diff, eta, l, num_shots, corr_type, output_file, loglog=True, averaging=True,show_threshold=True)
-    # full_error_plot(df, eta, l, num_shots, corr_type, output_file, loglog=True, averaging=True)
+    # threshold_plot(df, p_th_init, p_diff, eta, l, num_shots, "Z", output_file, loglog=True, averaging=True,show_threshold=True)
+    full_error_plot(df, eta, l, num_shots, corr_type, output_file, loglog=False, averaging=True)
 
 
 

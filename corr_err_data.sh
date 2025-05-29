@@ -10,5 +10,4 @@
 #SBATCH --job-name=circ_l6_eta0.5_100_data.out                # How is your output is called, you n$
 #readarray -t PARAMS_ARRAY < params.txt
 #PARAMS=${PARAMS_ARRAY[(($SLURM_ARRAY_TASK_ID - 1))]}
-module load python/3.8.19
 python3 compass_code_correlated_error.py 
