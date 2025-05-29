@@ -236,7 +236,7 @@ class CorrelatedDecoder:
         :param p_list: list of p values
         :param meas_type: type of memory experiment(X or Z), stabilizers measured
         :param num_shots: number of shots to sample
-        :return: list of logical error rates
+        :return: list of logical error rates, opposite type of the measurement type (e.g. if meas_type is X, then Z logical errors are returned)
         """
 
         log_error_L = []
@@ -292,23 +292,21 @@ def get_data(num_shots, d_list, l, p_list, eta, corr_type, circuit_data):
 
     for d in d_list:
         if circuit_data:
-            for p in p_list:
-                circuit_x = cc_circuit.CDCompassCodeCircuit(d, l, eta, [0.003, 0.001, p], "X")
-                circuit_z = cc_circuit.CDCompassCodeCircuit(d, l, eta, [0.003, 0.001, p], "Z")
+            
+                # circuit_x = cc_circuit.CDCompassCodeCircuit(d, l, eta, [0.003, 0.001, p], "X")
+                # circuit_z = cc_circuit.CDCompassCodeCircuit(d, l, eta, [0.003, 0.001, p], "Z")
     
-                decoder = CorrelatedDecoder(eta, d, l, corr_type)
-                log_errors_x = decoder.get_num_log_errors_DEM(circuit_x.circuit, num_shots)
-                log_errors_z = decoder.get_num_log_errors_DEM(circuit_z.circuit, num_shots)
-                # log_errors_z = circuit_x.get_num_log_errors_DEM(circuit_x.circuit, num_shots)
-                # log_errors_x = circuit_z.get_num_log_errors_DEM(circuit_z.circuit, num_shots)
+            decoder = CorrelatedDecoder(eta, d, l, corr_type)
+            log_errors_z = decoder.get_log_error_circuit_level(p_list, "X", num_shots) # get the Z logical errors from X memory experiment
+            log_errors_x = decoder.get_log_error_circuit_level(p_list, "Z", num_shots) # get the X logical errors from Z memory experiment
 
-                for i in range(len(log_errors_x)):
-                    curr_row = {"d":d, "num_shots":num_shots, "p":p, "l": l, "eta":eta, "error_type":"X_Mem", "num_log_errors":log_errors_x[i]/num_shots, "time_stamp":datetime.now()}
-                    data = pd.concat([data, pd.DataFrame([curr_row])], ignore_index=True)
-                
-                for i in range(len(log_errors_z)):
-                    curr_row = {"d":d, "num_shots":num_shots, "p":p, "l": l, "eta":eta, "error_type":"Z_Mem", "num_log_errors":log_errors_z[i]/num_shots, "time_stamp":datetime.now()}
-                    data = pd.concat([data, pd.DataFrame([curr_row])], ignore_index=True)
+
+            for i,log_error in enumerate(log_errors_x):
+                curr_row = {"d":d, "num_shots":num_shots, "p":p_list[i], "l": l, "eta":eta, "error_type":"X_Mem", "num_log_errors":log_error/num_shots, "time_stamp":datetime.now()}
+                data = pd.concat([data, pd.DataFrame([curr_row])], ignore_index=True)
+            for i,log_error in enumerate(log_errors_z):
+                curr_row = {"d":d, "num_shots":num_shots, "p":p, "l": l, "eta":eta, "error_type":"Z_Mem", "num_log_errors":log_error/num_shots, "time_stamp":datetime.now()}
+                data = pd.concat([data, pd.DataFrame([curr_row])], ignore_index=True)
 
         else:
             decoder = CorrelatedDecoder(eta, d, l, corr_type)
@@ -548,7 +546,7 @@ if __name__ == "__main__":
     circuit_data = True # whether circuit level or code cap data is desired
     d_list = [7, 9, 11]
     d_dict = {}
-    l=2 # elongation parameter of compass code
+    l=3 # elongation parameter of compass code
     p_list = np.linspace(0.001, 0.01, 20)
     eta = 0.5 # the degree of noise bias
     corr_type = "CORR_ZX"
@@ -565,16 +563,16 @@ if __name__ == "__main__":
         elif corr_type == "CORR_XZ":
             output_file = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/xz_corr_err_data.csv'
 
-    # ps = []
+    # ps = [0.003, 0.001, 0.001] # the ps for the circuit, not the p_list
     # # testing the circuit
-    # circuit = cc_circuit.CDCompassCodeCircuit(d_list[0], l, eta, [0.003, 0.001, 0.05], "X")
-    # decoder = CorrelatedDecoder(eta, d_list[0], l, corr_type)
+    # circuit = cc_circuit.CDCompassCodeCircuit(d_list[2], l, eta, ps, "X")
+    # decoder = CorrelatedDecoder(eta, d_list[2], l, corr_type)
     # prob_scale = get_prob_scale(corr_type, eta)
 
-    # d_dict[d_list[0]] = decoder.get_log_error_circuit_level(p_list, "X", num_shots)
+    # d_dict[d_list[2]] = decoder.get_log_error_circuit_level(p_list, "X", num_shots) # z logical errors
 
     # for d in d_dict:
-    #     plt.plot(p_list*prob_scale["X"], d_dict[d], label=f"d={d}")
+    #     plt.plot(p_list*prob_scale["Z"], d_dict[d], label=f"d={d}")
     # plt.xlabel("p")
     # plt.ylabel(f"Z Logical Errors ")
     # plt.legend()
