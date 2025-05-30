@@ -394,7 +394,8 @@ class CDCompassCodeCircuit:
             
             for q,p in q_x_list:
                 # CNOT gate errors
-                circuit.append("DEPOLARIZE2", [q + num_ancillas, p + len(stab_d_x)], p_gate) # CNOT gate errors
+                # circuit.append("DEPOLARIZE2", [q + num_ancillas, p + len(stab_d_x)], p_gate) # CNOT gate errors
+                circuit.append("DEPOLARIZE2", [p, q+num_ancillas], p_gate)
             for q,p in q_idling_list:
                 # Idling error on the Z qubits
                 circuit.append("PAULI_CHANNEL_1", [q + num_ancillas], [0, 0, p_i]) 
