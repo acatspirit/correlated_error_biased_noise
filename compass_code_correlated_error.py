@@ -539,8 +539,8 @@ def get_prob_scale(corr_type, eta):
 #
 
 if __name__ == "__main__":
-    # task_id = int(os.environ['SLURM_ARRAY_TASK_ID'])
-    task_id = 0 # for testing purposes, set to 0
+    task_id = int(os.environ['SLURM_ARRAY_TASK_ID'])
+    # task_id = 0 # for testing purposes, set to 0
 
     num_shots = 100000 # number of shots to sample
     circuit_data = True # whether circuit level or code cap data is desired
