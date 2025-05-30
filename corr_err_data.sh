@@ -7,7 +7,7 @@
 #SBATCH --mail-type=END        
 #SBATCH --mail-user=am1155@duke.edu       # It will send you an email when the job is finishe$
 #SBATCH --mem=10G                # Memory, keep it as 10G
-#SBATCH --job-name=circ_l3_eta0.5_100000_data.out                # How is your output is called, you n$
+#SBATCH --job-name=circ_l2_eta0.5_100000_data.out                # How is your output is called, you n$
 #readarray -t PARAMS_ARRAY < params.txt
 #PARAMS=${PARAMS_ARRAY[(($SLURM_ARRAY_TASK_ID - 1))]}
 python3 compass_code_correlated_error.py 
