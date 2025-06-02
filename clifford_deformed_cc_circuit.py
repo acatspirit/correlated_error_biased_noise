@@ -375,14 +375,15 @@ class CDCompassCodeCircuit:
         for q in range(len(qubit_d_x)): # go through all the qubits, might need to change when qubit_d_x doesn't have all the qubits
             if type == "X":
                 circuit.append("RX", q + num_ancillas)
-                circuit.append("Z_ERROR", q + num_ancillas, pz) # add the error to the data qubits
+                # circuit.append("Z_ERROR", q + num_ancillas, pz) # add the error to the data qubits
             if type == "Z":
                 circuit.append("R", q + num_ancillas)
-                circuit.append("X_ERROR", q + num_ancillas, px)
+                # circuit.append("X_ERROR", q + num_ancillas, px)
     
 
         for order in order_d_x: # go through the qubits in order of gates
             q_x_list = order_d_x[order] # (qubit, ancilla)
+            print("X check order", q_x_list)
             q_idling_list = []
             for inactive_ord, q_list in order_d_z.items():
                 if inactive_ord != order:
@@ -404,6 +405,7 @@ class CDCompassCodeCircuit:
 
         for order in order_d_z: # go through the qubits in order of gates
             q_z_list = order_d_z[order]
+            print("Z check order",q_z_list)
             q_idling_list = []
             for inactive_ord, q_list in order_d_z.items():
                 if inactive_ord != order:

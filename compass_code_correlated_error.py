@@ -546,7 +546,7 @@ if __name__ == "__main__":
     circuit_data = True # whether circuit level or code cap data is desired
     d_list = [7, 9, 11]
     d_dict = {}
-    l=2 # elongation parameter of compass code
+    l=3 # elongation parameter of compass code
     p_list = np.linspace(0.001, 0.01, 20)
     eta = 0.5 # the degree of noise bias
     corr_type = "CORR_ZX"
@@ -563,7 +563,10 @@ if __name__ == "__main__":
         elif corr_type == "CORR_XZ":
             output_file = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/xz_corr_err_data.csv'
 
-
+    d = 5
+    decoder = CorrelatedDecoder(eta, d, l, corr_type)
+    circuit = cc_circuit.CDCompassCodeCircuit(d, l, eta, [0.003, 0.001, 0.01], "X") # change list of ps dependent on model
+    circuit.make_elongated_circuit_from_parity()
 
     
     # run this to get data from the dcc
@@ -577,47 +580,49 @@ if __name__ == "__main__":
 
 
 
-    df = pd.read_csv(output_file)
-    df = df[(df['num_shots'] == num_shots) & (df['eta'] == eta)]
+    # df = pd.read_csv(output_file)
+    # df = df[(df['num_shots'] == num_shots) & (df['eta'] == eta)]
 
-    error_types = sorted(df['error_type'].unique())   # ['X_mem', 'Z_mem']
-    d_list = sorted(df['d'].unique())                # e.g., [7, 9, 11]
-    l_list = sorted(df['l'].unique())                # e.g., [2, 3, 4]
+    # error_types = sorted(df['error_type'].unique())   # ['X_mem', 'Z_mem']
+    # d_list = sorted(df['d'].unique())                # e.g., [7, 9, 11]
+    # l_list = sorted(df['l'].unique())                # e.g., [2, 3, 4]
 
-    fig, axes = plt.subplots(len(error_types), len(d_list), figsize=(15, 10), sharex=True, sharey=True)
+    # fig, axes = plt.subplots(len(error_types), len(d_list), figsize=(15, 10), sharex=True, sharey=True)
 
-    # Ensure axes is 2D in case there's only one error type or one d
-    if len(error_types) == 1:
-        axes = axes[None, :]
-    if len(d_list) == 1:
-        axes = axes[:, None]
+    # # Ensure axes is 2D in case there's only one error type or one d
+    # if len(error_types) == 1:
+    #     axes = axes[None, :]
+    # if len(d_list) == 1:
+    #     axes = axes[:, None]
 
-    for row, error_type in enumerate(error_types):
-        for col, d in enumerate(d_list):
-            ax = axes[row, col]
-            d_df = df[(df['d'] == d) & (df['error_type'] == error_type)]
-            for l in l_list:
-                l_df = d_df[d_df['l'] == l]
-                l_df_averaged = shots_averaging(num_shots, l, eta, corr_type, l_df, output_file)
-                l_df_averaged = l_df_averaged.sort_values(by='p')
+    # for row, error_type in enumerate(error_types):
+    #     for col, d in enumerate(d_list):
+    #         ax = axes[row, col]
+    #         d_df = df[(df['d'] == d) & (df['error_type'] == error_type)]
+    #         for l in l_list:
+    #             l_df = d_df[d_df['l'] == l]
+    #             l_df_averaged = shots_averaging(num_shots, l, eta, corr_type, l_df, output_file)
+    #             l_df_averaged = l_df_averaged.sort_values(by='p')
 
-                ax.plot(l_df_averaged['p'], l_df_averaged['num_log_errors'], label=rf"$n = {d},\ \ell = {l}$", marker='o')
+    #             ax.plot(l_df_averaged['p'], l_df_averaged['num_log_errors'], label=rf"$n = {d},\ \ell = {l}$", marker='o')
 
-            if row == 0:
-                ax.set_title(f"$n = {d}$", fontsize=16)
+    #         if row == 0:
+    #             ax.set_title(f"$n = {d}$", fontsize=16)
 
-            if col == 0:
-                ax.set_ylabel(rf"{error_type} errors" + "\n" + r"$p_L$", fontsize=14)
+    #         if col == 0:
+    #             ax.set_ylabel(rf"{error_type} errors" + "\n" + r"$p_L$", fontsize=14)
 
-            if row == len(error_types) - 1:
-                ax.set_xlabel(r"$p_i$", fontsize=14)
+    #         if row == len(error_types) - 1:
+    #             ax.set_xlabel(r"$p_i$", fontsize=14)
 
-            ax.grid(True)
-            ax.legend(fontsize=9)
+    #         ax.grid(True)
+    #         ax.legend(fontsize=9)
 
-    fig.suptitle(f'Logical Error Rates for $\\eta = {eta}$ and num_shots = {num_shots}', fontsize=18)
-    fig.tight_layout(rect=[0, 0.03, 1, 0.95])
-    plt.show()   
+    # fig.suptitle(f'Logical Error Rates for $\\eta = {eta}$ and num_shots = {num_shots}', fontsize=18)
+    # fig.tight_layout(rect=[0, 0.03, 1, 0.95])
+    # plt.show()   
+
+
 
     # df_larger_p = df[df['p'] > 0.05]
     # # df['time_stamp'] = pd.to_datetime(df['time_stamp'])
