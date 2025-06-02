@@ -75,47 +75,54 @@ class CDCompassCodeCircuit:
         return order_d
 
     def check_order_d_elongated(self):
-        """ New order based on zigzag pattern in PRA (101)042312, 2020
+        """ New order based on zigzag pattern in PRA (101)042312, 2020.
+            Z stabilizers 
+            #    #
+            |  / |
+            1 2  3 4 .....
+            |/   |/
+            #    #
+            X stabilizers
+            #--1--#
+                /
+               2    .....
+             /
+            #--3--#
+
         """
         stab_size = (self.l)*2# the size of the largest stabilizer
 
         # create the order dictionary to store the qubit ordering for each plaquette
         order_d_x = {}
         order_d_z = {}
-        for i in range(stab_size):
-            order_d_x[i] = []
-            order_d_z[i] = []
 
-        # get the qubit ordering for each plaquette
+        # create the order dictionary to store the qubit ordering for each plaquette
+        for row in range(self.H_x.shape[0]):
+            order_d_x[row] = []
+        for row in range(self.H_z.shape[0]):
+            order_d_z[row] = []
+
+        # qubit ordering for Z stabilizers
+        for row in range(self.H_z.shape[0]):
+            start = self.H_z.indptr[row]
+            end = self.H_z.indptr[row+1]
+            qubits = sorted(self.H_z.indices[start:end]) # the qubits in the plaquette
+
+            
+            for i in range(len(qubits)//2):
+                match_qubit_ind = np.where(qubits == (qubits[i] + d))[0][0]
+                order_d_z[row] += [(qubits[i], row)]
+                order_d_z[row] += [(qubits[match_qubit_ind], row)]
+        
+        
+        # qubit ordering for X stabilizers
         for row in range(self.H_x.shape[0]):
             start = self.H_x.indptr[row]
             end = self.H_x.indptr[row+1]
             qubits = sorted(self.H_x.indices[start:end]) # the qubits in the plaquette
 
-
-            for i, qubit in enumerate(qubits):
-                order_d_x[i] += [(qubit, row)]
-        
-        
-        for row in range(self.H_z.shape[0]):
-            start = self.H_z.indptr[row]
-            end = self.H_z.indptr[row+1]
-            qubits = sorted(self.H_z.indices[start:end])
-
-            if len(qubits) == 2 and (qubits[0]-qubits[1])%self.d == 0 and qubits[0]%self.d == 0: # if the two qubit stabilizer is on the left bndry
-                order_d_z[stab_size//2] += [(qubits[0], row)]
-                order_d_z[stab_size - 1] += [(qubits[1], row)]
-
-            elif len(qubits) == 2 and (qubits[0]-qubits[1])%self.d == 0 and qubits[0]%self.d != 0: # if the two qubit stabilizer is on right bndry
-                order_d_z[0] += [(qubits[0], row)]
-                order_d_z[stab_size//2 + 1] += [(qubits[1], row)]
-            
-            else:
-                for i in range(len(qubits)//2): # bulk of the stabilizers
-                    match_qubit_ind = np.where(qubits == (qubits[i] + self.d))[0][0]
-                    order_d_z[i] += [(qubits[i], row)]
-                    order_d_z[i+(len(qubits)//2)] += [(qubits[match_qubit_ind], row)]
-
+            for qubit in qubits:
+                order_d_x[row] += [(qubit, row)]
         return order_d_x, order_d_z
 
     def qubit_to_stab_d(self):  
