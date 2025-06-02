@@ -406,7 +406,7 @@ def concat_csv(folder_path, output_file):
     for file in data_files:
         os.remove(file)
 
-def full_error_plot(full_df, curr_eta, curr_l, curr_num_shots, corr_type, file, loglog=False, averaging=True, circuit_level=False):
+def full_error_plot(full_df, curr_eta, curr_l, curr_num_shots, corr_type, file, loglog=False, averaging=True, circuit_level=False, plot_by_l=False):
     """Make a plot of all 4 errors given a df with unedited contents"""
 
     prob_scale = get_prob_scale(corr_type, curr_eta)
@@ -539,7 +539,7 @@ def get_prob_scale(corr_type, eta):
 #
 
 if __name__ == "__main__":
-    task_id = int(os.environ['SLURM_ARRAY_TASK_ID'])
+    # task_id = int(os.environ['SLURM_ARRAY_TASK_ID'])
 
 
     num_shots = 100000 # number of shots to sample
@@ -567,7 +567,7 @@ if __name__ == "__main__":
 
     
     # run this to get data from the dcc
-    write_data(num_shots, d_list, l, p_list, eta, task_id, corr_type, circuit_data=circuit_data)
+    # write_data(num_shots, d_list, l, p_list, eta, task_id, corr_type, circuit_data=circuit_data)
     # run this once you have data and want to combo it to one csv
     # concat_csv(folder_path, output_file)
 
@@ -577,8 +577,48 @@ if __name__ == "__main__":
 
 
 
-    # to plot the data
-    # df = pd.read_csv(output_file)
+    df = pd.read_csv(output_file)
+    df = df[(df['num_shots'] == num_shots) & (df['eta'] == eta)]
+
+    error_types = sorted(df['error_type'].unique())   # ['X_mem', 'Z_mem']
+    d_list = sorted(df['d'].unique())                # e.g., [7, 9, 11]
+    l_list = sorted(df['l'].unique())                # e.g., [2, 3, 4]
+
+    fig, axes = plt.subplots(len(error_types), len(d_list), figsize=(15, 10), sharex=True, sharey=True)
+
+    # Ensure axes is 2D in case there's only one error type or one d
+    if len(error_types) == 1:
+        axes = axes[None, :]
+    if len(d_list) == 1:
+        axes = axes[:, None]
+
+    for row, error_type in enumerate(error_types):
+        for col, d in enumerate(d_list):
+            ax = axes[row, col]
+            d_df = df[(df['d'] == d) & (df['error_type'] == error_type)]
+            for l in l_list:
+                l_df = d_df[d_df['l'] == l]
+                l_df_averaged = shots_averaging(num_shots, l, eta, corr_type, l_df, output_file)
+                l_df_averaged = l_df_averaged.sort_values(by='p')
+
+                ax.plot(l_df_averaged['p'], l_df_averaged['num_log_errors'], label=rf"$n = {d},\ \ell = {l}$", marker='o')
+
+            if row == 0:
+                ax.set_title(f"$n = {d}$", fontsize=16)
+
+            if col == 0:
+                ax.set_ylabel(rf"{error_type} errors" + "\n" + r"$p_L$", fontsize=14)
+
+            if row == len(error_types) - 1:
+                ax.set_xlabel(r"$p_i$", fontsize=14)
+
+            ax.grid(True)
+            ax.legend(fontsize=9)
+
+    fig.suptitle(f'Logical Error Rates for $\\eta = {eta}$ and num_shots = {num_shots}', fontsize=18)
+    fig.tight_layout(rect=[0, 0.03, 1, 0.95])
+    plt.show()   
+
     # df_larger_p = df[df['p'] > 0.05]
     # # df['time_stamp'] = pd.to_datetime(df['time_stamp'])
     # # today = datetime.now().date()
