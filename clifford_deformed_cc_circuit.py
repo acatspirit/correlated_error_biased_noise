@@ -110,7 +110,7 @@ class CDCompassCodeCircuit:
 
             
             for i in range(len(qubits)//2):
-                match_qubit_ind = np.where(qubits == (qubits[i] + d))[0][0]
+                match_qubit_ind = np.where(qubits == (qubits[i] + self.d))[0][0]
                 order_d_z[row] += [(qubits[i], row)]
                 order_d_z[row] += [(qubits[match_qubit_ind], row)]
         
@@ -375,7 +375,7 @@ class CDCompassCodeCircuit:
         
         # reset the ancillas
         circuit.append("R", full_stab_L)
-        circuit.append("X_ERROR", full_stab_L, px) # add the error to the ancillas
+        # circuit.append("X_ERROR", full_stab_L, px) # add the error to the ancillas
         circuit.append("H", stab_d_x) # only the X stabs need H
 
         # reset the data qubits
@@ -387,47 +387,60 @@ class CDCompassCodeCircuit:
                 circuit.append("R", q + num_ancillas)
                 # circuit.append("X_ERROR", q + num_ancillas, px)
     
+        # go through each stabilizer in order, X stabilizers first
+        for order in order_d_x:
+            q_x_list = order_d_x[order] # (qubit, ancilla) in each X stabilizer
+            q_idling_list = [q for q,_ in q_x_list] # the dummy list for qubits that are idling
+            
+            # keep track of the idling qubits outside the stabilizer
+            q_inactive_list = []
+            for q in range(num_qubits_x):
+                if q not in q_x_list:
+                    q_inactive_list.extend(q_inactive_list)
+            
+            # apply a CX to each qubit in the stabilizer in the correct order
+            for q,anc in q_x_list:
 
-        for order in order_d_x: # go through the qubits in order of gates
-            q_x_list = order_d_x[order] # (qubit, ancilla)
-            print("X check order", q_x_list)
-            q_idling_list = []
-            for inactive_ord, q_list in order_d_z.items():
-                if inactive_ord != order:
-                    q_idling_list.extend(q_list)
-            
-            
-            for q,p in q_x_list:
-                circuit.append("CX", [p, q + num_ancillas])
-            
-            for q,p in q_x_list:
-                # CNOT gate errors
-                # circuit.append("DEPOLARIZE2", [q + num_ancillas, p + len(stab_d_x)], p_gate) # CNOT gate errors
-                circuit.append("DEPOLARIZE2", [p, q+num_ancillas], p_gate)
-            for q,p in q_idling_list:
-                # Idling error on the Z qubits
-                circuit.append("PAULI_CHANNEL_1", [q + num_ancillas], [0, 0, p_i]) 
+                circuit.append("CX", [anc, q + num_ancillas])
+
+                # apply the depolarizing channel to the CX gate
+                circuit.append("DEPOLARIZE2", [anc, q+num_ancillas], p_gate)
+
+                # apply idling errors to the qubits in the stabilizer without CX
+                for other_q in q_idling_list:
+                    if other_q != q:
+                        circuit.append("PAULI_CHANNEL_1", [other_q + num_ancillas], [0, 0, p_i]) # Idling error on the X qubits 
+
             circuit.append("TICK")
 
+        # now do the Z stabilizers
+        for order in order_d_z: 
+            q_z_list = order_d_z[order] # (qubit, ancilla) in each stabilizer
+            q_idling_list = [q for q,_ in q_z_list] # the dummy list for qubits that are idling
 
-        for order in order_d_z: # go through the qubits in order of gates
-            q_z_list = order_d_z[order]
-            print("Z check order",q_z_list)
-            q_idling_list = []
-            for inactive_ord, q_list in order_d_z.items():
-                if inactive_ord != order:
-                    q_idling_list.extend(q_list)
 
-            for q,p in q_z_list:
-                circuit.append("CX", [q + num_ancillas, p + len(stab_d_x)])
-            for q,p in q_z_list:
-                circuit.append("DEPOLARIZE2", [q + num_ancillas, p + len(stab_d_x)], p_gate) # CNOT gate errors
+            # keep track of the idling qubits outside the stabilizer
+            q_inactive_list = []
+            for q in range(num_qubits_z):
+                if q not in q_z_list:
+                    q_inactive_list.extend(q_inactive_list)
 
-            for q,p in q_idling_list:
-                # Idling error on the qubits
-                circuit.append("PAULI_CHANNEL_1", [q + num_ancillas], [0, 0, p_i]) 
+            # apply a CX to each qubit in the stabilizer in the correct order
+            for q,anc in q_z_list:
+                circuit.append("CX", [q + num_ancillas, anc + len(stab_d_x)]) # ancillas are shifted to account for X stabs
+
+                circuit.append("DEPOLARIZE2", [q + num_ancillas, anc + len(stab_d_x)], p_gate) # CNOT gate errors
+
+                # apply idling errors to the qubits in the stabilizer without CX
+                for other_q in q_idling_list:
+                    if other_q != q:
+                        circuit.append("PAULI_CHANNEL_1", [other_q + num_ancillas], [0, 0, p_i]) # Idling error on the X qubits
+            
+            circuit.append("TICK")
         
         circuit.append("H", stab_d_x)
+
+        # idling errors on the data qubits
         circuit.append("PAULI_CHANNEL_1", data_q_z_list, [0,0,p_i])
 
         circuit.append("X_ERROR", full_stab_L, p_meas) # add the error to the ancillas

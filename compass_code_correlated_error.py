@@ -565,7 +565,7 @@ if __name__ == "__main__":
 
     d = 5
     decoder = CorrelatedDecoder(eta, d, l, corr_type)
-    circuit = cc_circuit.CDCompassCodeCircuit(d, l, eta, [0.003, 0.001, 0.01], "X") # change list of ps dependent on model
+    circuit = cc_circuit.CDCompassCodeCircuit(d, l, eta, [0.003, 0.001, 0.01], "Z") # change list of ps dependent on model
     circuit.make_elongated_circuit_from_parity()
 
     
