@@ -320,62 +320,12 @@ class CDCompassCodeCircuit:
         print(repr(circuit))
         return circuit
     
-
-    def make_elongated_circuit_from_parity(self):
-        """ 
-        create a surface code memory experiment circuit from a parity check matrix
-        Inputs:
-                circuit - (stim.Circuit) the circuit to add noise to
-                p_gate - (float) the probability of a gate error
-                p_meas - (float) the probability of a measurement error
-                p_i - (float) the probability of an idling error
-            Returns: (stim.Circuit) the circuit with noise added
-
-            The error model is the biased noise model from the paper: PRA (101)042312, 2020
-            - 2-qubit gates are followed by 2-qubit depolarizing channel with p = p_gate (x)
-            - measurement outcomes are followed by a bit flip with probability p_meas (x)
-            - idling qubits are followed by a dephasing channel with probability p_i (x)
-
+    def add_meas_round(self, curr_circuit, stab_d_x, stab_d_z, order_d_x, order_d_z, qubit_d_x, qubit_d_z, num_ancillas, num_qubits_x, num_qubits_z, p_i, p_gate, type):
         """
-        p_gate = self.ps[0] # gate error on two-qubit gates
-        p_meas = self.ps[1] # measurement error
-        p_i = self.ps[2] # idling error, to be scanned over 
-        
-        px = 0.5*p_i/(1+self.eta)
-        pz = p_i*(self.eta/(1+self.eta))
-
-        # make the circuit
-        circuit = stim.Circuit()
-
-        # get the qubit ordering
-        stab_d_x,stab_d_z = self.convert_sparse_to_d()
-        
-        # get the qubit ordered properly for each stabilizer
-        order_d_x, order_d_z = self.check_order_d_elongated()
-        
-        # get the stabilizer that belong to each qubit
-        qubit_d_x,qubit_d_z = self.qubit_to_stab_d()
-        
-        # general parameters
-        num_ancillas = len(stab_d_x) + len(stab_d_z) # total number of stabilizer to initialize
-        num_qubits_x = len(qubit_d_x)
-        num_qubits_z = len(qubit_d_z)
-
-        # print(num_ancillas, num_qubits_x, num_qubits_z)
-        # print(self.H_x.shape, self.H_z.shape)
-        # print(stab_d_x, stab_d_z)
-        
-        data_q_x_list = [num_ancillas + q for q in list(qubit_d_x.keys())] # all the x data qubits
-        data_q_z_list = [num_ancillas + q for q in list(qubit_d_z.keys())] # all the z data qubits
-        data_q_list = data_q_x_list # change this later when wanna do X and Z seperately
-
-
-        # convention - X stabs first, then Z stabs starting with 0
-        full_stab_L = range(num_ancillas)
-        
-        # reset the ancillas
-        circuit.append("R", full_stab_L)
-        # circuit.append("X_ERROR", full_stab_L, px) # add the error to the ancillas
+        Add a measurement round to the circuit. Construct the gates with error model 
+        for one round of stabilizer construction.
+        """
+        circuit = curr_circuit
         circuit.append("H", stab_d_x) # only the X stabs need H
 
         # reset the data qubits
@@ -440,48 +390,139 @@ class CDCompassCodeCircuit:
         
         circuit.append("H", stab_d_x)
 
+    
+
+    def make_elongated_circuit_from_parity(self):
+        """ 
+        create a surface code memory experiment circuit from a parity check matrix
+        Inputs:
+                circuit - (stim.Circuit) the circuit to add noise to
+                p_gate - (float) the probability of a gate error
+                p_meas - (float) the probability of a measurement error
+                p_i - (float) the probability of an idling error
+            Returns: (stim.Circuit) the circuit with noise added
+
+            The error model is the biased noise model from the paper: PRA (101)042312, 2020
+            - 2-qubit gates are followed by 2-qubit depolarizing channel with p = p_gate (x)
+            - measurement outcomes are followed by a bit flip with probability p_meas (x)
+            - idling qubits are followed by a dephasing channel with probability p_i (x)
+
+        """
+        p_gate = self.ps[0] # gate error on two-qubit gates
+        p_meas = self.ps[1] # measurement error
+        p_i = self.ps[2] # idling error, to be scanned over 
+        
+        px = 0.5*p_i/(1+self.eta)
+        pz = p_i*(self.eta/(1+self.eta))
+
+        # make the circuit
+        circuit = stim.Circuit()
+
+        # get the qubit ordering
+        stab_d_x,stab_d_z = self.convert_sparse_to_d()
+        
+        # get the qubit ordered properly for each stabilizer
+        order_d_x, order_d_z = self.check_order_d_elongated()
+        
+        # get the stabilizer that belong to each qubit
+        qubit_d_x,qubit_d_z = self.qubit_to_stab_d()
+        
+        # general parameters
+        num_ancillas = len(stab_d_x) + len(stab_d_z) # total number of stabilizer to initialize
+        num_qubits_x = len(qubit_d_x)
+        num_qubits_z = len(qubit_d_z)
+
+        # print(num_ancillas, num_qubits_x, num_qubits_z)
+        # print(self.H_x.shape, self.H_z.shape)
+        # print(stab_d_x, stab_d_z)
+        
+        data_q_x_list = [num_ancillas + q for q in list(qubit_d_x.keys())] # all the x data qubits
+        data_q_z_list = [num_ancillas + q for q in list(qubit_d_z.keys())] # all the z data qubits
+        data_q_list = data_q_x_list # change this later when wanna do X and Z seperately
+
+
+        # convention - X stabs first, then Z stabs starting with 0
+        full_stab_L = range(num_ancillas)
+        
+        # reset the ancillas
+        circuit.append("R", full_stab_L)
+        # circuit.append("X_ERROR", full_stab_L, px) # add the error to the ancillas
+
+
+        # start the for loop to repeat for d rounds
+
+        # Round 0 - t=0 measurements
+
+        self.add_meas_round(circuit, stab_d_x, stab_d_z, order_d_x, order_d_z, qubit_d_x, qubit_d_z, num_ancillas, num_qubits_x, num_qubits_z, p_i, p_gate, self.type)
+
         # idling errors on the data qubits
         circuit.append("PAULI_CHANNEL_1", data_q_z_list, [0,0,p_i])
-
         circuit.append("X_ERROR", full_stab_L, p_meas) # add the error to the ancillas
         circuit.append("MR", full_stab_L)
         circuit.append("X_ERROR", full_stab_L, p_meas) # add the error to the ancillas
+        circuit.append("PAULI_CHANNEL_1", data_q_z_list, [0,0,p_i])
 
-        # for X mem measure X stabs
+        # initialize the t=0 detectors for the X or Z stabilizers
         if type == "X":
             for i in range(len(stab_d_x)):
                 circuit.append("DETECTOR", stim.target_rec(-num_ancillas + i))
-
-            circuit.append("MX", data_q_x_list)
-
-            # reconstruct each stabuette
-            for i in stab_d_x: 
-                q_x_list = stab_d_x[i] # get the qubits in the stab
-                anc = i 
-                detector_list =  [-num_qubits_x + q for q in q_x_list] + [-num_ancillas + anc - num_qubits_x]
-                
-                circuit.append("DETECTOR", [stim.target_rec(d) for d in detector_list])
-        
-            # construct the logical observable to include - pick the top line of qubits since this is an X meas
-            circuit.append("OBSERVABLE_INCLUDE", [stim.target_rec(- num_qubits_x + self.d*q) for q in range(self.d)], 0) # parity of the whole line needs to be the same
-        
-        # Z mem measure Z stabs
-        if type == "Z":
+        elif type == "Z":
             for i in range(len(stab_d_z)):
                 circuit.append("DETECTOR", stim.target_rec(-num_ancillas + i + len(stab_d_x)))
+        circuit.append("TICK") # add a tick to the circuit to mark the end of the t=0 measurements
+        
+        
+        # All other d rounds - t>0 measurements
+        for _ in range(self.d-1):
+            # add a measurement round
+            self.add_meas_round(circuit, stab_d_x, stab_d_z, order_d_x, order_d_z, qubit_d_x, qubit_d_z, num_ancillas, num_qubits_x, num_qubits_z, p_i, p_gate, self.type)
 
+            # idling errors on the data qubits, measure the ancillas, bit flip errors on measurements
+            circuit.append("PAULI_CHANNEL_1", data_q_z_list, [0,0,p_i])
+            circuit.append("X_ERROR", full_stab_L, p_meas)
+            circuit.append("MR", full_stab_L)
+            circuit.append("X_ERROR", full_stab_L, p_meas) # add the error to the ancillas
+            circuit.append("PAULI_CHANNEL_1", data_q_z_list, [0,0,p_i])
+
+            # timelike detectors for the X or Z stabilizers
+            if self.type == "X":
+                for i in range(len(stab_d_x)):
+                    circuit.append("DETECTOR", [stim.target_rec(-num_ancillas + i), stim.target_rec(-2*num_ancillas + i)]) # anc round d tied to anc round d=0
+            elif self.type == "Z":
+                for i in range(len(stab_d_z)):
+                    circuit.append("DETECTOR", [stim.target_rec(-num_ancillas + i + len(stab_d_x)), stim.target_rec(-2*num_ancillas + i + len(stab_d_x))]) # anc round d tied to anc round d=0
+            circuit.append("TICK") # add a tick to the circuit to mark the end of the t>0 iteration
+
+        # reconstruct the stabilizers and measure the data qubits
+        # for X mem measure X stabs
+        if type == "X":
+            # measure all the data qubits in the X stabilizers
+            circuit.append("MX", data_q_x_list)
+
+            # reconstruct each X stabilizer with a detector
+            for anc in stab_d_x: 
+                q_x_list = stab_d_x[i] # get the qubits in the stab
+                detector_list =  [-num_qubits_x + q for q in q_x_list] + [-num_ancillas + anc - num_qubits_x]
+                circuit.append("DETECTOR", [stim.target_rec(d) for d in detector_list])
+            
+            
+            # construct the logical observable to include - pick the top line of qubits since this is an X meas
+            circuit.append("OBSERVABLE_INCLUDE", [stim.target_rec(- num_qubits_x + self.d*q) for q in range(self.d)], 0) # parity of the whole line needs to be the same
+        # Z mem measure Z stabs
+        if type == "Z":
+            # measure all the data qubits in the Z stabilizers
             circuit.append("M", data_q_list)
 
-            # time to reconstruct each stabuette
-            for i in stab_d_z: 
+            # reconstruct each stabilizer with a detector
+            for anc in stab_d_z: 
                 
                 q_z_list = stab_d_z[i] # get the qubits in the stab
-                anc = i 
                 detector_list =  [-num_qubits_z + q for q in q_z_list] + [-num_ancillas +len(stab_d_x)+ anc - num_qubits_z]
                 circuit.append("DETECTOR", [stim.target_rec(d) for d in detector_list])
         
             # construct the logical observable to include - pick the top line of qubits since this is an X meas
             circuit.append("OBSERVABLE_INCLUDE", [stim.target_rec(-num_qubits_z + q) for q in range(self.d)], 0)
+
         return circuit
 
     def make_clifford_deformed_circuit_from_parity(self):
@@ -503,7 +544,11 @@ class CDCompassCodeCircuit:
         return circuit
 
 
-
+# for d rounds
+# 3 sets of detectors:
+# before the for loop, measure the ancillas that I want to track (ie X mem measure X stab ancillas)
+# during the for loop, for each round, make a detector between each stabilizer and itself at time 0. That is, measure the ancilla at round d and make a detector with the same ancilla outside the for loop
+# after the for loop, reconstruct the stabilizers in mem of interest, and measure the data qubits in each stabilizer (ie tie an anc for an X stab in the last iteration of the for loop to the data qubits in the X stab)
 
 
 
