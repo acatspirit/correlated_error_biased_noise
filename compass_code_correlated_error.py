@@ -539,14 +539,14 @@ def get_prob_scale(corr_type, eta):
 #
 
 if __name__ == "__main__":
-    # task_id = int(os.environ['SLURM_ARRAY_TASK_ID'])
+    task_id = int(os.environ['SLURM_ARRAY_TASK_ID'])
 
 
     num_shots = 100000 # number of shots to sample
     circuit_data = True # whether circuit level or code cap data is desired
     d_list = [7, 9, 11]
     d_dict = {}
-    l=3 # elongation parameter of compass code
+    l=2 # elongation parameter of compass code
     p_list = np.linspace(0.001, 0.01, 20)
     eta = 0.5 # the degree of noise bias
     corr_type = "CORR_ZX"
@@ -563,14 +563,19 @@ if __name__ == "__main__":
         elif corr_type == "CORR_XZ":
             output_file = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/xz_corr_err_data.csv'
 
-    d = 5
-    decoder = CorrelatedDecoder(eta, d, l, corr_type)
-    circuit = cc_circuit.CDCompassCodeCircuit(d, l, eta, [0.003, 0.001, 0.01], "Z") # change list of ps dependent on model
-    circuit.make_elongated_circuit_from_parity()
+    # d = 5
+    # type_mem = "X" # type of memory experiment, X or Z
+    # decoder = CorrelatedDecoder(eta, d, l, corr_type)
+    # # print(decoder.H_x, decoder.H_z)
+    # circuit = cc_circuit.CDCompassCodeCircuit(d, l, eta, [0.003, 0.001, 0.01], type_mem) # change list of ps dependent on model
+    # # circuit.make_elongated_circuit_from_parity()
+    # # print(circuit.circuit)
+
+    # decoder.get_log_error_circuit_level(p_list, type_mem, num_shots)
 
     
     # run this to get data from the dcc
-    # write_data(num_shots, d_list, l, p_list, eta, task_id, corr_type, circuit_data=circuit_data)
+    write_data(num_shots, d_list, l, p_list, eta, task_id, corr_type, circuit_data=circuit_data)
     # run this once you have data and want to combo it to one csv
     # concat_csv(folder_path, output_file)
 
