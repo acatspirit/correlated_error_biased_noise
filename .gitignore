@@ -4,5 +4,7 @@ data_no_log_probs/
 
 xz_corr_err_data.csv 
 zx_corr_err_data.csv
+# zx_circuit_data.csv
+# xz_circuit_data.csv
 
 

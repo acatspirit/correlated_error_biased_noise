@@ -575,9 +575,9 @@ if __name__ == "__main__":
 
     
     # run this to get data from the dcc
-    write_data(num_shots, d_list, l, p_list, eta, task_id, corr_type, circuit_data=circuit_data)
+    # write_data(num_shots, d_list, l, p_list, eta, task_id, corr_type, circuit_data=circuit_data)
     # run this once you have data and want to combo it to one csv
-    # concat_csv(folder_path, output_file)
+    concat_csv(folder_path, output_file)
 
 
     # threshold today - 0.2075 ZX, 0.217
