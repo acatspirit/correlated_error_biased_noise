@@ -329,24 +329,27 @@ class CDCompassCodeCircuit:
         circuit.append("H", stab_d_x) # only the X stabs need H
 
         # reset the data qubits
-        for q in range(len(qubit_d_x)): # go through all the qubits, might need to change when qubit_d_x doesn't have all the qubits
-            if type == "X":
-                circuit.append("RX", q + num_ancillas)
-                # circuit.append("Z_ERROR", q + num_ancillas, pz) # add the error to the data qubits
-            if type == "Z":
-                circuit.append("R", q + num_ancillas)
-                # circuit.append("X_ERROR", q + num_ancillas, px)
+        
+        if type == "X":
+            circuit.append("RX", [q + num_ancillas for q in range(num_qubits_x)])
+            circuit.append("PAULI_CHANNEL_1", [anc for anc in range(num_ancillas)], [0,0,p_i]) # idling error on the ancillas
+            # circuit.append("Z_ERROR", q + num_ancillas, pz) # add the error to the data qubits
+        if type == "Z":
+            circuit.append("R", [q + num_ancillas for q in range(num_qubits_x)])
+            circuit.append("PAULI_CHANNEL_1", [anc for anc in range(num_ancillas)], [0,0,p_i]) # idling error on the ancillas
+            # circuit.append("X_ERROR", q + num_ancillas, px)
     
         # go through each stabilizer in order, X stabilizers first
         for order in order_d_x:
-            q_x_list = order_d_x[order] # (qubit, ancilla) in each X stabilizer
-            q_idling_list = [q for q,_ in q_x_list] # the dummy list for qubits that are idling
-            
-            # keep track of the idling qubits outside the stabilizer
-            q_inactive_list = []
+            q_x_list = order_d_x[order] # (qubit, ancilla) in each X stabilizer, qubit is not adjusted for ancilla offset
+            q_idling_list = [q for q,_ in q_x_list] # the dummy list for qubits that are idling. All the qubits in the stabilizer idle at some point
+
+            # keep track of the idling qubits outside the stabilizer, including ancillas
+            q_inactive_list = [anc for anc in range(num_ancillas) if anc != order]
             for q in range(num_qubits_x):
-                if q not in q_x_list:
-                    q_inactive_list.extend(q_inactive_list)
+                if (q, order) not in q_x_list:
+                    q_inactive_list.append(q+num_ancillas)
+
             
             # apply a CX to each qubit in the stabilizer in the correct order
             for q,anc in q_x_list:
@@ -360,20 +363,21 @@ class CDCompassCodeCircuit:
                 for other_q in q_idling_list:
                     if other_q != q:
                         circuit.append("PAULI_CHANNEL_1", [other_q + num_ancillas], [0, 0, p_i]) # Idling error on the X qubits 
+                circuit.append("PAULI_CHANNEL_1", q_inactive_list, [0, 0, p_i]) # Idling error on the ancillas and qubits outside the stabilizer
 
             circuit.append("TICK")
 
         # now do the Z stabilizers
         for order in order_d_z: 
-            q_z_list = order_d_z[order] # (qubit, ancilla) in each stabilizer
+            q_z_list = order_d_z[order] # (qubit, ancilla) in each stabilizer, not offset for x ancillas for the z ancillas, or ancillas for the data qubits
             q_idling_list = [q for q,_ in q_z_list] # the dummy list for qubits that are idling
 
 
             # keep track of the idling qubits outside the stabilizer
-            q_inactive_list = []
+            q_inactive_list = [anc for anc in range(num_ancillas) if anc != (order + len(stab_d_x))]
             for q in range(num_qubits_z):
-                if q not in q_z_list:
-                    q_inactive_list.extend(q_inactive_list)
+                if (q, order) not in q_z_list:
+                    q_inactive_list.append(q+num_ancillas)
 
             # apply a CX to each qubit in the stabilizer in the correct order
             for q,anc in q_z_list:
@@ -385,10 +389,12 @@ class CDCompassCodeCircuit:
                 for other_q in q_idling_list:
                     if other_q != q:
                         circuit.append("PAULI_CHANNEL_1", [other_q + num_ancillas], [0, 0, p_i]) # Idling error on the X qubits
+                circuit.append("PAULI_CHANNEL_1", q_inactive_list, [0, 0, p_i]) # Idling error on the ancillas and qubits outside the stabilizer
             
             circuit.append("TICK")
         
         circuit.append("H", stab_d_x)
+        circuit.append("PAULI_CHANNEL_1", [q for q in range(len(stab_d_x), num_ancillas + num_qubits_x)], [0,0,p_i]) # idling error on the ancillas
         return circuit
 
     
