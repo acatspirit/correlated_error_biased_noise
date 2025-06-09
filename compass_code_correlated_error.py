@@ -546,7 +546,7 @@ if __name__ == "__main__":
     circuit_data = True # whether circuit level or code cap data is desired
     d_list = [7, 9, 11]
     d_dict = {}
-    l=2 # elongation parameter of compass code
+    l=3 # elongation parameter of compass code
     p_list = np.linspace(0.001, 0.01, 20)
     eta = 0.5 # the degree of noise bias
     corr_type = "CORR_ZX"
@@ -575,9 +575,9 @@ if __name__ == "__main__":
 
     
     # run this to get data from the dcc
-    write_data(num_shots, d_list, l, p_list, eta, task_id, corr_type, circuit_data=circuit_data)
+    # write_data(num_shots, d_list, l, p_list, eta, task_id, corr_type, circuit_data=circuit_data)
     # run this once you have data and want to combo it to one csv
-    # concat_csv(folder_path, output_file)
+    concat_csv(folder_path, output_file)
 
 
     # threshold today - 0.2075 ZX, 0.217
