@@ -539,7 +539,7 @@ def get_prob_scale(corr_type, eta):
 #
 
 if __name__ == "__main__":
-    # task_id = int(os.environ['SLURM_ARRAY_TASK_ID'])
+    task_id = int(os.environ['SLURM_ARRAY_TASK_ID'])
 
 
     num_shots = 100000 # number of shots to sample
@@ -578,7 +578,7 @@ if __name__ == "__main__":
 
     
     # run this to get data from the dcc
-    # write_data(num_shots, d_list, l, p_list, eta, task_id, corr_type, circuit_data=circuit_data)
+    write_data(num_shots, d_list, l, p_list, eta, task_id, corr_type, circuit_data=circuit_data)
     # run this once you have data and want to combo it to one csv
     # concat_csv(folder_path, output_file)
 
