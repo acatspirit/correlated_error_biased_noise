@@ -477,7 +477,7 @@ class CDCompassCodeCircuit:
         elif self.type == "Z":
             for i in range(len(stab_d_z)):
                 circuit.append("DETECTOR", stim.target_rec(-num_ancillas + i + len(stab_d_x)))
-        # print(circuit)
+        
         circuit.append("TICK") # add a tick to the circuit to mark the end of the t=0 measurements
         
         loop_circuit = stim.Circuit() # create a loop circuit to repeat the following for d-1 rounds
@@ -509,6 +509,7 @@ class CDCompassCodeCircuit:
         # for X mem measure X stabs
         if self.type == "X":
             # measure all the data qubits in the X stabilizers
+            circuit.append("X_ERROR", data_q_x_list, p_i) # add the error to the data qubits
             circuit.append("MX", data_q_x_list)
 
             # reconstruct each X stabilizer with a detector
@@ -524,6 +525,7 @@ class CDCompassCodeCircuit:
         # Z mem measure Z stabs
         if self.type == "Z":
             # measure all the data qubits in the Z stabilizers
+            circuit.append("X_ERROR", data_q_z_list, p_i) # add the error to the data qubits
             circuit.append("M", data_q_list)
 
             # reconstruct each stabilizer with a detector
