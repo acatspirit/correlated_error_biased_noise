@@ -539,7 +539,7 @@ def get_prob_scale(corr_type, eta):
 #
 
 if __name__ == "__main__":
-    task_id = int(os.environ['SLURM_ARRAY_TASK_ID'])
+    # task_id = int(os.environ['SLURM_ARRAY_TASK_ID'])
 
 
     num_shots = 100000 # number of shots to sample
@@ -566,16 +566,19 @@ if __name__ == "__main__":
     # d = 3
     # type_mem = "X" # type of memory experiment, X or Z
     # decoder = CorrelatedDecoder(eta, d, l, corr_type)
-    # # print(decoder.H_x, decoder.H_z)
+    # # # print(decoder.H_x, decoder.H_z)
     # circuit = cc_circuit.CDCompassCodeCircuit(d, l, eta, [0.003, 0.001, 0.01], type_mem) # change list of ps dependent on model
-    # # circuit.make_elongated_circuit_from_parity()
-    # print(circuit.circuit)
+    # curr_circuit = circuit.make_elongated_circuit_from_parity()
+    # # print(circuit.circuit)
+    # diagram = curr_circuit.diagram("timeline-svg")
+    # with open('diagram.svg', 'w') as f:
+    #     f.write(str(diagram))
 
     # decoder.get_log_error_circuit_level(p_list, type_mem, num_shots)
 
     
     # run this to get data from the dcc
-    write_data(num_shots, d_list, l, p_list, eta, task_id, corr_type, circuit_data=circuit_data)
+    # write_data(num_shots, d_list, l, p_list, eta, task_id, corr_type, circuit_data=circuit_data)
     # run this once you have data and want to combo it to one csv
     # concat_csv(folder_path, output_file)
 
@@ -584,13 +587,16 @@ if __name__ == "__main__":
     # threshold old - 0.20 ZX, 0.22 
 
 
-    # Load and filter the data
+    # Load and filter only X_mem and Z_mem
     # df = pd.read_csv(output_file)
-    # df = df[(df['num_shots'] == num_shots) & (df['eta'] == eta)]
+    # df = df[(df['num_shots'] == num_shots) & 
+    #         (df['eta'] == eta) ]
 
-    # d_list = sorted(df['d'].unique())     # e.g., [7, 9, 11]
+    # # Group by p, d, l and sum the num_log_errors to create 'tot_mem'
+    # df_tot = df.groupby(['p', 'd', 'l'], as_index=False)['num_log_errors'].sum()
 
-    # l_list = sorted(df['l'].unique())     # e.g., [2, 3, 4]
+    # d_list = sorted(df_tot['d'].unique())   # e.g., [7, 9, 11]
+    # l_list = sorted(df_tot['l'].unique())   # e.g., [2, 3, 4]
 
     # fig, axes = plt.subplots(1, len(d_list), figsize=(15, 4), sharex=True, sharey=True)
 
@@ -600,11 +606,14 @@ if __name__ == "__main__":
 
     # for col, d in enumerate(d_list):
     #     ax = axes[col]
-    #     d_df = df[df['d'] == d]
+    #     d_df = df_tot[df_tot['d'] == d]
     #     for l in l_list:
-    #         l_df = d_df[d_df['l'] == l]
+    #         l_df = d_df[d_df['l'] == l].sort_values(by='p')
+
+    #         # If you're still using a custom averaging function, apply it here:
     #         l_df_averaged = shots_averaging(num_shots, l, eta, corr_type, l_df, output_file)
     #         l_df_averaged = l_df_averaged.sort_values(by='p')
+    #         # ax.plot(l_df_averaged['p'], l_df_averaged['num_log_errors'], ...)
 
     #         ax.plot(l_df_averaged['p'], l_df_averaged['num_log_errors'], label=rf"$n = {d},\ \ell = {l}$", marker='o')
 
@@ -616,7 +625,7 @@ if __name__ == "__main__":
     #     ax.grid(True)
     #     ax.legend(fontsize=9)
 
-    # fig.suptitle(f'Logical Error Rates (X + Z memory errors) for $\\eta = {eta}$ and num_shots = {num_shots}', fontsize=18)
+    # fig.suptitle(f'Logical Error Rates ($X_{{mem}} + Z_{{mem}}$) for $\\eta = {eta}$ and num_shots = {num_shots}', fontsize=18)
     # fig.tight_layout(rect=[0, 0.03, 1, 0.90])
     # plt.show()
 
