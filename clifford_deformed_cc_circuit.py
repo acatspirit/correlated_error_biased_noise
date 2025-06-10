@@ -488,7 +488,7 @@ class CDCompassCodeCircuit:
 
         # idling errors on the data qubits, measure the ancillas, bit flip errors on measurements
         # loop_circuit.append("Z_ERROR", data_q_z_list, p_i)
-        loop_circuit.append("X_ERROR", full_stab_L, p_meas)
+        loop_circuit.append("X_ERROR", full_stab_L, p_i)
         loop_circuit.append("MR", full_stab_L)
         # loop_circuit.append("X_ERROR", full_stab_L, p_meas) # add the error to the ancillas
         # loop_circuit.append("PAULI_CHANNEL_1", data_q_z_list, [0,0,p_i])

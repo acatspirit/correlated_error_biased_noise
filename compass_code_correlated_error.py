@@ -547,7 +547,7 @@ if __name__ == "__main__":
     d_list = [7, 9, 11]
     d_dict = {}
     l=2 # elongation parameter of compass code
-    p_list = np.linspace(0.001, 0.01, 20)
+    p_list = np.linspace(0.01, 0.5, 20)
     eta = 0.5 # the degree of noise bias
     corr_type = "CORR_ZX"
     if circuit_data:
