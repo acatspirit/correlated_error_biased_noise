@@ -320,7 +320,7 @@ class CDCompassCodeCircuit:
         print(repr(circuit))
         return circuit
     
-    def add_meas_round(self, curr_circuit, stab_d_x, stab_d_z, order_d_x, order_d_z, qubit_d_x, qubit_d_z, num_ancillas, num_qubits_x, num_qubits_z, p_i, p_gate, type):
+    def add_meas_round(self, curr_circuit, stab_d_x, stab_d_z, order_d_x, order_d_z, qubit_d_x, qubit_d_z, num_ancillas, num_qubits_x, num_qubits_z, p_i, p_gate):
         """
         Add a measurement round to the circuit. Construct the gates with error model 
         for one round of stabilizer construction.
@@ -448,12 +448,12 @@ class CDCompassCodeCircuit:
 
         # reset the data qubits
         
-        if type == "X":
+        if self.type == "X":
             circuit.append("RX", [q + num_ancillas for q in range(num_qubits_x)])
             circuit.append("X_ERROR", [q + num_ancillas for q in range(num_qubits_x)], p_i) # add the error to the data qubits
             # circuit.append("Z_ERROR", [anc for anc in range(num_ancillas)], p_i) # idling error on the ancillas
             # circuit.append("Z_ERROR", q + num_ancillas, pz) # add the error to the data qubits
-        if type == "Z":
+        elif self.type == "Z":
             circuit.append("R", [q + num_ancillas for q in range(num_qubits_x)])
             # circuit.append("Z_ERROR", [anc for anc in range(num_ancillas)], p_i) # idling error on the ancillas
             circuit.append("X_ERROR", [q + num_ancillas for q in range(num_qubits_x)], p_i)
@@ -463,7 +463,7 @@ class CDCompassCodeCircuit:
 
         # Round 0 - t=0 measurements
 
-        circuit = self.add_meas_round(circuit, stab_d_x, stab_d_z, order_d_x, order_d_z, qubit_d_x, qubit_d_z, num_ancillas, num_qubits_x, num_qubits_z, p_i, p_gate, self.type)
+        circuit = self.add_meas_round(circuit, stab_d_x, stab_d_z, order_d_x, order_d_z, qubit_d_x, qubit_d_z, num_ancillas, num_qubits_x, num_qubits_z, p_i, p_gate)
 
         # idling errors on the data qubits
         # circuit.append("Z_ERROR", data_q_z_list, p_i)
@@ -488,7 +488,7 @@ class CDCompassCodeCircuit:
         # All other d rounds - t>0 measurements
         # circuit += "REPEAT %d {\n" # repeat the following for d-1 rounds
         # add a measurement round
-        loop_circuit = self.add_meas_round(loop_circuit, stab_d_x, stab_d_z, order_d_x, order_d_z, qubit_d_x, qubit_d_z, num_ancillas, num_qubits_x, num_qubits_z, p_i, p_gate, self.type)
+        loop_circuit = self.add_meas_round(loop_circuit, stab_d_x, stab_d_z, order_d_x, order_d_z, qubit_d_x, qubit_d_z, num_ancillas, num_qubits_x, num_qubits_z, p_i, p_gate)
 
         # idling errors on the data qubits, measure the ancillas, bit flip errors on measurements
         # loop_circuit.append("Z_ERROR", data_q_z_list, p_i)
