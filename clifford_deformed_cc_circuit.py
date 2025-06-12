@@ -466,7 +466,7 @@ class CDCompassCodeCircuit:
         # idling errors on the data qubits
         # circuit.append("Z_ERROR", data_q_z_list, p_i)
         # circuit.append("X_ERROR", full_stab_L, p_meas) # add the error to the ancillas
-        # circuit.append("X_ERROR", full_stab_L, p_i) # for phenom only
+        circuit.append("X_ERROR", full_stab_L, p_i) # for phenom only
         circuit.append("MR", full_stab_L,p_i)
         circuit.append("X_ERROR", full_stab_L,p_i) # add the error to the ancillas
         # circuit.append("Z_ERROR", data_q_z_list, p_i)
@@ -497,12 +497,14 @@ class CDCompassCodeCircuit:
         # loop_circuit.append("PAULI_CHANNEL_1", data_q_z_list, [0,0,p_i])
 
         # timelike detectors for the X or Z stabilizers
-        if self.type == "X":
-            for i in range(len(stab_d_x)):
-                loop_circuit.append("DETECTOR", [stim.target_rec(-num_ancillas + i), stim.target_rec(-2*num_ancillas + i)]) # anc round d tied to anc round d=0
-        elif self.type == "Z":
-            for i in range(len(stab_d_z)):
-                loop_circuit.append("DETECTOR", [stim.target_rec(-num_ancillas + i + len(stab_d_x)), stim.target_rec(-2*num_ancillas + i + len(stab_d_x))]) # anc round d tied to anc round d=0
+        for i in range(num_ancillas):
+            loop_circuit.append("DETECTOR", [stim.target_rec(-num_ancillas + i), stim.target_rec(-2*num_ancillas + i)]) # anc round d tied to anc round d=0
+        # if self.type == "X":
+        #     for i in range(len(stab_d_x)):
+        #         loop_circuit.append("DETECTOR", [stim.target_rec(-num_ancillas + i), stim.target_rec(-2*num_ancillas + i)]) # anc round d tied to anc round d=0
+        # elif self.type == "Z":
+        #     for i in range(len(stab_d_z)):
+        #         loop_circuit.append("DETECTOR", [stim.target_rec(-num_ancillas + i + len(stab_d_x)), stim.target_rec(-2*num_ancillas + i + len(stab_d_x))]) # anc round d tied to anc round d=0
         loop_circuit.append("TICK") # add a tick to the circuit to mark the end of the t>0 iteration
         
         # repeat the loop circuit d-1 times - circuit level only
@@ -524,7 +526,7 @@ class CDCompassCodeCircuit:
             
             
             # construct the logical observable to include - pick the top line of qubits since this is an X meas
-            circuit.append("OBSERVABLE_INCLUDE", [stim.target_rec(- num_qubits_x + self.d*q) for q in range(self.d)], 0) # parity of the whole line needs to be the same
+            circuit.append("OBSERVABLE_INCLUDE", [stim.target_rec(-num_qubits_x + self.d*q) for q in range(self.d)], 0) # parity of the whole line needs to be the same
         
         # Z mem measure Z stabs
         if self.type == "Z":
