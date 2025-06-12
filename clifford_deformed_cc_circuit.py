@@ -332,12 +332,13 @@ class CDCompassCodeCircuit:
         
         if type == "X":
             circuit.append("RX", [q + num_ancillas for q in range(num_qubits_x)])
+            circuit.append("X_ERROR", [q + num_ancillas for q in range(num_qubits_x)], p_i) # add the error to the data qubits
             # circuit.append("Z_ERROR", [anc for anc in range(num_ancillas)], p_i) # idling error on the ancillas
             # circuit.append("Z_ERROR", q + num_ancillas, pz) # add the error to the data qubits
         if type == "Z":
             circuit.append("R", [q + num_ancillas for q in range(num_qubits_x)])
             # circuit.append("Z_ERROR", [anc for anc in range(num_ancillas)], p_i) # idling error on the ancillas
-            # circuit.append("X_ERROR", q + num_ancillas, px)
+            circuit.append("X_ERROR", [q + num_ancillas for q in range(num_qubits_x)], p_i)
     
         # go through each stabilizer in order, X stabilizers first
         for order in order_d_x:
