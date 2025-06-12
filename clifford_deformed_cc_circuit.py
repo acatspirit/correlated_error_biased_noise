@@ -534,7 +534,7 @@ class CDCompassCodeCircuit:
         if self.type == "Z":
             # measure all the data qubits in the Z stabilizers
             circuit.append("X_ERROR", data_q_z_list, p_i) # add the error to the data qubits
-            circuit.append("M", data_q_list)
+            circuit.append("M", data_q_list, p_i)
             circuit.append("X_ERROR", data_q_z_list, p_i)
 
             # reconstruct each stabilizer with a detector
