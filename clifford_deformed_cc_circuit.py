@@ -328,17 +328,7 @@ class CDCompassCodeCircuit:
         circuit = curr_circuit
         circuit.append("H", stab_d_x) # only the X stabs need H
 
-        # reset the data qubits
         
-        if type == "X":
-            circuit.append("RX", [q + num_ancillas for q in range(num_qubits_x)])
-            circuit.append("X_ERROR", [q + num_ancillas for q in range(num_qubits_x)], p_i) # add the error to the data qubits
-            # circuit.append("Z_ERROR", [anc for anc in range(num_ancillas)], p_i) # idling error on the ancillas
-            # circuit.append("Z_ERROR", q + num_ancillas, pz) # add the error to the data qubits
-        if type == "Z":
-            circuit.append("R", [q + num_ancillas for q in range(num_qubits_x)])
-            # circuit.append("Z_ERROR", [anc for anc in range(num_ancillas)], p_i) # idling error on the ancillas
-            circuit.append("X_ERROR", [q + num_ancillas for q in range(num_qubits_x)], p_i)
     
         # go through each stabilizer in order, X stabilizers first
         for order in order_d_x:
@@ -455,6 +445,18 @@ class CDCompassCodeCircuit:
         # reset the ancillas
         circuit.append("R", full_stab_L)
         circuit.append("X_ERROR", full_stab_L, p_i) # add the error to the ancillas
+
+        # reset the data qubits
+        
+        if type == "X":
+            circuit.append("RX", [q + num_ancillas for q in range(num_qubits_x)])
+            circuit.append("X_ERROR", [q + num_ancillas for q in range(num_qubits_x)], p_i) # add the error to the data qubits
+            # circuit.append("Z_ERROR", [anc for anc in range(num_ancillas)], p_i) # idling error on the ancillas
+            # circuit.append("Z_ERROR", q + num_ancillas, pz) # add the error to the data qubits
+        if type == "Z":
+            circuit.append("R", [q + num_ancillas for q in range(num_qubits_x)])
+            # circuit.append("Z_ERROR", [anc for anc in range(num_ancillas)], p_i) # idling error on the ancillas
+            circuit.append("X_ERROR", [q + num_ancillas for q in range(num_qubits_x)], p_i)
 
 
         # start the for loop to repeat for d rounds
