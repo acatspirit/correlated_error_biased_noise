@@ -539,7 +539,7 @@ def get_prob_scale(corr_type, eta):
 #
 
 if __name__ == "__main__":
-    # task_id = int(os.environ['SLURM_ARRAY_TASK_ID'])
+    task_id = int(os.environ['SLURM_ARRAY_TASK_ID'])
 
 
     num_shots = 100000 # number of shots to sample
@@ -563,29 +563,29 @@ if __name__ == "__main__":
         elif corr_type == "CORR_XZ":
             output_file = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/xz_corr_err_data.csv'
 
-    d = 3
-    type_mem = "X" # type of memory experiment, X or Z
-    decoder = CorrelatedDecoder(eta, d, l, corr_type)
-    # # # # print(decoder.H_x, decoder.H_z)
-    circuit = cc_circuit.CDCompassCodeCircuit(d, l, eta, [0.003, 0.001, 0.01], type_mem) # change list of ps dependent on model
-    curr_circuit = circuit.make_elongated_circuit_from_parity()
-    # print(repr(curr_circuit.detector_error_model(decompose_errors=True)))
+    # d = 3
+    # type_mem = "X" # type of memory experiment, X or Z
+    # decoder = CorrelatedDecoder(eta, d, l, corr_type)
+    # # # # # print(decoder.H_x, decoder.H_z)
+    # circuit = cc_circuit.CDCompassCodeCircuit(d, l, eta, [0.003, 0.001, 0.01], type_mem) # change list of ps dependent on model
+    # curr_circuit = circuit.make_elongated_circuit_from_parity()
+    # # print(repr(curr_circuit.detector_error_model(decompose_errors=True)))
 
-    # diagram = curr_circuit.diagram("timeline-svg")
-    DEM = curr_circuit.detector_error_model()
-    # matchgraph = Matching.from_detector_error_model(DEM)
-    # matchgraph = Matching.from_stim_circuit(curr_circuit)
-    # print(matchgraph.edges())
-    # matchgraph.draw()
-    # plt.show()
-    # with open('diagram.svg', 'w') as f:
-    #     f.write(str(diagram))
+    # # diagram = curr_circuit.diagram("timeline-svg")
+    # DEM = curr_circuit.detector_error_model()
+    # # matchgraph = Matching.from_detector_error_model(DEM)
+    # # matchgraph = Matching.from_stim_circuit(curr_circuit)
+    # # print(matchgraph.edges())
+    # # matchgraph.draw()
+    # # plt.show()
+    # # with open('diagram.svg', 'w') as f:
+    # #     f.write(str(diagram))
 
-    decoder.get_log_error_circuit_level(p_list, type_mem, num_shots)
+    # decoder.get_log_error_circuit_level(p_list, type_mem, num_shots)
     
     
     # run this to get data from the dcc
-    # write_data(num_shots, d_list, l, p_list, eta, task_id, corr_type, circuit_data=circuit_data)
+    write_data(num_shots, d_list, l, p_list, eta, task_id, corr_type, circuit_data=circuit_data)
     # run this once you have data and want to combo it to one csv
     # concat_csv(folder_path, output_file)
 
