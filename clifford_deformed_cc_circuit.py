@@ -503,7 +503,7 @@ class CDCompassCodeCircuit:
         loop_circuit.append("TICK") # add a tick to the circuit to mark the end of the t>0 iteration
         
         # repeat the loop circuit d-1 times - circuit level only
-        # circuit.append(stim.CircuitRepeatBlock(repeat_count=self.d, body=loop_circuit))# end the repeat block
+        circuit.append(stim.CircuitRepeatBlock(repeat_count=self.d-1, body=loop_circuit))# end the repeat block
 
         # reconstruct the stabilizers and measure the data qubits
         # for X mem measure X stabs
@@ -570,11 +570,12 @@ class CDCompassCodeCircuit:
 p_list = np.linspace(0,0.5, 30)
 d_dict = {5:[], 7:[], 9:[], 11:[]}
 num_shots = 100000
-l = 3
+l = 2
 type_d = {0:"X", 1:"Z"}
 type=type_d[0]
 eta = 1.67
 prob_scale = {'X': 0.5/(1+eta), 'Z': (1+2*eta)/(2*(1+eta)), 'CORR_XZ': 1, 'TOTAL':1}
+
 
 
 # circuit = CDCompassCodeCircuit(5, l, eta, [0.003, 0.001, 0.05], type)

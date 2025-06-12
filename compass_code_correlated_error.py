@@ -225,9 +225,9 @@ class CorrelatedDecoder:
         dem = circuit.detector_error_model(approximate_disjoint_errors=True) # what does the decompose do?
         matchgraph = Matching.from_detector_error_model(dem)
         sampler = circuit.compile_detector_sampler()
-        syndrome, obersvable_flips = sampler.sample(num_shots, separate_observables=True)
+        syndrome, observable_flips = sampler.sample(num_shots, separate_observables=True)
         predictions = matchgraph.decode_batch(syndrome)
-        num_errors = np.sum(np.any(np.array(obersvable_flips) != np.array(predictions), axis=1))
+        num_errors = np.sum(np.any(np.array(observable_flips) != np.array(predictions), axis=1))
         return num_errors
 
     def get_log_error_circuit_level(self, p_list, meas_type, num_shots):
@@ -544,7 +544,7 @@ if __name__ == "__main__":
 
     num_shots = 100000 # number of shots to sample
     circuit_data = True # whether circuit level or code cap data is desired
-    d_list = [7, 9, 11]
+    d_list = [3,5,7]
     d_dict = {}
     l=2 # elongation parameter of compass code
     p_list = np.linspace(0.01, 0.5, 20)
@@ -566,16 +566,17 @@ if __name__ == "__main__":
     # d = 3
     # type_mem = "X" # type of memory experiment, X or Z
     # decoder = CorrelatedDecoder(eta, d, l, corr_type)
-    # # # print(decoder.H_x, decoder.H_z)
+    # # # # print(decoder.H_x, decoder.H_z)
     # circuit = cc_circuit.CDCompassCodeCircuit(d, l, eta, [0.003, 0.001, 0.01], type_mem) # change list of ps dependent on model
     # curr_circuit = circuit.make_elongated_circuit_from_parity()
-    # # print(circuit.circuit)
+    # print(repr(curr_circuit.detector_error_model(decompose_errors=True)))
+
     # diagram = curr_circuit.diagram("timeline-svg")
     # with open('diagram.svg', 'w') as f:
     #     f.write(str(diagram))
 
     # decoder.get_log_error_circuit_level(p_list, type_mem, num_shots)
-
+    
     
     # run this to get data from the dcc
     write_data(num_shots, d_list, l, p_list, eta, task_id, corr_type, circuit_data=circuit_data)
