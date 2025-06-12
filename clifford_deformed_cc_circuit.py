@@ -453,7 +453,7 @@ class CDCompassCodeCircuit:
         
         # reset the ancillas
         circuit.append("R", full_stab_L)
-        # circuit.append("X_ERROR", full_stab_L, px) # add the error to the ancillas
+        circuit.append("X_ERROR", full_stab_L, p_i) # add the error to the ancillas
 
 
         # start the for loop to repeat for d rounds
@@ -465,8 +465,8 @@ class CDCompassCodeCircuit:
         # idling errors on the data qubits
         # circuit.append("Z_ERROR", data_q_z_list, p_i)
         # circuit.append("X_ERROR", full_stab_L, p_meas) # add the error to the ancillas
-        circuit.append("X_ERROR", full_stab_L, p_i) # for phenom only
-        circuit.append("MR", full_stab_L)
+        # circuit.append("X_ERROR", full_stab_L, p_i) # for phenom only
+        circuit.append("MR", full_stab_L,p_i)
         circuit.append("X_ERROR", full_stab_L,p_i) # add the error to the ancillas
         # circuit.append("Z_ERROR", data_q_z_list, p_i)
 
@@ -490,7 +490,7 @@ class CDCompassCodeCircuit:
         # idling errors on the data qubits, measure the ancillas, bit flip errors on measurements
         # loop_circuit.append("Z_ERROR", data_q_z_list, p_i)
         loop_circuit.append("X_ERROR", full_stab_L, p_i)
-        loop_circuit.append("MR", full_stab_L)
+        loop_circuit.append("MR", full_stab_L,p_i)
         loop_circuit.append("X_ERROR", full_stab_L, p_i) # add the error to the ancillas
         # loop_circuit.append("X_ERROR", full_stab_L, p_meas) # add the error to the ancillas
         # loop_circuit.append("PAULI_CHANNEL_1", data_q_z_list, [0,0,p_i])
@@ -512,7 +512,7 @@ class CDCompassCodeCircuit:
         if self.type == "X":
             # measure all the data qubits in the X stabilizers
             circuit.append("X_ERROR", data_q_x_list, p_i) # add the error to the data qubits
-            circuit.append("MX", data_q_x_list)
+            circuit.append("MX", data_q_x_list, p_i)
             circuit.append("X_ERROR", data_q_x_list, p_i)
 
             # reconstruct each X stabilizer with a detector
