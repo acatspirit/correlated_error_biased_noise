@@ -222,7 +222,7 @@ class CorrelatedDecoder:
         :param num_shots: number of shots to sample
         :return: number of logical errors
         """
-        dem = circuit.detector_error_model(approximate_disjoint_errors=True) # what does the decompose do?
+        dem = circuit.detector_error_model() # what does the decompose do?
         matchgraph = Matching.from_detector_error_model(dem)
         sampler = circuit.compile_detector_sampler()
         syndrome, observable_flips = sampler.sample(num_shots, separate_observables=True)
@@ -245,7 +245,7 @@ class CorrelatedDecoder:
             circuit = cc_circuit.CDCompassCodeCircuit(self.d, self.l, self.eta, [0.003, 0.001, p], meas_type) # change list of ps dependent on model
 
             log_errors = self.get_num_log_errors_DEM(circuit.circuit, num_shots)
-            log_error_L.append(log_errors/num_shots)
+            log_error_L.append(log_errors)
 
         return log_error_L
 
@@ -297,8 +297,8 @@ def get_data(num_shots, d_list, l, p_list, eta, corr_type, circuit_data):
                 # circuit_z = cc_circuit.CDCompassCodeCircuit(d, l, eta, [0.003, 0.001, p], "Z")
     
             decoder = CorrelatedDecoder(eta, d, l, corr_type)
-            log_errors_z = decoder.get_log_error_circuit_level(p_list, "X", num_shots) # get the Z logical errors from X memory experiment
-            log_errors_x = decoder.get_log_error_circuit_level(p_list, "Z", num_shots) # get the X logical errors from Z memory experiment
+            log_errors_z = decoder.get_log_error_circuit_level(p_list, "Z", num_shots) # get the Z logical errors from Z memory experiment
+            log_errors_x = decoder.get_log_error_circuit_level(p_list, "X", num_shots) # get the X logical errors from X memory experiment
 
 
             for i,log_error in enumerate(log_errors_x):
@@ -539,7 +539,7 @@ def get_prob_scale(corr_type, eta):
 #
 
 if __name__ == "__main__":
-    task_id = int(os.environ['SLURM_ARRAY_TASK_ID'])
+    # task_id = int(os.environ['SLURM_ARRAY_TASK_ID'])
 
 
     num_shots = 100000 # number of shots to sample
@@ -547,7 +547,7 @@ if __name__ == "__main__":
     d_list = [3,5,7]
     d_dict = {}
     l=2 # elongation parameter of compass code
-    p_list = np.linspace(0.01, 0.5, 20)
+    p_list = np.linspace(0.01, 0.11, 20)
     eta = 0.5 # the degree of noise bias
     corr_type = "CORR_ZX"
     if circuit_data:
@@ -585,7 +585,7 @@ if __name__ == "__main__":
     
     
     # run this to get data from the dcc
-    write_data(num_shots, d_list, l, p_list, eta, task_id, corr_type, circuit_data=circuit_data)
+    # write_data(num_shots, d_list, l, p_list, eta, task_id, corr_type, circuit_data=circuit_data)
     # run this once you have data and want to combo it to one csv
     # concat_csv(folder_path, output_file)
 
@@ -595,7 +595,7 @@ if __name__ == "__main__":
 
 
     # Load and filter only X_mem and Z_mem
-    # df = pd.read_csv(output_file)
+    df = pd.read_csv(output_file)
     # df = df[(df['num_shots'] == num_shots) & 
     #         (df['eta'] == eta) ]
 
@@ -651,7 +651,7 @@ if __name__ == "__main__":
     # print(threshold, confidence)
 
     # threshold_plot(df, p_th_init, p_diff, eta, l, num_shots, "Z", output_file, loglog=True, averaging=True,show_threshold=True)
-    # full_error_plot(df, eta, l, num_shots, corr_type, output_file, loglog=False, averaging=True)
+    full_error_plot(df, eta, l, num_shots, corr_type, output_file, loglog=False, averaging=True)
 
 
 
