@@ -539,7 +539,7 @@ def get_prob_scale(corr_type, eta):
 #
 
 if __name__ == "__main__":
-    task_id = int(os.environ['SLURM_ARRAY_TASK_ID'])
+    # task_id = int(os.environ['SLURM_ARRAY_TASK_ID'])
 
 
     num_shots = 100000 # number of shots to sample
@@ -571,21 +571,21 @@ if __name__ == "__main__":
     # curr_circuit = circuit.make_elongated_circuit_from_parity()
     # # # print(repr(curr_circuit.detector_error_model(decompose_errors=True)))
 
-    # # # diagram = curr_circuit.diagram("timeline-svg")
-    # DEM = curr_circuit.detector_error_model()
+    # diagram = curr_circuit.diagram("timeline-svg")
+    # # DEM = curr_circuit.detector_error_model()
     # # matchgraph = Matching.from_detector_error_model(DEM)
     # # matchgraph = Matching.from_stim_circuit(curr_circuit)
     # # print(matchgraph.edges())
     # # matchgraph.draw()
     # # plt.show()
-    # # with open('diagram.svg', 'w') as f:
-    # #     f.write(str(diagram))
+    # with open('diagram.svg', 'w') as f:
+    #     f.write(str(diagram))
 
     # decoder.get_log_error_circuit_level(p_list, type_mem, num_shots)
     
     
     # run this to get data from the dcc
-    write_data(num_shots, d_list, l, p_list, eta, task_id, corr_type, circuit_data=circuit_data)
+    # write_data(num_shots, d_list, l, p_list, eta, task_id, corr_type, circuit_data=circuit_data)
     # run this once you have data and want to combo it to one csv
     # concat_csv(folder_path, output_file)
 
@@ -595,7 +595,7 @@ if __name__ == "__main__":
 
 
     # Load and filter only X_mem and Z_mem
-    # df = pd.read_csv(output_file)
+    df = pd.read_csv(output_file)
     # df = df[(df['num_shots'] == num_shots) & 
     #         (df['eta'] == eta) ]
 
@@ -651,7 +651,7 @@ if __name__ == "__main__":
     # print(threshold, confidence)
 
     # threshold_plot(df, p_th_init, p_diff, eta, l, num_shots, "Z", output_file, loglog=True, averaging=True,show_threshold=True)
-    # full_error_plot(df, eta, l, num_shots, corr_type, output_file, loglog=False, averaging=True)
+    full_error_plot(df, eta, l, num_shots, corr_type, output_file, loglog=False, averaging=True)
 
 
 

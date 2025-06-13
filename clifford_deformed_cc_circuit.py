@@ -436,7 +436,7 @@ class CDCompassCodeCircuit:
         
         data_q_x_list = [num_ancillas + q for q in list(qubit_d_x.keys())] # all the x data qubits
         data_q_z_list = [num_ancillas + q for q in list(qubit_d_z.keys())] # all the z data qubits
-        data_q_list = data_q_x_list # change this later when wanna do X and Z seperately
+        data_q_list = [num_ancillas + q for q in range(self.d**2)] # change this later when wanna do X and Z seperately
 
 
         # convention - X stabs first, then Z stabs starting with 0
@@ -449,14 +449,14 @@ class CDCompassCodeCircuit:
         # reset the data qubits
         
         if self.type == "X":
-            circuit.append("RX", [q + num_ancillas for q in range(num_qubits_x)])
-            circuit.append("X_ERROR", [q + num_ancillas for q in range(num_qubits_x)], p_i) # add the error to the data qubits
+            circuit.append("RX", data_q_list)
+            circuit.append("X_ERROR", data_q_list, p_i) # add the error to the data qubits
             # circuit.append("Z_ERROR", [anc for anc in range(num_ancillas)], p_i) # idling error on the ancillas
             # circuit.append("Z_ERROR", q + num_ancillas, pz) # add the error to the data qubits
         elif self.type == "Z":
-            circuit.append("R", [q + num_ancillas for q in range(num_qubits_x)])
+            circuit.append("R", data_q_list)
             # circuit.append("Z_ERROR", [anc for anc in range(num_ancillas)], p_i) # idling error on the ancillas
-            circuit.append("X_ERROR", [q + num_ancillas for q in range(num_qubits_x)], p_i)
+            circuit.append("X_ERROR", data_q_list, p_i)
 
 
         # start the for loop to repeat for d rounds
@@ -468,8 +468,8 @@ class CDCompassCodeCircuit:
         # idling errors on the data qubits
         # circuit.append("Z_ERROR", data_q_z_list, p_i)
         # circuit.append("X_ERROR", full_stab_L, p_meas) # add the error to the ancillas
-        circuit.append("X_ERROR", full_stab_L, p_i) # for phenom only
-        circuit.append("MR", full_stab_L,p_i)
+        # circuit.append("X_ERROR", full_stab_L, p_i) # for phenom only
+        circuit.append("MR", full_stab_L)
         circuit.append("X_ERROR", full_stab_L,p_i) # add the error to the ancillas
         # circuit.append("Z_ERROR", data_q_z_list, p_i)
 
@@ -492,8 +492,8 @@ class CDCompassCodeCircuit:
 
         # idling errors on the data qubits, measure the ancillas, bit flip errors on measurements
         # loop_circuit.append("Z_ERROR", data_q_z_list, p_i)
-        loop_circuit.append("X_ERROR", full_stab_L, p_i)
-        loop_circuit.append("MR", full_stab_L,p_i)
+        # loop_circuit.append("X_ERROR", full_stab_L, p_i)
+        loop_circuit.append("MR", full_stab_L)
         loop_circuit.append("X_ERROR", full_stab_L, p_i) # add the error to the ancillas
         # loop_circuit.append("X_ERROR", full_stab_L, p_meas) # add the error to the ancillas
         # loop_circuit.append("PAULI_CHANNEL_1", data_q_z_list, [0,0,p_i])
@@ -516,9 +516,9 @@ class CDCompassCodeCircuit:
         # for X mem measure X stabs
         if self.type == "X":
             # measure all the data qubits in the X stabilizers
-            circuit.append("X_ERROR", data_q_x_list, p_i) # add the error to the data qubits
-            circuit.append("MX", data_q_x_list, p_i)
-            circuit.append("X_ERROR", data_q_x_list, p_i)
+            # circuit.append("X_ERROR", data_q_list, p_i) # add the error to the data qubits
+            circuit.append("MX", data_q_list)
+            # circuit.append("X_ERROR", data_q_list, p_i)
 
             # reconstruct each X stabilizer with a detector
             for anc in stab_d_x: 
@@ -533,9 +533,9 @@ class CDCompassCodeCircuit:
         # Z mem measure Z stabs
         if self.type == "Z":
             # measure all the data qubits in the Z stabilizers
-            circuit.append("X_ERROR", data_q_z_list, p_i) # add the error to the data qubits
-            circuit.append("M", data_q_list, p_i)
-            circuit.append("X_ERROR", data_q_z_list, p_i)
+            # circuit.append("X_ERROR", data_q_list, p_i) # add the error to the data qubits
+            circuit.append("M", data_q_list)
+            # circuit.append("X_ERROR", data_q_list, p_i)
 
             # reconstruct each stabilizer with a detector
             for anc in stab_d_z: 

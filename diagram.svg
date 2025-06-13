@@ -1,1 +1,689 @@
-None
+<svg viewBox="0 0 5408 1184"  version="1.1" xmlns="http://www.w3.org/2000/svg">
+<g id="qubit_lines">
+<path id="qubit_line:0" d="M64,64 L5376,64 " stroke="black"/>
+<text dominant-baseline="central" text-anchor="end" font-family="monospace" font-size="12" x="64" y="64">q0</text>
+<path id="qubit_line:1" d="M64,128 L5376,128 " stroke="black"/>
+<text dominant-baseline="central" text-anchor="end" font-family="monospace" font-size="12" x="64" y="128">q1</text>
+<path id="qubit_line:2" d="M64,192 L5376,192 " stroke="black"/>
+<text dominant-baseline="central" text-anchor="end" font-family="monospace" font-size="12" x="64" y="192">q2</text>
+<path id="qubit_line:3" d="M64,256 L5376,256 " stroke="black"/>
+<text dominant-baseline="central" text-anchor="end" font-family="monospace" font-size="12" x="64" y="256">q3</text>
+<path id="qubit_line:4" d="M64,320 L5376,320 " stroke="black"/>
+<text dominant-baseline="central" text-anchor="end" font-family="monospace" font-size="12" x="64" y="320">q4</text>
+<path id="qubit_line:5" d="M64,384 L5376,384 " stroke="black"/>
+<text dominant-baseline="central" text-anchor="end" font-family="monospace" font-size="12" x="64" y="384">q5</text>
+<path id="qubit_line:6" d="M64,448 L5376,448 " stroke="black"/>
+<text dominant-baseline="central" text-anchor="end" font-family="monospace" font-size="12" x="64" y="448">q6</text>
+<path id="qubit_line:7" d="M64,512 L5376,512 " stroke="black"/>
+<text dominant-baseline="central" text-anchor="end" font-family="monospace" font-size="12" x="64" y="512">q7</text>
+<path id="qubit_line:8" d="M64,576 L5376,576 " stroke="black"/>
+<text dominant-baseline="central" text-anchor="end" font-family="monospace" font-size="12" x="64" y="576">q8</text>
+<path id="qubit_line:9" d="M64,640 L5376,640 " stroke="black"/>
+<text dominant-baseline="central" text-anchor="end" font-family="monospace" font-size="12" x="64" y="640">q9</text>
+<path id="qubit_line:10" d="M64,704 L5376,704 " stroke="black"/>
+<text dominant-baseline="central" text-anchor="end" font-family="monospace" font-size="12" x="64" y="704">q10</text>
+<path id="qubit_line:11" d="M64,768 L5376,768 " stroke="black"/>
+<text dominant-baseline="central" text-anchor="end" font-family="monospace" font-size="12" x="64" y="768">q11</text>
+<path id="qubit_line:12" d="M64,832 L5376,832 " stroke="black"/>
+<text dominant-baseline="central" text-anchor="end" font-family="monospace" font-size="12" x="64" y="832">q12</text>
+<path id="qubit_line:13" d="M64,896 L5376,896 " stroke="black"/>
+<text dominant-baseline="central" text-anchor="end" font-family="monospace" font-size="12" x="64" y="896">q13</text>
+<path id="qubit_line:14" d="M64,960 L5376,960 " stroke="black"/>
+<text dominant-baseline="central" text-anchor="end" font-family="monospace" font-size="12" x="64" y="960">q14</text>
+<path id="qubit_line:15" d="M64,1024 L5376,1024 " stroke="black"/>
+<text dominant-baseline="central" text-anchor="end" font-family="monospace" font-size="12" x="64" y="1024">q15</text>
+<path id="qubit_line:16" d="M64,1088 L5376,1088 " stroke="black"/>
+<text dominant-baseline="central" text-anchor="end" font-family="monospace" font-size="12" x="64" y="1088">q16</text>
+</g>
+<rect x="80" y="48" width="32" height="32" stroke="black" fill="black"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="30" x="96" y="64" fill="white">R</text>
+<rect x="80" y="112" width="32" height="32" stroke="black" fill="black"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="30" x="96" y="128" fill="white">R</text>
+<rect x="80" y="176" width="32" height="32" stroke="black" fill="black"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="30" x="96" y="192" fill="white">R</text>
+<rect x="80" y="240" width="32" height="32" stroke="black" fill="black"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="30" x="96" y="256" fill="white">R</text>
+<rect x="80" y="304" width="32" height="32" stroke="black" fill="black"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="30" x="96" y="320" fill="white">R</text>
+<rect x="80" y="368" width="32" height="32" stroke="black" fill="black"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="30" x="96" y="384" fill="white">R</text>
+<rect x="80" y="432" width="32" height="32" stroke="black" fill="black"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="30" x="96" y="448" fill="white">R</text>
+<rect x="80" y="496" width="32" height="32" stroke="black" fill="black"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="30" x="96" y="512" fill="white">R</text>
+<rect x="144" y="48" width="32" height="32" stroke="black" fill="pink"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="12" x="160" y="64">ERR<tspan baseline-shift="sub" font-size="10">X</tspan></text>
+<text dominant-baseline="hanging" text-anchor="middle" font-family="monospace" font-size="10" stroke="red" x="160" y="84">0.01</text>
+<rect x="144" y="112" width="32" height="32" stroke="black" fill="pink"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="12" x="160" y="128">ERR<tspan baseline-shift="sub" font-size="10">X</tspan></text>
+<text dominant-baseline="hanging" text-anchor="middle" font-family="monospace" font-size="10" stroke="red" x="160" y="148">0.01</text>
+<rect x="144" y="176" width="32" height="32" stroke="black" fill="pink"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="12" x="160" y="192">ERR<tspan baseline-shift="sub" font-size="10">X</tspan></text>
+<text dominant-baseline="hanging" text-anchor="middle" font-family="monospace" font-size="10" stroke="red" x="160" y="212">0.01</text>
+<rect x="144" y="240" width="32" height="32" stroke="black" fill="pink"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="12" x="160" y="256">ERR<tspan baseline-shift="sub" font-size="10">X</tspan></text>
+<text dominant-baseline="hanging" text-anchor="middle" font-family="monospace" font-size="10" stroke="red" x="160" y="276">0.01</text>
+<rect x="144" y="304" width="32" height="32" stroke="black" fill="pink"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="12" x="160" y="320">ERR<tspan baseline-shift="sub" font-size="10">X</tspan></text>
+<text dominant-baseline="hanging" text-anchor="middle" font-family="monospace" font-size="10" stroke="red" x="160" y="340">0.01</text>
+<rect x="144" y="368" width="32" height="32" stroke="black" fill="pink"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="12" x="160" y="384">ERR<tspan baseline-shift="sub" font-size="10">X</tspan></text>
+<text dominant-baseline="hanging" text-anchor="middle" font-family="monospace" font-size="10" stroke="red" x="160" y="404">0.01</text>
+<rect x="144" y="432" width="32" height="32" stroke="black" fill="pink"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="12" x="160" y="448">ERR<tspan baseline-shift="sub" font-size="10">X</tspan></text>
+<text dominant-baseline="hanging" text-anchor="middle" font-family="monospace" font-size="10" stroke="red" x="160" y="468">0.01</text>
+<rect x="144" y="496" width="32" height="32" stroke="black" fill="pink"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="12" x="160" y="512">ERR<tspan baseline-shift="sub" font-size="10">X</tspan></text>
+<text dominant-baseline="hanging" text-anchor="middle" font-family="monospace" font-size="10" stroke="red" x="160" y="532">0.01</text>
+<rect x="144" y="560" width="32" height="32" stroke="black" fill="black"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="30" x="160" y="576" fill="white">R</text>
+<rect x="144" y="624" width="32" height="32" stroke="black" fill="black"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="30" x="160" y="640" fill="white">R</text>
+<rect x="144" y="688" width="32" height="32" stroke="black" fill="black"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="30" x="160" y="704" fill="white">R</text>
+<rect x="144" y="752" width="32" height="32" stroke="black" fill="black"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="30" x="160" y="768" fill="white">R</text>
+<rect x="144" y="816" width="32" height="32" stroke="black" fill="black"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="30" x="160" y="832" fill="white">R</text>
+<rect x="144" y="880" width="32" height="32" stroke="black" fill="black"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="30" x="160" y="896" fill="white">R</text>
+<rect x="144" y="944" width="32" height="32" stroke="black" fill="black"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="30" x="160" y="960" fill="white">R</text>
+<rect x="144" y="1008" width="32" height="32" stroke="black" fill="black"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="30" x="160" y="1024" fill="white">R</text>
+<rect x="144" y="1072" width="32" height="32" stroke="black" fill="black"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="30" x="160" y="1088" fill="white">R</text>
+<rect x="208" y="560" width="32" height="32" stroke="black" fill="pink"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="12" x="224" y="576">ERR<tspan baseline-shift="sub" font-size="10">X</tspan></text>
+<text dominant-baseline="hanging" text-anchor="middle" font-family="monospace" font-size="10" stroke="red" x="224" y="596">0.01</text>
+<rect x="208" y="624" width="32" height="32" stroke="black" fill="pink"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="12" x="224" y="640">ERR<tspan baseline-shift="sub" font-size="10">X</tspan></text>
+<text dominant-baseline="hanging" text-anchor="middle" font-family="monospace" font-size="10" stroke="red" x="224" y="660">0.01</text>
+<rect x="208" y="688" width="32" height="32" stroke="black" fill="pink"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="12" x="224" y="704">ERR<tspan baseline-shift="sub" font-size="10">X</tspan></text>
+<text dominant-baseline="hanging" text-anchor="middle" font-family="monospace" font-size="10" stroke="red" x="224" y="724">0.01</text>
+<rect x="208" y="752" width="32" height="32" stroke="black" fill="pink"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="12" x="224" y="768">ERR<tspan baseline-shift="sub" font-size="10">X</tspan></text>
+<text dominant-baseline="hanging" text-anchor="middle" font-family="monospace" font-size="10" stroke="red" x="224" y="788">0.01</text>
+<rect x="208" y="816" width="32" height="32" stroke="black" fill="pink"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="12" x="224" y="832">ERR<tspan baseline-shift="sub" font-size="10">X</tspan></text>
+<text dominant-baseline="hanging" text-anchor="middle" font-family="monospace" font-size="10" stroke="red" x="224" y="852">0.01</text>
+<rect x="208" y="880" width="32" height="32" stroke="black" fill="pink"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="12" x="224" y="896">ERR<tspan baseline-shift="sub" font-size="10">X</tspan></text>
+<text dominant-baseline="hanging" text-anchor="middle" font-family="monospace" font-size="10" stroke="red" x="224" y="916">0.01</text>
+<rect x="208" y="944" width="32" height="32" stroke="black" fill="pink"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="12" x="224" y="960">ERR<tspan baseline-shift="sub" font-size="10">X</tspan></text>
+<text dominant-baseline="hanging" text-anchor="middle" font-family="monospace" font-size="10" stroke="red" x="224" y="980">0.01</text>
+<rect x="208" y="1008" width="32" height="32" stroke="black" fill="pink"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="12" x="224" y="1024">ERR<tspan baseline-shift="sub" font-size="10">X</tspan></text>
+<text dominant-baseline="hanging" text-anchor="middle" font-family="monospace" font-size="10" stroke="red" x="224" y="1044">0.01</text>
+<rect x="208" y="1072" width="32" height="32" stroke="black" fill="pink"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="12" x="224" y="1088">ERR<tspan baseline-shift="sub" font-size="10">X</tspan></text>
+<text dominant-baseline="hanging" text-anchor="middle" font-family="monospace" font-size="10" stroke="red" x="224" y="1108">0.01</text>
+<rect x="208" y="48" width="32" height="32" stroke="black" fill="white"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="30" x="224" y="64">H</text>
+<rect x="208" y="112" width="32" height="32" stroke="black" fill="white"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="30" x="224" y="128">H</text>
+<rect x="208" y="176" width="32" height="32" stroke="black" fill="white"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="30" x="224" y="192">H</text>
+<rect x="208" y="240" width="32" height="32" stroke="black" fill="white"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="30" x="224" y="256">H</text>
+<path d="M288,64 L288,576 " stroke="black"/>
+<circle cx="288" cy="64" r="12" stroke="none" fill="black"/>
+<circle cx="288" cy="576" r="12" stroke="black" fill="white"/>
+<path d="M276,576 L300,576 M288,564 L288,588 " stroke="black"/>
+<path d="M352,64 L352,640 " stroke="black"/>
+<circle cx="352" cy="64" r="12" stroke="none" fill="black"/>
+<circle cx="352" cy="640" r="12" stroke="black" fill="white"/>
+<path d="M340,640 L364,640 M352,628 L352,652 " stroke="black"/>
+<path d="M416,64 L416,768 " stroke="black"/>
+<circle cx="416" cy="64" r="12" stroke="none" fill="black"/>
+<circle cx="416" cy="768" r="12" stroke="black" fill="white"/>
+<path d="M404,768 L428,768 M416,756 L416,780 " stroke="black"/>
+<path d="M480,64 L480,832 " stroke="black"/>
+<circle cx="480" cy="64" r="12" stroke="none" fill="black"/>
+<circle cx="480" cy="832" r="12" stroke="black" fill="white"/>
+<path d="M468,832 L492,832 M480,820 L480,844 " stroke="black"/>
+<path d="M68,40 L68,32 L508,32 L508,40 " stroke="black" fill="none"/>
+<path d="M68,1144 L68,1152 L508,1152 L508,1144 " stroke="black" fill="none"/>
+<path d="M544,128 L544,960 " stroke="black"/>
+<circle cx="544" cy="128" r="12" stroke="none" fill="black"/>
+<circle cx="544" cy="960" r="12" stroke="black" fill="white"/>
+<path d="M532,960 L556,960 M544,948 L544,972 " stroke="black"/>
+<path d="M608,128 L608,1024 " stroke="black"/>
+<circle cx="608" cy="128" r="12" stroke="none" fill="black"/>
+<circle cx="608" cy="1024" r="12" stroke="black" fill="white"/>
+<path d="M596,1024 L620,1024 M608,1012 L608,1036 " stroke="black"/>
+<path d="M516,40 L516,32 L636,32 L636,40 " stroke="black" fill="none"/>
+<path d="M516,1144 L516,1152 L636,1152 L636,1144 " stroke="black" fill="none"/>
+<path d="M672,192 L672,640 " stroke="black"/>
+<circle cx="672" cy="192" r="12" stroke="none" fill="black"/>
+<circle cx="672" cy="640" r="12" stroke="black" fill="white"/>
+<path d="M660,640 L684,640 M672,628 L672,652 " stroke="black"/>
+<path d="M736,192 L736,704 " stroke="black"/>
+<circle cx="736" cy="192" r="12" stroke="none" fill="black"/>
+<circle cx="736" cy="704" r="12" stroke="black" fill="white"/>
+<path d="M724,704 L748,704 M736,692 L736,716 " stroke="black"/>
+<path d="M644,40 L644,32 L764,32 L764,40 " stroke="black" fill="none"/>
+<path d="M644,1144 L644,1152 L764,1152 L764,1144 " stroke="black" fill="none"/>
+<path d="M800,256 L800,832 " stroke="black"/>
+<circle cx="800" cy="256" r="12" stroke="none" fill="black"/>
+<circle cx="800" cy="832" r="12" stroke="black" fill="white"/>
+<path d="M788,832 L812,832 M800,820 L800,844 " stroke="black"/>
+<path d="M864,256 L864,896 " stroke="black"/>
+<circle cx="864" cy="256" r="12" stroke="none" fill="black"/>
+<circle cx="864" cy="896" r="12" stroke="black" fill="white"/>
+<path d="M852,896 L876,896 M864,884 L864,908 " stroke="black"/>
+<path d="M928,256 L928,1024 " stroke="black"/>
+<circle cx="928" cy="256" r="12" stroke="none" fill="black"/>
+<circle cx="928" cy="1024" r="12" stroke="black" fill="white"/>
+<path d="M916,1024 L940,1024 M928,1012 L928,1036 " stroke="black"/>
+<path d="M992,256 L992,1088 " stroke="black"/>
+<circle cx="992" cy="256" r="12" stroke="none" fill="black"/>
+<circle cx="992" cy="1088" r="12" stroke="black" fill="white"/>
+<path d="M980,1088 L1004,1088 M992,1076 L992,1100 " stroke="black"/>
+<path d="M772,40 L772,32 L1020,32 L1020,40 " stroke="black" fill="none"/>
+<path d="M772,1144 L772,1152 L1020,1152 L1020,1144 " stroke="black" fill="none"/>
+<path d="M1056,320 L1056,576 " stroke="black"/>
+<circle cx="1056" cy="576" r="12" stroke="none" fill="black"/>
+<circle cx="1056" cy="320" r="12" stroke="black" fill="white"/>
+<path d="M1044,320 L1068,320 M1056,308 L1056,332 " stroke="black"/>
+<path d="M1120,320 L1120,768 " stroke="black"/>
+<circle cx="1120" cy="768" r="12" stroke="none" fill="black"/>
+<circle cx="1120" cy="320" r="12" stroke="black" fill="white"/>
+<path d="M1108,320 L1132,320 M1120,308 L1120,332 " stroke="black"/>
+<path d="M1028,40 L1028,32 L1148,32 L1148,40 " stroke="black" fill="none"/>
+<path d="M1028,1144 L1028,1152 L1148,1152 L1148,1144 " stroke="black" fill="none"/>
+<path d="M1184,384 L1184,640 " stroke="black"/>
+<circle cx="1184" cy="640" r="12" stroke="none" fill="black"/>
+<circle cx="1184" cy="384" r="12" stroke="black" fill="white"/>
+<path d="M1172,384 L1196,384 M1184,372 L1184,396 " stroke="black"/>
+<path d="M1248,384 L1248,832 " stroke="black"/>
+<circle cx="1248" cy="832" r="12" stroke="none" fill="black"/>
+<circle cx="1248" cy="384" r="12" stroke="black" fill="white"/>
+<path d="M1236,384 L1260,384 M1248,372 L1248,396 " stroke="black"/>
+<path d="M1312,384 L1312,704 " stroke="black"/>
+<circle cx="1312" cy="704" r="12" stroke="none" fill="black"/>
+<circle cx="1312" cy="384" r="12" stroke="black" fill="white"/>
+<path d="M1300,384 L1324,384 M1312,372 L1312,396 " stroke="black"/>
+<path d="M1376,384 L1376,896 " stroke="black"/>
+<circle cx="1376" cy="896" r="12" stroke="none" fill="black"/>
+<circle cx="1376" cy="384" r="12" stroke="black" fill="white"/>
+<path d="M1364,384 L1388,384 M1376,372 L1376,396 " stroke="black"/>
+<path d="M1156,40 L1156,32 L1404,32 L1404,40 " stroke="black" fill="none"/>
+<path d="M1156,1144 L1156,1152 L1404,1152 L1404,1144 " stroke="black" fill="none"/>
+<path d="M1440,448 L1440,768 " stroke="black"/>
+<circle cx="1440" cy="768" r="12" stroke="none" fill="black"/>
+<circle cx="1440" cy="448" r="12" stroke="black" fill="white"/>
+<path d="M1428,448 L1452,448 M1440,436 L1440,460 " stroke="black"/>
+<path d="M1504,448 L1504,960 " stroke="black"/>
+<circle cx="1504" cy="960" r="12" stroke="none" fill="black"/>
+<circle cx="1504" cy="448" r="12" stroke="black" fill="white"/>
+<path d="M1492,448 L1516,448 M1504,436 L1504,460 " stroke="black"/>
+<path d="M1568,448 L1568,832 " stroke="black"/>
+<circle cx="1568" cy="832" r="12" stroke="none" fill="black"/>
+<circle cx="1568" cy="448" r="12" stroke="black" fill="white"/>
+<path d="M1556,448 L1580,448 M1568,436 L1568,460 " stroke="black"/>
+<path d="M1632,448 L1632,1024 " stroke="black"/>
+<circle cx="1632" cy="1024" r="12" stroke="none" fill="black"/>
+<circle cx="1632" cy="448" r="12" stroke="black" fill="white"/>
+<path d="M1620,448 L1644,448 M1632,436 L1632,460 " stroke="black"/>
+<path d="M1412,40 L1412,32 L1660,32 L1660,40 " stroke="black" fill="none"/>
+<path d="M1412,1144 L1412,1152 L1660,1152 L1660,1144 " stroke="black" fill="none"/>
+<path d="M1696,512 L1696,896 " stroke="black"/>
+<circle cx="1696" cy="896" r="12" stroke="none" fill="black"/>
+<circle cx="1696" cy="512" r="12" stroke="black" fill="white"/>
+<path d="M1684,512 L1708,512 M1696,500 L1696,524 " stroke="black"/>
+<path d="M1760,512 L1760,1088 " stroke="black"/>
+<circle cx="1760" cy="1088" r="12" stroke="none" fill="black"/>
+<circle cx="1760" cy="512" r="12" stroke="black" fill="white"/>
+<path d="M1748,512 L1772,512 M1760,500 L1760,524 " stroke="black"/>
+<path d="M1668,40 L1668,32 L1788,32 L1788,40 " stroke="black" fill="none"/>
+<path d="M1668,1144 L1668,1152 L1788,1152 L1788,1144 " stroke="black" fill="none"/>
+<rect x="1808" y="48" width="32" height="32" stroke="black" fill="white"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="30" x="1824" y="64">H</text>
+<rect x="1808" y="112" width="32" height="32" stroke="black" fill="white"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="30" x="1824" y="128">H</text>
+<rect x="1808" y="176" width="32" height="32" stroke="black" fill="white"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="30" x="1824" y="192">H</text>
+<rect x="1808" y="240" width="32" height="32" stroke="black" fill="white"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="30" x="1824" y="256">H</text>
+<rect x="1872" y="48" width="32" height="32" stroke="black" fill="pink"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="12" x="1888" y="64">ERR<tspan baseline-shift="sub" font-size="10">X</tspan></text>
+<text dominant-baseline="hanging" text-anchor="middle" font-family="monospace" font-size="10" stroke="red" x="1888" y="84">0.01</text>
+<rect x="1872" y="112" width="32" height="32" stroke="black" fill="pink"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="12" x="1888" y="128">ERR<tspan baseline-shift="sub" font-size="10">X</tspan></text>
+<text dominant-baseline="hanging" text-anchor="middle" font-family="monospace" font-size="10" stroke="red" x="1888" y="148">0.01</text>
+<rect x="1872" y="176" width="32" height="32" stroke="black" fill="pink"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="12" x="1888" y="192">ERR<tspan baseline-shift="sub" font-size="10">X</tspan></text>
+<text dominant-baseline="hanging" text-anchor="middle" font-family="monospace" font-size="10" stroke="red" x="1888" y="212">0.01</text>
+<rect x="1872" y="240" width="32" height="32" stroke="black" fill="pink"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="12" x="1888" y="256">ERR<tspan baseline-shift="sub" font-size="10">X</tspan></text>
+<text dominant-baseline="hanging" text-anchor="middle" font-family="monospace" font-size="10" stroke="red" x="1888" y="276">0.01</text>
+<rect x="1872" y="304" width="32" height="32" stroke="black" fill="pink"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="12" x="1888" y="320">ERR<tspan baseline-shift="sub" font-size="10">X</tspan></text>
+<text dominant-baseline="hanging" text-anchor="middle" font-family="monospace" font-size="10" stroke="red" x="1888" y="340">0.01</text>
+<rect x="1872" y="368" width="32" height="32" stroke="black" fill="pink"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="12" x="1888" y="384">ERR<tspan baseline-shift="sub" font-size="10">X</tspan></text>
+<text dominant-baseline="hanging" text-anchor="middle" font-family="monospace" font-size="10" stroke="red" x="1888" y="404">0.01</text>
+<rect x="1872" y="432" width="32" height="32" stroke="black" fill="pink"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="12" x="1888" y="448">ERR<tspan baseline-shift="sub" font-size="10">X</tspan></text>
+<text dominant-baseline="hanging" text-anchor="middle" font-family="monospace" font-size="10" stroke="red" x="1888" y="468">0.01</text>
+<rect x="1872" y="496" width="32" height="32" stroke="black" fill="pink"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="12" x="1888" y="512">ERR<tspan baseline-shift="sub" font-size="10">X</tspan></text>
+<text dominant-baseline="hanging" text-anchor="middle" font-family="monospace" font-size="10" stroke="red" x="1888" y="532">0.01</text>
+<rect x="1936" y="48" width="32" height="32" stroke="black" fill="black"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="24" x="1952" y="64" fill="white">MR</text>
+<text dominant-baseline="hanging" text-anchor="middle" font-family="monospace" font-size="16" stroke="red" x="1952" y="84">0.01</text>
+<text text-anchor="middle" font-family="monospace" font-size="8" x="1952" y="44">rec[0]</text>
+<rect x="1936" y="112" width="32" height="32" stroke="black" fill="black"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="24" x="1952" y="128" fill="white">MR</text>
+<text dominant-baseline="hanging" text-anchor="middle" font-family="monospace" font-size="16" stroke="red" x="1952" y="148">0.01</text>
+<text text-anchor="middle" font-family="monospace" font-size="8" x="1952" y="108">rec[1]</text>
+<rect x="1936" y="176" width="32" height="32" stroke="black" fill="black"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="24" x="1952" y="192" fill="white">MR</text>
+<text dominant-baseline="hanging" text-anchor="middle" font-family="monospace" font-size="16" stroke="red" x="1952" y="212">0.01</text>
+<text text-anchor="middle" font-family="monospace" font-size="8" x="1952" y="172">rec[2]</text>
+<rect x="1936" y="240" width="32" height="32" stroke="black" fill="black"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="24" x="1952" y="256" fill="white">MR</text>
+<text dominant-baseline="hanging" text-anchor="middle" font-family="monospace" font-size="16" stroke="red" x="1952" y="276">0.01</text>
+<text text-anchor="middle" font-family="monospace" font-size="8" x="1952" y="236">rec[3]</text>
+<rect x="1936" y="304" width="32" height="32" stroke="black" fill="black"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="24" x="1952" y="320" fill="white">MR</text>
+<text dominant-baseline="hanging" text-anchor="middle" font-family="monospace" font-size="16" stroke="red" x="1952" y="340">0.01</text>
+<text text-anchor="middle" font-family="monospace" font-size="8" x="1952" y="300">rec[4]</text>
+<rect x="1936" y="368" width="32" height="32" stroke="black" fill="black"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="24" x="1952" y="384" fill="white">MR</text>
+<text dominant-baseline="hanging" text-anchor="middle" font-family="monospace" font-size="16" stroke="red" x="1952" y="404">0.01</text>
+<text text-anchor="middle" font-family="monospace" font-size="8" x="1952" y="364">rec[5]</text>
+<rect x="1936" y="432" width="32" height="32" stroke="black" fill="black"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="24" x="1952" y="448" fill="white">MR</text>
+<text dominant-baseline="hanging" text-anchor="middle" font-family="monospace" font-size="16" stroke="red" x="1952" y="468">0.01</text>
+<text text-anchor="middle" font-family="monospace" font-size="8" x="1952" y="428">rec[6]</text>
+<rect x="1936" y="496" width="32" height="32" stroke="black" fill="black"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="24" x="1952" y="512" fill="white">MR</text>
+<text dominant-baseline="hanging" text-anchor="middle" font-family="monospace" font-size="16" stroke="red" x="1952" y="532">0.01</text>
+<text text-anchor="middle" font-family="monospace" font-size="8" x="1952" y="492">rec[7]</text>
+<rect x="2000" y="48" width="32" height="32" stroke="black" fill="pink"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="12" x="2016" y="64">ERR<tspan baseline-shift="sub" font-size="10">X</tspan></text>
+<text dominant-baseline="hanging" text-anchor="middle" font-family="monospace" font-size="10" stroke="red" x="2016" y="84">0.01</text>
+<rect x="2000" y="112" width="32" height="32" stroke="black" fill="pink"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="12" x="2016" y="128">ERR<tspan baseline-shift="sub" font-size="10">X</tspan></text>
+<text dominant-baseline="hanging" text-anchor="middle" font-family="monospace" font-size="10" stroke="red" x="2016" y="148">0.01</text>
+<rect x="2000" y="176" width="32" height="32" stroke="black" fill="pink"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="12" x="2016" y="192">ERR<tspan baseline-shift="sub" font-size="10">X</tspan></text>
+<text dominant-baseline="hanging" text-anchor="middle" font-family="monospace" font-size="10" stroke="red" x="2016" y="212">0.01</text>
+<rect x="2000" y="240" width="32" height="32" stroke="black" fill="pink"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="12" x="2016" y="256">ERR<tspan baseline-shift="sub" font-size="10">X</tspan></text>
+<text dominant-baseline="hanging" text-anchor="middle" font-family="monospace" font-size="10" stroke="red" x="2016" y="276">0.01</text>
+<rect x="2000" y="304" width="32" height="32" stroke="black" fill="pink"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="12" x="2016" y="320">ERR<tspan baseline-shift="sub" font-size="10">X</tspan></text>
+<text dominant-baseline="hanging" text-anchor="middle" font-family="monospace" font-size="10" stroke="red" x="2016" y="340">0.01</text>
+<rect x="2000" y="368" width="32" height="32" stroke="black" fill="pink"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="12" x="2016" y="384">ERR<tspan baseline-shift="sub" font-size="10">X</tspan></text>
+<text dominant-baseline="hanging" text-anchor="middle" font-family="monospace" font-size="10" stroke="red" x="2016" y="404">0.01</text>
+<rect x="2000" y="432" width="32" height="32" stroke="black" fill="pink"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="12" x="2016" y="448">ERR<tspan baseline-shift="sub" font-size="10">X</tspan></text>
+<text dominant-baseline="hanging" text-anchor="middle" font-family="monospace" font-size="10" stroke="red" x="2016" y="468">0.01</text>
+<rect x="2000" y="496" width="32" height="32" stroke="black" fill="pink"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="12" x="2016" y="512">ERR<tspan baseline-shift="sub" font-size="10">X</tspan></text>
+<text dominant-baseline="hanging" text-anchor="middle" font-family="monospace" font-size="10" stroke="red" x="2016" y="532">0.01</text>
+<rect x="2064" y="304" width="160" height="32" stroke="black" fill="lightgray"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="16" x="2144" y="320">DETECTOR</text>
+<text text-anchor="middle" font-family="monospace" font-size="8" x="2144" y="300">D0 = rec[4]</text>
+<rect x="2064" y="368" width="160" height="32" stroke="black" fill="lightgray"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="16" x="2144" y="384">DETECTOR</text>
+<text text-anchor="middle" font-family="monospace" font-size="8" x="2144" y="364">D1 = rec[5]</text>
+<rect x="2064" y="432" width="160" height="32" stroke="black" fill="lightgray"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="16" x="2144" y="448">DETECTOR</text>
+<text text-anchor="middle" font-family="monospace" font-size="8" x="2144" y="428">D2 = rec[6]</text>
+<rect x="2064" y="496" width="160" height="32" stroke="black" fill="lightgray"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="16" x="2144" y="512">DETECTOR</text>
+<text text-anchor="middle" font-family="monospace" font-size="8" x="2144" y="492">D3 = rec[7]</text>
+<path d="M1796,40 L1796,32 L2236,32 L2236,40 " stroke="black" fill="none"/>
+<path d="M1796,1144 L1796,1152 L2236,1152 L2236,1144 " stroke="black" fill="none"/>
+<path d="M2280,32 L2272,32 L2272,1152 L2280,1152 " stroke="black" fill="none"/>
+<text dominant-baseline="auto" text-anchor="start" font-family="monospace" font-size="12" x="2276" y="1148">REP2</text>
+<rect x="2320" y="48" width="32" height="32" stroke="black" fill="white"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="30" x="2336" y="64">H</text>
+<rect x="2320" y="112" width="32" height="32" stroke="black" fill="white"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="30" x="2336" y="128">H</text>
+<rect x="2320" y="176" width="32" height="32" stroke="black" fill="white"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="30" x="2336" y="192">H</text>
+<rect x="2320" y="240" width="32" height="32" stroke="black" fill="white"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="30" x="2336" y="256">H</text>
+<path d="M2400,64 L2400,576 " stroke="black"/>
+<circle cx="2400" cy="64" r="12" stroke="none" fill="black"/>
+<circle cx="2400" cy="576" r="12" stroke="black" fill="white"/>
+<path d="M2388,576 L2412,576 M2400,564 L2400,588 " stroke="black"/>
+<path d="M2464,64 L2464,640 " stroke="black"/>
+<circle cx="2464" cy="64" r="12" stroke="none" fill="black"/>
+<circle cx="2464" cy="640" r="12" stroke="black" fill="white"/>
+<path d="M2452,640 L2476,640 M2464,628 L2464,652 " stroke="black"/>
+<path d="M2528,64 L2528,768 " stroke="black"/>
+<circle cx="2528" cy="64" r="12" stroke="none" fill="black"/>
+<circle cx="2528" cy="768" r="12" stroke="black" fill="white"/>
+<path d="M2516,768 L2540,768 M2528,756 L2528,780 " stroke="black"/>
+<path d="M2592,64 L2592,832 " stroke="black"/>
+<circle cx="2592" cy="64" r="12" stroke="none" fill="black"/>
+<circle cx="2592" cy="832" r="12" stroke="black" fill="white"/>
+<path d="M2580,832 L2604,832 M2592,820 L2592,844 " stroke="black"/>
+<path d="M2308,40 L2308,32 L2620,32 L2620,40 " stroke="black" fill="none"/>
+<path d="M2308,1144 L2308,1152 L2620,1152 L2620,1144 " stroke="black" fill="none"/>
+<path d="M2656,128 L2656,960 " stroke="black"/>
+<circle cx="2656" cy="128" r="12" stroke="none" fill="black"/>
+<circle cx="2656" cy="960" r="12" stroke="black" fill="white"/>
+<path d="M2644,960 L2668,960 M2656,948 L2656,972 " stroke="black"/>
+<path d="M2720,128 L2720,1024 " stroke="black"/>
+<circle cx="2720" cy="128" r="12" stroke="none" fill="black"/>
+<circle cx="2720" cy="1024" r="12" stroke="black" fill="white"/>
+<path d="M2708,1024 L2732,1024 M2720,1012 L2720,1036 " stroke="black"/>
+<path d="M2628,40 L2628,32 L2748,32 L2748,40 " stroke="black" fill="none"/>
+<path d="M2628,1144 L2628,1152 L2748,1152 L2748,1144 " stroke="black" fill="none"/>
+<path d="M2784,192 L2784,640 " stroke="black"/>
+<circle cx="2784" cy="192" r="12" stroke="none" fill="black"/>
+<circle cx="2784" cy="640" r="12" stroke="black" fill="white"/>
+<path d="M2772,640 L2796,640 M2784,628 L2784,652 " stroke="black"/>
+<path d="M2848,192 L2848,704 " stroke="black"/>
+<circle cx="2848" cy="192" r="12" stroke="none" fill="black"/>
+<circle cx="2848" cy="704" r="12" stroke="black" fill="white"/>
+<path d="M2836,704 L2860,704 M2848,692 L2848,716 " stroke="black"/>
+<path d="M2756,40 L2756,32 L2876,32 L2876,40 " stroke="black" fill="none"/>
+<path d="M2756,1144 L2756,1152 L2876,1152 L2876,1144 " stroke="black" fill="none"/>
+<path d="M2912,256 L2912,832 " stroke="black"/>
+<circle cx="2912" cy="256" r="12" stroke="none" fill="black"/>
+<circle cx="2912" cy="832" r="12" stroke="black" fill="white"/>
+<path d="M2900,832 L2924,832 M2912,820 L2912,844 " stroke="black"/>
+<path d="M2976,256 L2976,896 " stroke="black"/>
+<circle cx="2976" cy="256" r="12" stroke="none" fill="black"/>
+<circle cx="2976" cy="896" r="12" stroke="black" fill="white"/>
+<path d="M2964,896 L2988,896 M2976,884 L2976,908 " stroke="black"/>
+<path d="M3040,256 L3040,1024 " stroke="black"/>
+<circle cx="3040" cy="256" r="12" stroke="none" fill="black"/>
+<circle cx="3040" cy="1024" r="12" stroke="black" fill="white"/>
+<path d="M3028,1024 L3052,1024 M3040,1012 L3040,1036 " stroke="black"/>
+<path d="M3104,256 L3104,1088 " stroke="black"/>
+<circle cx="3104" cy="256" r="12" stroke="none" fill="black"/>
+<circle cx="3104" cy="1088" r="12" stroke="black" fill="white"/>
+<path d="M3092,1088 L3116,1088 M3104,1076 L3104,1100 " stroke="black"/>
+<path d="M2884,40 L2884,32 L3132,32 L3132,40 " stroke="black" fill="none"/>
+<path d="M2884,1144 L2884,1152 L3132,1152 L3132,1144 " stroke="black" fill="none"/>
+<path d="M3168,320 L3168,576 " stroke="black"/>
+<circle cx="3168" cy="576" r="12" stroke="none" fill="black"/>
+<circle cx="3168" cy="320" r="12" stroke="black" fill="white"/>
+<path d="M3156,320 L3180,320 M3168,308 L3168,332 " stroke="black"/>
+<path d="M3232,320 L3232,768 " stroke="black"/>
+<circle cx="3232" cy="768" r="12" stroke="none" fill="black"/>
+<circle cx="3232" cy="320" r="12" stroke="black" fill="white"/>
+<path d="M3220,320 L3244,320 M3232,308 L3232,332 " stroke="black"/>
+<path d="M3140,40 L3140,32 L3260,32 L3260,40 " stroke="black" fill="none"/>
+<path d="M3140,1144 L3140,1152 L3260,1152 L3260,1144 " stroke="black" fill="none"/>
+<path d="M3296,384 L3296,640 " stroke="black"/>
+<circle cx="3296" cy="640" r="12" stroke="none" fill="black"/>
+<circle cx="3296" cy="384" r="12" stroke="black" fill="white"/>
+<path d="M3284,384 L3308,384 M3296,372 L3296,396 " stroke="black"/>
+<path d="M3360,384 L3360,832 " stroke="black"/>
+<circle cx="3360" cy="832" r="12" stroke="none" fill="black"/>
+<circle cx="3360" cy="384" r="12" stroke="black" fill="white"/>
+<path d="M3348,384 L3372,384 M3360,372 L3360,396 " stroke="black"/>
+<path d="M3424,384 L3424,704 " stroke="black"/>
+<circle cx="3424" cy="704" r="12" stroke="none" fill="black"/>
+<circle cx="3424" cy="384" r="12" stroke="black" fill="white"/>
+<path d="M3412,384 L3436,384 M3424,372 L3424,396 " stroke="black"/>
+<path d="M3488,384 L3488,896 " stroke="black"/>
+<circle cx="3488" cy="896" r="12" stroke="none" fill="black"/>
+<circle cx="3488" cy="384" r="12" stroke="black" fill="white"/>
+<path d="M3476,384 L3500,384 M3488,372 L3488,396 " stroke="black"/>
+<path d="M3268,40 L3268,32 L3516,32 L3516,40 " stroke="black" fill="none"/>
+<path d="M3268,1144 L3268,1152 L3516,1152 L3516,1144 " stroke="black" fill="none"/>
+<path d="M3552,448 L3552,768 " stroke="black"/>
+<circle cx="3552" cy="768" r="12" stroke="none" fill="black"/>
+<circle cx="3552" cy="448" r="12" stroke="black" fill="white"/>
+<path d="M3540,448 L3564,448 M3552,436 L3552,460 " stroke="black"/>
+<path d="M3616,448 L3616,960 " stroke="black"/>
+<circle cx="3616" cy="960" r="12" stroke="none" fill="black"/>
+<circle cx="3616" cy="448" r="12" stroke="black" fill="white"/>
+<path d="M3604,448 L3628,448 M3616,436 L3616,460 " stroke="black"/>
+<path d="M3680,448 L3680,832 " stroke="black"/>
+<circle cx="3680" cy="832" r="12" stroke="none" fill="black"/>
+<circle cx="3680" cy="448" r="12" stroke="black" fill="white"/>
+<path d="M3668,448 L3692,448 M3680,436 L3680,460 " stroke="black"/>
+<path d="M3744,448 L3744,1024 " stroke="black"/>
+<circle cx="3744" cy="1024" r="12" stroke="none" fill="black"/>
+<circle cx="3744" cy="448" r="12" stroke="black" fill="white"/>
+<path d="M3732,448 L3756,448 M3744,436 L3744,460 " stroke="black"/>
+<path d="M3524,40 L3524,32 L3772,32 L3772,40 " stroke="black" fill="none"/>
+<path d="M3524,1144 L3524,1152 L3772,1152 L3772,1144 " stroke="black" fill="none"/>
+<path d="M3808,512 L3808,896 " stroke="black"/>
+<circle cx="3808" cy="896" r="12" stroke="none" fill="black"/>
+<circle cx="3808" cy="512" r="12" stroke="black" fill="white"/>
+<path d="M3796,512 L3820,512 M3808,500 L3808,524 " stroke="black"/>
+<path d="M3872,512 L3872,1088 " stroke="black"/>
+<circle cx="3872" cy="1088" r="12" stroke="none" fill="black"/>
+<circle cx="3872" cy="512" r="12" stroke="black" fill="white"/>
+<path d="M3860,512 L3884,512 M3872,500 L3872,524 " stroke="black"/>
+<path d="M3780,40 L3780,32 L3900,32 L3900,40 " stroke="black" fill="none"/>
+<path d="M3780,1144 L3780,1152 L3900,1152 L3900,1144 " stroke="black" fill="none"/>
+<rect x="3920" y="48" width="32" height="32" stroke="black" fill="white"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="30" x="3936" y="64">H</text>
+<rect x="3920" y="112" width="32" height="32" stroke="black" fill="white"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="30" x="3936" y="128">H</text>
+<rect x="3920" y="176" width="32" height="32" stroke="black" fill="white"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="30" x="3936" y="192">H</text>
+<rect x="3920" y="240" width="32" height="32" stroke="black" fill="white"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="30" x="3936" y="256">H</text>
+<rect x="3984" y="48" width="32" height="32" stroke="black" fill="pink"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="12" x="4000" y="64">ERR<tspan baseline-shift="sub" font-size="10">X</tspan></text>
+<text dominant-baseline="hanging" text-anchor="middle" font-family="monospace" font-size="10" stroke="red" x="4000" y="84">0.01</text>
+<rect x="3984" y="112" width="32" height="32" stroke="black" fill="pink"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="12" x="4000" y="128">ERR<tspan baseline-shift="sub" font-size="10">X</tspan></text>
+<text dominant-baseline="hanging" text-anchor="middle" font-family="monospace" font-size="10" stroke="red" x="4000" y="148">0.01</text>
+<rect x="3984" y="176" width="32" height="32" stroke="black" fill="pink"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="12" x="4000" y="192">ERR<tspan baseline-shift="sub" font-size="10">X</tspan></text>
+<text dominant-baseline="hanging" text-anchor="middle" font-family="monospace" font-size="10" stroke="red" x="4000" y="212">0.01</text>
+<rect x="3984" y="240" width="32" height="32" stroke="black" fill="pink"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="12" x="4000" y="256">ERR<tspan baseline-shift="sub" font-size="10">X</tspan></text>
+<text dominant-baseline="hanging" text-anchor="middle" font-family="monospace" font-size="10" stroke="red" x="4000" y="276">0.01</text>
+<rect x="3984" y="304" width="32" height="32" stroke="black" fill="pink"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="12" x="4000" y="320">ERR<tspan baseline-shift="sub" font-size="10">X</tspan></text>
+<text dominant-baseline="hanging" text-anchor="middle" font-family="monospace" font-size="10" stroke="red" x="4000" y="340">0.01</text>
+<rect x="3984" y="368" width="32" height="32" stroke="black" fill="pink"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="12" x="4000" y="384">ERR<tspan baseline-shift="sub" font-size="10">X</tspan></text>
+<text dominant-baseline="hanging" text-anchor="middle" font-family="monospace" font-size="10" stroke="red" x="4000" y="404">0.01</text>
+<rect x="3984" y="432" width="32" height="32" stroke="black" fill="pink"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="12" x="4000" y="448">ERR<tspan baseline-shift="sub" font-size="10">X</tspan></text>
+<text dominant-baseline="hanging" text-anchor="middle" font-family="monospace" font-size="10" stroke="red" x="4000" y="468">0.01</text>
+<rect x="3984" y="496" width="32" height="32" stroke="black" fill="pink"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="12" x="4000" y="512">ERR<tspan baseline-shift="sub" font-size="10">X</tspan></text>
+<text dominant-baseline="hanging" text-anchor="middle" font-family="monospace" font-size="10" stroke="red" x="4000" y="532">0.01</text>
+<rect x="4048" y="48" width="32" height="32" stroke="black" fill="black"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="24" x="4064" y="64" fill="white">MR</text>
+<text dominant-baseline="hanging" text-anchor="middle" font-family="monospace" font-size="16" stroke="red" x="4064" y="84">0.01</text>
+<text text-anchor="middle" font-family="monospace" font-size="8" x="4064" y="44">rec[8+iter*8]</text>
+<rect x="4048" y="112" width="32" height="32" stroke="black" fill="black"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="24" x="4064" y="128" fill="white">MR</text>
+<text dominant-baseline="hanging" text-anchor="middle" font-family="monospace" font-size="16" stroke="red" x="4064" y="148">0.01</text>
+<text text-anchor="middle" font-family="monospace" font-size="8" x="4064" y="108">rec[9+iter*8]</text>
+<rect x="4048" y="176" width="32" height="32" stroke="black" fill="black"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="24" x="4064" y="192" fill="white">MR</text>
+<text dominant-baseline="hanging" text-anchor="middle" font-family="monospace" font-size="16" stroke="red" x="4064" y="212">0.01</text>
+<text text-anchor="middle" font-family="monospace" font-size="8" x="4064" y="172">rec[10+iter*8]</text>
+<rect x="4048" y="240" width="32" height="32" stroke="black" fill="black"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="24" x="4064" y="256" fill="white">MR</text>
+<text dominant-baseline="hanging" text-anchor="middle" font-family="monospace" font-size="16" stroke="red" x="4064" y="276">0.01</text>
+<text text-anchor="middle" font-family="monospace" font-size="8" x="4064" y="236">rec[11+iter*8]</text>
+<rect x="4048" y="304" width="32" height="32" stroke="black" fill="black"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="24" x="4064" y="320" fill="white">MR</text>
+<text dominant-baseline="hanging" text-anchor="middle" font-family="monospace" font-size="16" stroke="red" x="4064" y="340">0.01</text>
+<text text-anchor="middle" font-family="monospace" font-size="8" x="4064" y="300">rec[12+iter*8]</text>
+<rect x="4048" y="368" width="32" height="32" stroke="black" fill="black"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="24" x="4064" y="384" fill="white">MR</text>
+<text dominant-baseline="hanging" text-anchor="middle" font-family="monospace" font-size="16" stroke="red" x="4064" y="404">0.01</text>
+<text text-anchor="middle" font-family="monospace" font-size="8" x="4064" y="364">rec[13+iter*8]</text>
+<rect x="4048" y="432" width="32" height="32" stroke="black" fill="black"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="24" x="4064" y="448" fill="white">MR</text>
+<text dominant-baseline="hanging" text-anchor="middle" font-family="monospace" font-size="16" stroke="red" x="4064" y="468">0.01</text>
+<text text-anchor="middle" font-family="monospace" font-size="8" x="4064" y="428">rec[14+iter*8]</text>
+<rect x="4048" y="496" width="32" height="32" stroke="black" fill="black"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="24" x="4064" y="512" fill="white">MR</text>
+<text dominant-baseline="hanging" text-anchor="middle" font-family="monospace" font-size="16" stroke="red" x="4064" y="532">0.01</text>
+<text text-anchor="middle" font-family="monospace" font-size="8" x="4064" y="492">rec[15+iter*8]</text>
+<rect x="4112" y="48" width="32" height="32" stroke="black" fill="pink"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="12" x="4128" y="64">ERR<tspan baseline-shift="sub" font-size="10">X</tspan></text>
+<text dominant-baseline="hanging" text-anchor="middle" font-family="monospace" font-size="10" stroke="red" x="4128" y="84">0.01</text>
+<rect x="4112" y="112" width="32" height="32" stroke="black" fill="pink"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="12" x="4128" y="128">ERR<tspan baseline-shift="sub" font-size="10">X</tspan></text>
+<text dominant-baseline="hanging" text-anchor="middle" font-family="monospace" font-size="10" stroke="red" x="4128" y="148">0.01</text>
+<rect x="4112" y="176" width="32" height="32" stroke="black" fill="pink"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="12" x="4128" y="192">ERR<tspan baseline-shift="sub" font-size="10">X</tspan></text>
+<text dominant-baseline="hanging" text-anchor="middle" font-family="monospace" font-size="10" stroke="red" x="4128" y="212">0.01</text>
+<rect x="4112" y="240" width="32" height="32" stroke="black" fill="pink"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="12" x="4128" y="256">ERR<tspan baseline-shift="sub" font-size="10">X</tspan></text>
+<text dominant-baseline="hanging" text-anchor="middle" font-family="monospace" font-size="10" stroke="red" x="4128" y="276">0.01</text>
+<rect x="4112" y="304" width="32" height="32" stroke="black" fill="pink"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="12" x="4128" y="320">ERR<tspan baseline-shift="sub" font-size="10">X</tspan></text>
+<text dominant-baseline="hanging" text-anchor="middle" font-family="monospace" font-size="10" stroke="red" x="4128" y="340">0.01</text>
+<rect x="4112" y="368" width="32" height="32" stroke="black" fill="pink"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="12" x="4128" y="384">ERR<tspan baseline-shift="sub" font-size="10">X</tspan></text>
+<text dominant-baseline="hanging" text-anchor="middle" font-family="monospace" font-size="10" stroke="red" x="4128" y="404">0.01</text>
+<rect x="4112" y="432" width="32" height="32" stroke="black" fill="pink"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="12" x="4128" y="448">ERR<tspan baseline-shift="sub" font-size="10">X</tspan></text>
+<text dominant-baseline="hanging" text-anchor="middle" font-family="monospace" font-size="10" stroke="red" x="4128" y="468">0.01</text>
+<rect x="4112" y="496" width="32" height="32" stroke="black" fill="pink"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="12" x="4128" y="512">ERR<tspan baseline-shift="sub" font-size="10">X</tspan></text>
+<text dominant-baseline="hanging" text-anchor="middle" font-family="monospace" font-size="10" stroke="red" x="4128" y="532">0.01</text>
+<rect x="4176" y="48" width="224" height="32" stroke="black" fill="lightgray"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="16" x="4288" y="64">DETECTOR</text>
+<text text-anchor="middle" font-family="monospace" font-size="8" x="4288" y="44">D[4+iter*8] = rec[8+iter*8]*rec[0+iter*8]</text>
+<rect x="4176" y="112" width="224" height="32" stroke="black" fill="lightgray"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="16" x="4288" y="128">DETECTOR</text>
+<text text-anchor="middle" font-family="monospace" font-size="8" x="4288" y="108">D[5+iter*8] = rec[9+iter*8]*rec[1+iter*8]</text>
+<rect x="4176" y="176" width="224" height="32" stroke="black" fill="lightgray"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="16" x="4288" y="192">DETECTOR</text>
+<text text-anchor="middle" font-family="monospace" font-size="8" x="4288" y="172">D[6+iter*8] = rec[10+iter*8]*rec[2+iter*8]</text>
+<rect x="4176" y="240" width="224" height="32" stroke="black" fill="lightgray"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="16" x="4288" y="256">DETECTOR</text>
+<text text-anchor="middle" font-family="monospace" font-size="8" x="4288" y="236">D[7+iter*8] = rec[11+iter*8]*rec[3+iter*8]</text>
+<rect x="4176" y="304" width="224" height="32" stroke="black" fill="lightgray"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="16" x="4288" y="320">DETECTOR</text>
+<text text-anchor="middle" font-family="monospace" font-size="8" x="4288" y="300">D[8+iter*8] = rec[12+iter*8]*rec[4+iter*8]</text>
+<rect x="4176" y="368" width="224" height="32" stroke="black" fill="lightgray"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="16" x="4288" y="384">DETECTOR</text>
+<text text-anchor="middle" font-family="monospace" font-size="8" x="4288" y="364">D[9+iter*8] = rec[13+iter*8]*rec[5+iter*8]</text>
+<rect x="4176" y="432" width="224" height="32" stroke="black" fill="lightgray"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="16" x="4288" y="448">DETECTOR</text>
+<text text-anchor="middle" font-family="monospace" font-size="8" x="4288" y="428">D[10+iter*8] = rec[14+iter*8]*rec[6+iter*8]</text>
+<rect x="4176" y="496" width="224" height="32" stroke="black" fill="lightgray"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="16" x="4288" y="512">DETECTOR</text>
+<text text-anchor="middle" font-family="monospace" font-size="8" x="4288" y="492">D[11+iter*8] = rec[15+iter*8]*rec[7+iter*8]</text>
+<path d="M3908,40 L3908,32 L4412,32 L4412,40 " stroke="black" fill="none"/>
+<path d="M3908,1144 L3908,1152 L4412,1152 L4412,1144 " stroke="black" fill="none"/>
+<path d="M4440,32 L4448,32 L4448,1152 L4440,1152 " stroke="black" fill="none"/>
+<rect x="4496" y="560" width="32" height="32" stroke="black" fill="pink"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="12" x="4512" y="576">ERR<tspan baseline-shift="sub" font-size="10">X</tspan></text>
+<text dominant-baseline="hanging" text-anchor="middle" font-family="monospace" font-size="10" stroke="red" x="4512" y="596">0.01</text>
+<rect x="4496" y="624" width="32" height="32" stroke="black" fill="pink"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="12" x="4512" y="640">ERR<tspan baseline-shift="sub" font-size="10">X</tspan></text>
+<text dominant-baseline="hanging" text-anchor="middle" font-family="monospace" font-size="10" stroke="red" x="4512" y="660">0.01</text>
+<rect x="4496" y="688" width="32" height="32" stroke="black" fill="pink"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="12" x="4512" y="704">ERR<tspan baseline-shift="sub" font-size="10">X</tspan></text>
+<text dominant-baseline="hanging" text-anchor="middle" font-family="monospace" font-size="10" stroke="red" x="4512" y="724">0.01</text>
+<rect x="4496" y="752" width="32" height="32" stroke="black" fill="pink"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="12" x="4512" y="768">ERR<tspan baseline-shift="sub" font-size="10">X</tspan></text>
+<text dominant-baseline="hanging" text-anchor="middle" font-family="monospace" font-size="10" stroke="red" x="4512" y="788">0.01</text>
+<rect x="4496" y="816" width="32" height="32" stroke="black" fill="pink"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="12" x="4512" y="832">ERR<tspan baseline-shift="sub" font-size="10">X</tspan></text>
+<text dominant-baseline="hanging" text-anchor="middle" font-family="monospace" font-size="10" stroke="red" x="4512" y="852">0.01</text>
+<rect x="4496" y="880" width="32" height="32" stroke="black" fill="pink"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="12" x="4512" y="896">ERR<tspan baseline-shift="sub" font-size="10">X</tspan></text>
+<text dominant-baseline="hanging" text-anchor="middle" font-family="monospace" font-size="10" stroke="red" x="4512" y="916">0.01</text>
+<rect x="4496" y="944" width="32" height="32" stroke="black" fill="pink"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="12" x="4512" y="960">ERR<tspan baseline-shift="sub" font-size="10">X</tspan></text>
+<text dominant-baseline="hanging" text-anchor="middle" font-family="monospace" font-size="10" stroke="red" x="4512" y="980">0.01</text>
+<rect x="4496" y="1008" width="32" height="32" stroke="black" fill="pink"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="12" x="4512" y="1024">ERR<tspan baseline-shift="sub" font-size="10">X</tspan></text>
+<text dominant-baseline="hanging" text-anchor="middle" font-family="monospace" font-size="10" stroke="red" x="4512" y="1044">0.01</text>
+<rect x="4496" y="1072" width="32" height="32" stroke="black" fill="pink"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="12" x="4512" y="1088">ERR<tspan baseline-shift="sub" font-size="10">X</tspan></text>
+<text dominant-baseline="hanging" text-anchor="middle" font-family="monospace" font-size="10" stroke="red" x="4512" y="1108">0.01</text>
+<rect x="4560" y="560" width="32" height="32" stroke="black" fill="black"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="30" x="4576" y="576" fill="white">M</text>
+<text dominant-baseline="hanging" text-anchor="middle" font-family="monospace" font-size="10" stroke="red" x="4576" y="596">0.01</text>
+<text text-anchor="middle" font-family="monospace" font-size="8" x="4576" y="556">rec[24]</text>
+<rect x="4560" y="624" width="32" height="32" stroke="black" fill="black"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="30" x="4576" y="640" fill="white">M</text>
+<text dominant-baseline="hanging" text-anchor="middle" font-family="monospace" font-size="10" stroke="red" x="4576" y="660">0.01</text>
+<text text-anchor="middle" font-family="monospace" font-size="8" x="4576" y="620">rec[25]</text>
+<rect x="4560" y="688" width="32" height="32" stroke="black" fill="black"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="30" x="4576" y="704" fill="white">M</text>
+<text dominant-baseline="hanging" text-anchor="middle" font-family="monospace" font-size="10" stroke="red" x="4576" y="724">0.01</text>
+<text text-anchor="middle" font-family="monospace" font-size="8" x="4576" y="684">rec[26]</text>
+<rect x="4560" y="752" width="32" height="32" stroke="black" fill="black"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="30" x="4576" y="768" fill="white">M</text>
+<text dominant-baseline="hanging" text-anchor="middle" font-family="monospace" font-size="10" stroke="red" x="4576" y="788">0.01</text>
+<text text-anchor="middle" font-family="monospace" font-size="8" x="4576" y="748">rec[27]</text>
+<rect x="4560" y="816" width="32" height="32" stroke="black" fill="black"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="30" x="4576" y="832" fill="white">M</text>
+<text dominant-baseline="hanging" text-anchor="middle" font-family="monospace" font-size="10" stroke="red" x="4576" y="852">0.01</text>
+<text text-anchor="middle" font-family="monospace" font-size="8" x="4576" y="812">rec[28]</text>
+<rect x="4560" y="880" width="32" height="32" stroke="black" fill="black"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="30" x="4576" y="896" fill="white">M</text>
+<text dominant-baseline="hanging" text-anchor="middle" font-family="monospace" font-size="10" stroke="red" x="4576" y="916">0.01</text>
+<text text-anchor="middle" font-family="monospace" font-size="8" x="4576" y="876">rec[29]</text>
+<rect x="4560" y="944" width="32" height="32" stroke="black" fill="black"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="30" x="4576" y="960" fill="white">M</text>
+<text dominant-baseline="hanging" text-anchor="middle" font-family="monospace" font-size="10" stroke="red" x="4576" y="980">0.01</text>
+<text text-anchor="middle" font-family="monospace" font-size="8" x="4576" y="940">rec[30]</text>
+<rect x="4560" y="1008" width="32" height="32" stroke="black" fill="black"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="30" x="4576" y="1024" fill="white">M</text>
+<text dominant-baseline="hanging" text-anchor="middle" font-family="monospace" font-size="10" stroke="red" x="4576" y="1044">0.01</text>
+<text text-anchor="middle" font-family="monospace" font-size="8" x="4576" y="1004">rec[31]</text>
+<rect x="4560" y="1072" width="32" height="32" stroke="black" fill="black"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="30" x="4576" y="1088" fill="white">M</text>
+<text dominant-baseline="hanging" text-anchor="middle" font-family="monospace" font-size="10" stroke="red" x="4576" y="1108">0.01</text>
+<text text-anchor="middle" font-family="monospace" font-size="8" x="4576" y="1068">rec[32]</text>
+<rect x="4624" y="560" width="32" height="32" stroke="black" fill="pink"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="12" x="4640" y="576">ERR<tspan baseline-shift="sub" font-size="10">X</tspan></text>
+<text dominant-baseline="hanging" text-anchor="middle" font-family="monospace" font-size="10" stroke="red" x="4640" y="596">0.01</text>
+<rect x="4624" y="624" width="32" height="32" stroke="black" fill="pink"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="12" x="4640" y="640">ERR<tspan baseline-shift="sub" font-size="10">X</tspan></text>
+<text dominant-baseline="hanging" text-anchor="middle" font-family="monospace" font-size="10" stroke="red" x="4640" y="660">0.01</text>
+<rect x="4624" y="688" width="32" height="32" stroke="black" fill="pink"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="12" x="4640" y="704">ERR<tspan baseline-shift="sub" font-size="10">X</tspan></text>
+<text dominant-baseline="hanging" text-anchor="middle" font-family="monospace" font-size="10" stroke="red" x="4640" y="724">0.01</text>
+<rect x="4624" y="752" width="32" height="32" stroke="black" fill="pink"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="12" x="4640" y="768">ERR<tspan baseline-shift="sub" font-size="10">X</tspan></text>
+<text dominant-baseline="hanging" text-anchor="middle" font-family="monospace" font-size="10" stroke="red" x="4640" y="788">0.01</text>
+<rect x="4624" y="816" width="32" height="32" stroke="black" fill="pink"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="12" x="4640" y="832">ERR<tspan baseline-shift="sub" font-size="10">X</tspan></text>
+<text dominant-baseline="hanging" text-anchor="middle" font-family="monospace" font-size="10" stroke="red" x="4640" y="852">0.01</text>
+<rect x="4624" y="880" width="32" height="32" stroke="black" fill="pink"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="12" x="4640" y="896">ERR<tspan baseline-shift="sub" font-size="10">X</tspan></text>
+<text dominant-baseline="hanging" text-anchor="middle" font-family="monospace" font-size="10" stroke="red" x="4640" y="916">0.01</text>
+<rect x="4624" y="944" width="32" height="32" stroke="black" fill="pink"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="12" x="4640" y="960">ERR<tspan baseline-shift="sub" font-size="10">X</tspan></text>
+<text dominant-baseline="hanging" text-anchor="middle" font-family="monospace" font-size="10" stroke="red" x="4640" y="980">0.01</text>
+<rect x="4624" y="1008" width="32" height="32" stroke="black" fill="pink"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="12" x="4640" y="1024">ERR<tspan baseline-shift="sub" font-size="10">X</tspan></text>
+<text dominant-baseline="hanging" text-anchor="middle" font-family="monospace" font-size="10" stroke="red" x="4640" y="1044">0.01</text>
+<rect x="4624" y="1072" width="32" height="32" stroke="black" fill="pink"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="12" x="4640" y="1088">ERR<tspan baseline-shift="sub" font-size="10">X</tspan></text>
+<text dominant-baseline="hanging" text-anchor="middle" font-family="monospace" font-size="10" stroke="red" x="4640" y="1108">0.01</text>
+<rect x="4624" y="304" width="288" height="32" stroke="black" fill="lightgray"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="16" x="4768" y="320">DETECTOR</text>
+<text text-anchor="middle" font-family="monospace" font-size="8" x="4768" y="300">D20 = rec[24]*rec[27]*rec[20]</text>
+<rect x="4624" y="368" width="416" height="32" stroke="black" fill="lightgray"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="16" x="4832" y="384">DETECTOR</text>
+<text text-anchor="middle" font-family="monospace" font-size="8" x="4832" y="364">D21 = rec[25]*rec[26]*rec[28]*rec[29]*rec[21]</text>
+<rect x="4624" y="432" width="416" height="32" stroke="black" fill="lightgray"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="16" x="4832" y="448">DETECTOR</text>
+<text text-anchor="middle" font-family="monospace" font-size="8" x="4832" y="428">D22 = rec[27]*rec[28]*rec[30]*rec[31]*rec[22]</text>
+<rect x="4624" y="496" width="288" height="32" stroke="black" fill="lightgray"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="16" x="4768" y="512">DETECTOR</text>
+<text text-anchor="middle" font-family="monospace" font-size="8" x="4768" y="492">D23 = rec[29]*rec[32]*rec[23]</text>
+<rect x="5072" y="560" width="288" height="32" stroke="black" fill="lightgray"/>
+<text dominant-baseline="central" text-anchor="middle" font-family="monospace" font-size="16" x="5216" y="576">OBS_INCLUDE(0)</text>
+<text text-anchor="middle" font-family="monospace" font-size="8" x="5216" y="556">L0 *= rec[24]*rec[25]*rec[26]</text>
+<path d="M4484,40 L4484,32 L5372,32 L5372,40 " stroke="black" fill="none"/>
+<path d="M4484,1144 L4484,1152 L5372,1152 L5372,1144 " stroke="black" fill="none"/>
+</svg>
