@@ -748,7 +748,7 @@ class CDCompassCodeCircuit:
         # do the measurements 
         circuit += self.MBQC_round_helper(order_d_x, order_d_z)
 
-        for round_count in range(1):
+        for round_count in range(self.d):
             # add the noise
             circuit += f"X_ERROR({p_i}) "
             for i in range(num_data_qubits):
