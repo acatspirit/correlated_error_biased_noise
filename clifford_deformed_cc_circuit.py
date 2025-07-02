@@ -399,8 +399,6 @@ class CDCompassCodeCircuit:
 
     
 
-        
-
         circuit.append("H", stab_d_x) # only the X stabs need H
         # go through each stabilizer in order, X stabilizers first
         for order in order_d_x:
@@ -476,7 +474,7 @@ class CDCompassCodeCircuit:
             The error model is the biased noise model from the paper: PRA (101)042312, 2020
             - 2-qubit gates are followed by 2-qubit depolarizing channel with p = p_gate (x)
             - measurement outcomes are followed by a bit flip with probability p_meas (x)
-            - idling qubits are followed by a dephasing channel with probability p_i (x)
+            - idling qubits are followed by a dephasing channel / Z_ERROR with probability p_i (x)
 
             Z memory - measuring X stabs first time is random, don't add detectors to these, just hte second round
         """
@@ -504,9 +502,6 @@ class CDCompassCodeCircuit:
         num_qubits_x = len(qubit_d_x)
         num_qubits_z = len(qubit_d_z)
 
-        # print(num_ancillas, num_qubits_x, num_qubits_z)
-        # print(self.H_x.shape, self.H_z.shape)
-        # print(stab_d_x, stab_d_z)
         
         data_q_x_list = [num_ancillas + q for q in list(qubit_d_x.keys())] # all the x data qubits
         data_q_z_list = [num_ancillas + q for q in list(qubit_d_z.keys())] # all the z data qubits
@@ -518,19 +513,16 @@ class CDCompassCodeCircuit:
         
         # reset the ancillas
         circuit.append("R", full_stab_L)
-        # circuit.append("X_ERROR", full_stab_L, p_i) # add the error to the ancillas
 
         # reset the data qubits
-        
         if self.type == "X":
             circuit.append("RX", data_q_list)
             circuit.append("DEPOLARIZE1", data_q_list, p_i) # add the error to the data qubits, change this to Z when first testing done
             # circuit.append("Z_ERROR", [anc for anc in range(num_ancillas)], p_i) # idling error on the ancillas
-            # circuit.append("Z_ERROR", q + num_ancillas, pz) # add the error to the data qubits
         elif self.type == "Z":
             circuit.append("R", data_q_list)
-            # circuit.append("Z_ERROR", [anc for anc in range(num_ancillas)], p_i) # idling error on the ancillas
             circuit.append("DEPOLARIZE1", data_q_list, p_i)
+            # circuit.append("Z_ERROR", [anc for anc in range(num_ancillas)], p_i) # idling error on the ancillas
 
 
         # start the for loop to repeat for d rounds
@@ -546,31 +538,24 @@ class CDCompassCodeCircuit:
         # circuit.append("MR", full_stab_L)
 
 
-        circuit.append("X_ERROR", full_stab_L, p_i) # add the error to the ancillas
+        circuit.append("X_ERROR", full_stab_L, p_meas) # add the error to the ancillas
         circuit.append("MR", full_stab_L) # measure the ancillas at t=0
         
         # circuit.append("Z_ERROR", data_q_z_list, p_i)
 
 
         # initialize the t=0 detectors for the X or Z stabilizers
-        if self.type == "X": # the Z stabilizers will be indeterministic
-            # circuit.append("X_ERROR", range(len(stab_d_x)), p_i) # add the error to the ancillas
-            # circuit.append("MR", range(len(stab_d_x))) # measure the ancillas at t=0
+        if self.type == "X": # the Z stabilizers will be indeterministic at t=0
             for i in range(len(stab_d_x)):
-                # circuit.append("DETECTOR", stim.target_rec(-num_ancillas + i))
                 circuit.append("DETECTOR", stim.target_rec(-num_ancillas + i))
-        elif self.type == "Z": # the X stabilizers will be indeterministic
-            # circuit.append("X_ERROR", range(len(stab_d_x), num_ancillas), p_i) # add the error to the ancillas
-            # circuit.append("MR", range(len(stab_d_x), num_ancillas)) # measure the ancillas at t=0
+        elif self.type == "Z": # the X stabilizers will be indeterministic at t=0
             for i in range(len(stab_d_z)):
-                # circuit.append("DETECTOR", stim.target_rec(-num_ancillas + i + len(stab_d_x)))
                 circuit.append("DETECTOR", stim.target_rec(-num_ancillas + len(stab_d_x) + i ))
         
         circuit.append("TICK") # add a tick to the circuit to mark the end of the t=0 measurements
         
         loop_circuit = stim.Circuit() # create a loop circuit to repeat the following for d-1 rounds
         # All other d rounds - t>0 measurements
-        # circuit += "REPEAT %d {\n" # repeat the following for d-1 rounds
         # add a measurement round
 
         # add error to the data qubits
@@ -584,44 +569,14 @@ class CDCompassCodeCircuit:
         # idling errors on the data qubits, measure the ancillas, bit flip errors on measurements
         # loop_circuit.append("Z_ERROR", data_q_z_list, p_i)
         # loop_circuit.append("X_ERROR", full_stab_L, p_i)
-
-        # results that worked:
-        # if self.type == "X":
-        #     loop_circuit.append("X_ERROR", range(len(stab_d_x)), p_i)
-        #     loop_circuit.append("MR", range(len(stab_d_x)))
-        #     # loop_circuit.append("X_ERROR", range(len(stab_d_x)), p_i) # add the error to the ancillas after the measurements
-        # elif self.type == "Z":
-        #     loop_circuit.append("X_ERROR", range(len(stab_d_x), num_ancillas), p_i)
-        #     loop_circuit.append("MR", range(len(stab_d_x), num_ancillas))
-        #     # loop_circuit.append("X_ERROR", range(len(stab_d_x), num_ancillas), p_i) # add the error to the ancillas after the measurements
         
-        loop_circuit.append("X_ERROR", full_stab_L, p_i) # add the error to the ancillas after the measurements
+        loop_circuit.append("X_ERROR", full_stab_L, p_meas) # add the error to the ancillas before the measurements
         loop_circuit.append("MR", full_stab_L) # measure the ancillas at t>0
-
-        # loop_circuit.append("TICK") # add a tick to the circuit to mark the end of the t>0 measurements
-        # loop_circuit.append("X_ERROR", full_stab_L, p_meas) # add the error to the ancillas
-        # loop_circuit.append("PAULI_CHANNEL_1", data_q_z_list, [0,0,p_i])
 
         # timelike detectors for the X or Z stabilizers
         for i in range(num_ancillas):
             loop_circuit.append("DETECTOR", [stim.target_rec(-num_ancillas + i), stim.target_rec(-2*num_ancillas+ i)]) # anc round d tied to anc round d=0
 
-        # results that worked:
-        # if self.type == "X": # the Z stabilizers will be indeterministic
-        #     for i in range(len(stab_d_x)):
-        #         # loop_circuit.append("DETECTOR", [stim.target_rec(-num_ancillas + i), stim.target_rec(-2*num_ancillas + i)])
-        #         loop_circuit.append("DETECTOR", [stim.target_rec(-len(stab_d_x) + i), stim.target_rec(-2*len(stab_d_x) + i)])
-        # elif self.type == "Z": # the X stabilizers will be indeterministic
-        #     for i in range(len(stab_d_z)):
-        #         loop_circuit.append("DETECTOR", [stim.target_rec(-len(stab_d_z) + i ), stim.target_rec(-2*len(stab_d_z) + i)])
-        
-        
-        # if self.type == "X":
-        #     for i in range(len(stab_d_x)):
-        #         loop_circuit.append("DETECTOR", [stim.target_rec(-num_ancillas + i), stim.target_rec(-2*num_ancillas + i)]) # anc round d tied to anc round d=0
-        # elif self.type == "Z":
-        #     for i in range(len(stab_d_z)):
-        #         loop_circuit.append("DETECTOR", [stim.target_rec(-num_ancillas + i + len(stab_d_x)), stim.target_rec(-2*num_ancillas + i + len(stab_d_x))]) # anc round d tied to anc round d=0
         loop_circuit.append("TICK") # add a tick to the circuit to mark the end of the t>0 iteration
         
         # repeat the loop circuit d-1 times - circuit level only
@@ -633,18 +588,15 @@ class CDCompassCodeCircuit:
             # measure all the data qubits in the X stabilizers
             circuit.append("Z_ERROR", data_q_list, p_i) # add the error to the data qubits
             circuit.append("MX", data_q_list)
-            # circuit.append("X_ERROR", data_q_list, p_i)
 
             # reconstruct each X stabilizer with a detector
-            for anc in stab_d_x: 
+            for anc in stab_d_x:
                 q_x_list = stab_d_x[anc] # get the qubits in the stab
                 detector_list =  [-num_qubits_x + q for q in q_x_list] + [-num_ancillas + anc - num_qubits_x]
-                # detector_list =  [-num_qubits_x + q for q in q_x_list] + [-len(stab_d_x) + anc - num_qubits_x]
                 circuit.append("DETECTOR", [stim.target_rec(d) for d in detector_list])
             
             
             # construct the logical observable to include - pick the top line of qubits since this is an X meas
-            # circuit.append("OBSERVABLE_INCLUDE", [stim.target_rec(-num_qubits_x + self.d*q) for q in range(self.d)], 0) # parity of the whole line needs to be the same
             circuit.append("OBSERVABLE_INCLUDE", [stim.target_rec(-num_qubits_x + self.d*q) for q in range(self.d)], 0)
         
         # Z mem measure Z stabs
@@ -652,14 +604,12 @@ class CDCompassCodeCircuit:
             # measure all the data qubits in the Z stabilizers
             circuit.append("X_ERROR", data_q_list, p_i) # add the error to the data qubits
             circuit.append("M", data_q_list)
-            # circuit.append("X_ERROR", data_q_list, p_i)
 
             # reconstruct each stabilizer with a detector
             for anc in stab_d_z: 
                 
                 q_z_list = stab_d_z[anc] # get the qubits in the stab
                 detector_list =  [-num_qubits_z + q for q in q_z_list] + [-num_ancillas +len(stab_d_x)+ anc - num_qubits_z]
-                # detector_list =  [-num_qubits_z + q for q in q_z_list] + [-num_ancillas +len(stab_d_x)+ anc - num_qubits_z]
                 circuit.append("DETECTOR", [stim.target_rec(d) for d in detector_list])
         
             # construct the logical observable to include - pick the top line of qubits since this is an X meas
