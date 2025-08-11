@@ -412,16 +412,7 @@ class CDCompassCodeCircuit:
 
         circuit.append("DEPOLARIZE1", range(num_ancillas + num_qubits_x), p_i_round) # idling error on all qubits in between measurement rounds
         circuit.append("H", range(num_ancillas))
-
-        # if CD_circuit:
-        #     CD_data = cc.CD_data_func(self.code.qbit_dict.values(), special='ZXXZonSqu', ell=self.l, size=self.d) # data for which qubits have a transformation applied   
-        #     circuit.append("H", range(num_ancillas)) # all stabs need H when applying CD - is this true
-        # else:
-        #     # circuit.append("H", stab_d_x) # only the X stabs need H
-        #     circuit.append("H", range(num_ancillas)) # all stabs need H when applying CD - is this true
        
-   
-        
         circuit.append("Z_ERROR", [num_ancillas + q for q in list(qubit_d_x.keys())], p_i) # idling error on the data qubits during round
 
         # go through each stabilizer in order, X stabilizers first
@@ -457,8 +448,6 @@ class CDCompassCodeCircuit:
                         circuit.append("Z_ERROR", [other_q + num_ancillas], p_i) # Idling error on the X qubits 
                 circuit.append("Z_ERROR", q_inactive_list, p_i) # Idling error on the ancillas and qubits outside the stabilizer
         
-        # if not CD_circuit:
-        #     circuit.append("H", stab_d_x)
 
         circuit.append("Z_ERROR", [num_ancillas + q for q in list(qubit_d_x.keys())], p_i)# idling error on the data qubits during round
         circuit.append("TICK")
@@ -478,7 +467,6 @@ class CDCompassCodeCircuit:
             # apply a CX to each qubit in the stabilizer in the correct order
             for q,anc in q_z_list:
                 if not CD_circuit:
-                    # circuit.append("CX", [q + num_ancillas, anc + len(stab_d_x)]) # ancillas are shifted to account for X stabs
                     circuit.append("CZ", [anc + len(stab_d_x), q + num_ancillas]) # apply the CZ gate, ancillas are shifted to account for X stabs
                 else:
                     if CD_data[q] == 2:
@@ -494,15 +482,11 @@ class CDCompassCodeCircuit:
                     if other_q != q:
                         circuit.append("Z_ERROR", [other_q + num_ancillas], p_i) # Idling error on the X qubits
                 circuit.append("Z_ERROR", q_inactive_list, p_i) # Idling error on the ancillas and qubits outside the stabilizer
-        
-        # if CD_circuit:
-        #     circuit.append("H", range(num_ancillas))
 
         circuit.append("H", range(num_ancillas))
         circuit.append("TICK")
         
         
-
         # circuit.append("Z_ERROR", [q for q in range(len(stab_d_x), num_ancillas + num_qubits_x)], p_i) # idling error on the ancillas
         return circuit
 
@@ -635,14 +619,12 @@ class CDCompassCodeCircuit:
         loop_circuit.append("TICK") # add a tick to the circuit to mark the end of the t>0 iteration
         
         # repeat the loop circuit d-1 times - circuit level only
-        # COMMENTED OUT FOR DEBUGGING
         circuit.append(stim.CircuitRepeatBlock(repeat_count=self.d-1, body=loop_circuit))# end the repeat block
 
         # reconstruct the stabilizers and measure the data qubits
         # for X mem measure X stabs
         if self.type == "X":
             # measure all the data qubits in the X stabilizers
-            # circuit.append("Z_ERROR", data_q_list, p_i) # add the error to the data qubits  - should this be Z_ERROR or X_ERROR?
 
             if CD_circuit:
                 circuit.append("H", [q + num_ancillas for q in CD_data if CD_data[q] == 2]) # apply H to the qubits that have a transformation applied 
