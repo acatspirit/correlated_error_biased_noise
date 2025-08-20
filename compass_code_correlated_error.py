@@ -542,11 +542,11 @@ if __name__ == "__main__":
     # task_id = int(os.environ['SLURM_ARRAY_TASK_ID'])
 
 
-    num_shots = 100000 # number of shots to sample
-    circuit_data = True # whether circuit level or code cap data is desired
+    num_shots = 10000 # number of shots to sample
+    circuit_data = False # whether circuit level or code cap data is desired
     d_list = [3,5,7]
     d_dict = {}
-    l=2 # elongation parameter of compass code
+    l=3 # elongation parameter of compass code
     p_list = np.linspace(0.01, 0.11, 20)
     eta = 0.5 # the degree of noise bias
     corr_type = "CORR_ZX"
@@ -596,8 +596,12 @@ if __name__ == "__main__":
 
     # Load and filter only X_mem and Z_mem
     df = pd.read_csv(output_file)
-    # df = df[(df['num_shots'] == num_shots) & 
-    #         (df['eta'] == eta) ]
+
+    df = df[(df['num_shots'] == num_shots) & (df['eta'] == eta)]
+    print(len(df))
+
+    threshold_plot(df, 0.155, 0.05, eta, l, num_shots, corr_type, output_file, loglog=True, averaging=True, show_threshold=True)
+
 
     # # Group by p, d, l and sum the num_log_errors to create 'tot_mem'
     # df_tot = df.groupby(['p', 'd', 'l'], as_index=False)['num_log_errors'].sum()
@@ -651,7 +655,7 @@ if __name__ == "__main__":
     # print(threshold, confidence)
 
     # threshold_plot(df, p_th_init, p_diff, eta, l, num_shots, "Z", output_file, loglog=True, averaging=True,show_threshold=True)
-    full_error_plot(df, eta, l, num_shots, corr_type, output_file, loglog=False, averaging=True)
+    # full_error_plot(df, eta, l, num_shots, corr_type, output_file, loglog=False, averaging=True)
 
 
 
