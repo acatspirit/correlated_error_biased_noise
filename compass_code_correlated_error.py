@@ -13,6 +13,7 @@ import sys
 import glob
 from scipy.optimize import curve_fit
 import clifford_deformed_cc_circuit as cc_circuit
+import itertools
 # from lmfit import Minimizer, Parameters, report_fit
 
 
@@ -534,22 +535,41 @@ def get_prob_scale(corr_type, eta):
     prob_scale = {'X': 0.5/(1+eta), 'Z': (1+2*eta)/(2*(1+eta)), corr_type: 1, 'TOTAL':1, 'X_Mem':  1, 'Z_Mem': 1}
     return prob_scale
 
+
+
+
 #
 # for generating a threshold graph for Z/X too 
 #
 
 if __name__ == "__main__":
-    # task_id = int(os.environ['SLURM_ARRAY_TASK_ID'])
+    task_id = int(os.environ['SLURM_ARRAY_TASK_ID']) # will iter over 15 sized array, later add num_shots
+    l_eta__corr_type_arr = list(itertools.product([2,3,4,5,6],[0.5,1,5], ["CORR_XZ", "CORR_ZX"])) # list of tuples (l, eta, corr_type)
+
+    p_th_init_dict = {(2,0.5, "CORR_ZX"):0.157, (2,1, "CORR_ZX"):0.149, (2,5, "CORR_ZX"):0.110,
+                      (3,0.5, "CORR_ZX"):0.177, (3,1, "CORR_ZX"):0.178, (3,5, "CORR_ZX"):0.155,
+                      (4,0.5, "CORR_ZX"):0.146, (4,1, "CORR_ZX"):0.173, (4,5, "CORR_ZX"):0.187,
+                      (5,0.5, "CORR_ZX"):0.120, (5,1, "CORR_ZX"):0.148, (5,5, "CORR_ZX"):0.210,
+                      (6,0.5, "CORR_ZX"):0.093, (6,1, "CORR_ZX"):0.109, (6,5, "CORR_ZX"):0.235,
+                      (2,0.5, "CORR_XZ"):0.160, (2,1, "CORR_XZ"):0.167, (2,5, "CORR_XZ"):0.120,
+                      (3,0.5, "CORR_XZ"):0.128, (3,1, "CORR_XZ"):0.165, (3,5, "CORR_XZ"):0.160,
+                      (4,0.5, "CORR_XZ"):0.090, (4,1, "CORR_XZ"):0.145, (4,5, "CORR_XZ"):0.190,
+                      (5,0.5, "CORR_XZ"):0.075, (5,1, "CORR_XZ"):0.110, (5,5, "CORR_XZ"):0.210,
+                      (6,0.5, "CORR_XZ"):0.065, (6,1, "CORR_XZ"):0.090, (6,5, "CORR_XZ"):0.230}
+                      
 
 
-    num_shots = 10000 # number of shots to sample
+    l,eta, corr_type = l_eta__corr_type_arr[task_id] # get the l and eta from the task_id
+    p_th_init = p_th_init_dict[(l,eta,corr_type)]
+
+    
+
+    num_shots = 1e6 # number of shots to sample
     circuit_data = False # whether circuit level or code cap data is desired
-    d_list = [3,5,7]
+    d_list = [11,13,15,17,19]
     d_dict = {}
-    l=3 # elongation parameter of compass code
-    p_list = np.linspace(0.01, 0.11, 20)
-    eta = 0.5 # the degree of noise bias
-    corr_type = "CORR_ZX"
+    p_list = np.linspace(p_th_init-0.1, p_th_init + 0.1, 40)
+    # corr_type = "CORR_XZ"
     if circuit_data:
         folder_path = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/circuit_data/'
         if corr_type == "CORR_ZX":
@@ -563,29 +583,9 @@ if __name__ == "__main__":
         elif corr_type == "CORR_XZ":
             output_file = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/xz_corr_err_data.csv'
 
-    # d = 3
-    # type_mem = "Z" # type of memory experiment, X or Z
-    # # # decoder = CorrelatedDecoder(eta, d, l, corr_type)
-    # # # # # # # print(decoder.H_x, decoder.H_z)
-    # circuit = cc_circuit.CDCompassCodeCircuit(d, l, eta, [0.003, 0.001, 0.01], type_mem) # change list of ps dependent on model
-    # curr_circuit = circuit.make_elongated_circuit_from_parity()
-    # # # # print(repr(curr_circuit.detector_error_model(decompose_errors=True)))
-
-    # diagram = curr_circuit.diagram("timeline-svg")
-    # # # DEM = curr_circuit.detector_error_model()
-    # # # matchgraph = Matching.from_detector_error_model(DEM)
-    # # # matchgraph = Matching.from_stim_circuit(curr_circuit)
-    # # # print(matchgraph.edges())
-    # # # matchgraph.draw()
-    # # # plt.show()
-    # with open('diagram.svg', 'w') as f:
-    #     f.write(str(diagram))
-
-    # decoder.get_log_error_circuit_level(p_list, type_mem, num_shots)
-    
     
     # run this to get data from the dcc
-    # write_data(num_shots, d_list, l, p_list, eta, task_id, corr_type, circuit_data=circuit_data)
+    write_data(num_shots, d_list, l, p_list, eta, task_id, corr_type, circuit_data=circuit_data)
     # run this once you have data and want to combo it to one csv
     # concat_csv(folder_path, output_file)
 
@@ -595,12 +595,11 @@ if __name__ == "__main__":
 
 
     # Load and filter only X_mem and Z_mem
-    df = pd.read_csv(output_file)
+    # df = pd.read_csv(output_file)
 
-    df = df[(df['num_shots'] == num_shots) & (df['eta'] == eta)]
-    print(len(df))
+    # df = df[(df['num_shots'] == num_shots) & (df['eta'] == eta)]
 
-    threshold_plot(df, 0.155, 0.05, eta, l, num_shots, corr_type, output_file, loglog=True, averaging=True, show_threshold=True)
+    # threshold_plot(df, 0.15, 0.05, eta, l, num_shots, corr_type, output_file, loglog=True, averaging=True, show_threshold=True)
 
 
     # # Group by p, d, l and sum the num_log_errors to create 'tot_mem'
