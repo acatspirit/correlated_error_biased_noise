@@ -115,12 +115,12 @@ class CorrelatedDecoder:
         # Syndrome for Z errors and decoding
         syndrome_z = err_vec_x @ self.H_z.T % 2
         correction_x = M_z.decode_batch(syndrome_z)
-        num_errors_x = np.sum((correction_x + err_vec_x) @ self.L_z % 2)
+        num_errors_x = np.sum((correction_x + err_vec_x) @ self.log_z % 2)
         
         # Syndrome for X errors and decoding
         syndrome_x = err_vec_z @ self.H_x.T % 2
         correction_z = M_x.decode_batch(syndrome_x)
-        num_errors_z = np.sum((correction_z + err_vec_z) @ self.L_x % 2)
+        num_errors_z = np.sum((correction_z + err_vec_z) @ self.log_x % 2)
 
         
         # Decode Z errors correlated
@@ -137,7 +137,7 @@ class CorrelatedDecoder:
             for i in range(shots):
                 M_xz_corr = Matching.from_check_matrix(self.H_x, weights=updated_weights[i]) # updated weights set erasure to 0
                 correction_xz_corr = M_xz_corr.decode(syndrome_x[i])
-                num_errors_xz_corr += np.sum((correction_xz_corr + err_vec_z[i]) @ self.L_x % 2)
+                num_errors_xz_corr += np.sum((correction_xz_corr + err_vec_z[i]) @ self.log_x % 2)
             
             num_errors_corr = num_errors_xz_corr + num_errors_x
         
@@ -154,11 +154,11 @@ class CorrelatedDecoder:
             for i in range(shots):
                 M_zx_corr = Matching.from_check_matrix(self.H_z, weights=updated_weights[i]) # updated weights set erasure to 0
                 correction_zx_corr = M_zx_corr.decode(syndrome_z[i])
-                num_errors_zx_corr += np.sum((correction_zx_corr + err_vec_x[i]) @ self.L_z % 2)
+                num_errors_zx_corr += np.sum((correction_zx_corr + err_vec_x[i]) @ self.log_z % 2)
             
             num_errors_corr = num_errors_zx_corr + num_errors_z
         
-        num_errors_tot = num_errors_x + num_errors_z
+        num_errors_tot = num_errors_x + num_errors_z # do I need to change this?
 
         return num_errors_x, num_errors_z, num_errors_corr, num_errors_tot
 
