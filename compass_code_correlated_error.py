@@ -564,7 +564,7 @@ if __name__ == "__main__":
 
     
 
-    num_shots = 1e6 # number of shots to sample
+    num_shots = 1000000 # number of shots to sample
     circuit_data = False # whether circuit level or code cap data is desired
     d_list = [11,13,15,17,19]
     d_dict = {}
