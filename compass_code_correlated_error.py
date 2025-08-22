@@ -568,7 +568,7 @@ if __name__ == "__main__":
     num_shots = int(1e6//reps) # number of shots to sample
     circuit_data = False # whether circuit level or code cap data is desired
     d_list = [11,13,15,17,19]
-    p_list = np.linspace(p_th_init-0.1, p_th_init + 0.1, 20)
+    p_list = np.linspace(p_th_init-0.01, p_th_init + 0.01, 20)
     # corr_type = "CORR_XZ"
     if circuit_data:
         folder_path = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/circuit_data/'
