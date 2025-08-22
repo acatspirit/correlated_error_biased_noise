@@ -546,7 +546,7 @@ if __name__ == "__main__":
     task_id = int(os.environ['SLURM_ARRAY_TASK_ID']) # will iter over 30 sized array, later add num_shots
     slurm_array_size = int(os.environ['SLURM_ARRAY_TASK_MAX']) # the size of the slurm array, used to determine how many tasks to run
     l_eta_corr_type_arr = list(itertools.product([2,3,4,5,6],[0.5,1,5], ["CORR_XZ", "CORR_ZX"])) # list of tuples (l, eta, corr_type)
-    reps = slurm_array_size/len(l_eta_corr_type_arr) # how many times to run file, num_shots each time
+    reps = slurm_array_size//len(l_eta_corr_type_arr) # how many times to run file, num_shots each time
     p_th_init_dict = {(2,0.5, "CORR_ZX"):0.157, (2,1, "CORR_ZX"):0.149, (2,5, "CORR_ZX"):0.110,
                       (3,0.5, "CORR_ZX"):0.177, (3,1, "CORR_ZX"):0.178, (3,5, "CORR_ZX"):0.155,
                       (4,0.5, "CORR_ZX"):0.146, (4,1, "CORR_ZX"):0.173, (4,5, "CORR_ZX"):0.187,
