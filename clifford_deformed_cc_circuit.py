@@ -413,7 +413,7 @@ class CDCompassCodeCircuit:
         px = 0.5*p_i_round/(1+self.eta)
         pz = p_i_round*(self.eta/(1+self.eta))
 
-        circuit.append("PAULI_CHANNEL_1",range(num_ancillas + num_qubits_x), [px,pz,pz]) # idling error on all qubits in between measurement rounds
+        circuit.append("PAULI_CHANNEL_1",range(num_ancillas + num_qubits_x), [px,px,pz]) # idling error on all qubits in between measurement rounds
         circuit.append("H", range(num_ancillas))
 
         
@@ -525,6 +525,14 @@ class CDCompassCodeCircuit:
 
         num_rounds = self.d
         # num_rounds = 1
+
+        px_data = 0.5*p_data_dep/(1+self.eta) # biased depolarizing error on data qubits before measurement
+        pz_data = p_data_dep*(self.eta/(1+self.eta)) # biased depolarizing error on data qubits before measurement
+        py_data = px_data
+
+        px_meas = 0.5*p_data_meas/(1+self.eta) # biased depolarizing error on data qubits before measurement
+        pz_meas = p_data_meas*(self.eta/(1+self.eta)) # biased depolarizing error on data qubits before measurement
+        py_meas = px_meas
         
 
         # make the circuit
@@ -570,7 +578,7 @@ class CDCompassCodeCircuit:
             if CD_circuit:
                 circuit.append("H", [q + num_ancillas for q in CD_data_ZXXZonSqu if CD_data_ZXXZonSqu[q] == 2]) # put code into 0L of the CD code 
 
-            circuit.append("PAULI_CHANNEL_1", data_q_list, [0.5*p_data_dep/(1+self.eta), p_data_dep*(self.eta/(1+self.eta)),p_data_dep*(self.eta/(1+self.eta))]) # biased pauli channel on data qubits before the round
+            circuit.append("PAULI_CHANNEL_1", data_q_list, [px_data, py_data, pz_data]) # biased pauli channel on data qubits before the round
             circuit.append("Z_ERROR", [anc for anc in range(num_ancillas)], p_i) # idling error on the ancillas
         elif self.type == "Z":
             
@@ -581,7 +589,7 @@ class CDCompassCodeCircuit:
                 circuit.append("R", data_q_list)
                 
 
-            circuit.append("PAULI_CHANNEL_1", data_q_list, [0.5*p_data_dep/(1+self.eta), p_data_dep*(self.eta/(1+self.eta)),p_data_dep*(self.eta/(1+self.eta))])
+            circuit.append("PAULI_CHANNEL_1", data_q_list, [px_data, py_data, pz_data])
             circuit.append("Z_ERROR", [anc for anc in range(num_ancillas)], p_i) # idling error on the ancillas
             
 
@@ -614,7 +622,7 @@ class CDCompassCodeCircuit:
         # All other d rounds - t>0 measurements
 
         # add error to the data qubits
-        loop_circuit.append("PAULI_CHANNEL_1", data_q_list, [0.5*p_data_dep/(1+self.eta), p_data_dep*(self.eta/(1+self.eta)),p_data_dep*(self.eta/(1+self.eta))])
+        loop_circuit.append("PAULI_CHANNEL_1", data_q_list, [px_data, py_data, pz_data])
        
         loop_circuit = self.add_meas_round(loop_circuit, stab_d_x, stab_d_z, order_d_x, order_d_z, qubit_d_x, qubit_d_z, num_ancillas, num_qubits_x, num_qubits_z, CD_data_ZXXZonSqu, p_i, p_gate, p_i_round, CD_circuit)
 
@@ -638,7 +646,7 @@ class CDCompassCodeCircuit:
             # measure all the data qubits in the X stabilizers
 
             circuit.append("Z_ERROR", data_q_list, p_meas)
-            circuit.append("PAULI_CHANNEL_1", data_q_list, [0.5*p_data_meas/(1+self.eta), p_data_meas*(self.eta/(1+self.eta)),p_data_meas*(self.eta/(1+self.eta))]) # apply biased depolarizing error on data qubits before measurement
+            circuit.append("PAULI_CHANNEL_1", data_q_list, [px_meas, py_meas, pz_meas]) # apply biased depolarizing error on data qubits before measurement
 
             if CD_circuit:
                 circuit.append("H", [q + num_ancillas for q in CD_data_ZXXZonSqu if CD_data_ZXXZonSqu[q] == 2]) # apply H to the qubits that have a transformation applied 
@@ -660,7 +668,7 @@ class CDCompassCodeCircuit:
         if self.type == "Z":
             # measure all the data qubits in the Z stabilizers
             circuit.append("X_ERROR", data_q_list, p_meas) # add the error to the data qubits
-            circuit.append("PAULI_CHANNEL_1", data_q_list, [0.5*p_data_meas/(1+self.eta), p_data_meas*(self.eta/(1+self.eta)),p_data_meas*(self.eta/(1+self.eta))]) # apply biased depolarizing error on data qubits before measurement
+            circuit.append("PAULI_CHANNEL_1", data_q_list, [px_meas, py_meas, pz_meas]) # apply biased depolarizing error on data qubits before measurement
 
             if CD_circuit:
                 circuit.append("H", [q + num_ancillas for q in CD_data_ZXXZonSqu if CD_data_ZXXZonSqu[q] == 0]) # apply H to the qubits that have no transformation applied

@@ -543,9 +543,9 @@ def get_prob_scale(corr_type, eta):
 #
 
 if __name__ == "__main__":
-    task_id = int(os.environ['SLURM_ARRAY_TASK_ID']) # will iter over 15 sized array, later add num_shots
+    task_id = int(os.environ['SLURM_ARRAY_TASK_ID']) # will iter over 30 sized array, later add num_shots
+    slurm_array_size = int(os.environ['SLURM_ARRAY_TASK_MAX']) # the size of the slurm array, used to determine how many tasks to run
     l_eta__corr_type_arr = list(itertools.product([2,3,4,5,6],[0.5,1,5], ["CORR_XZ", "CORR_ZX"])) # list of tuples (l, eta, corr_type)
-
     p_th_init_dict = {(2,0.5, "CORR_ZX"):0.157, (2,1, "CORR_ZX"):0.149, (2,5, "CORR_ZX"):0.110,
                       (3,0.5, "CORR_ZX"):0.177, (3,1, "CORR_ZX"):0.178, (3,5, "CORR_ZX"):0.155,
                       (4,0.5, "CORR_ZX"):0.146, (4,1, "CORR_ZX"):0.173, (4,5, "CORR_ZX"):0.187,
@@ -558,17 +558,16 @@ if __name__ == "__main__":
                       (6,0.5, "CORR_XZ"):0.065, (6,1, "CORR_XZ"):0.090, (6,5, "CORR_XZ"):0.230}
                       
 
-
-    l,eta, corr_type = l_eta__corr_type_arr[task_id] # get the l and eta from the task_id
+    ind = task_id%len(l_eta__corr_type_arr) # get the index of the task_id in the l_eta__corr_type_arr
+    l,eta, corr_type = l_eta__corr_type_arr[ind] # get the l and eta from the task_id
     p_th_init = p_th_init_dict[(l,eta,corr_type)]
 
     
 
-    num_shots = 1000000 # number of shots to sample
+    num_shots = int(1e6//(slurm_array_size/len(l_eta__corr_type_arr))) # number of shots to sample
     circuit_data = False # whether circuit level or code cap data is desired
     d_list = [11,13,15,17,19]
-    d_dict = {}
-    p_list = np.linspace(p_th_init-0.1, p_th_init + 0.1, 40)
+    p_list = np.linspace(p_th_init-0.1, p_th_init + 0.1, 20)
     # corr_type = "CORR_XZ"
     if circuit_data:
         folder_path = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/circuit_data/'
