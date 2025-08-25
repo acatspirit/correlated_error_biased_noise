@@ -373,7 +373,7 @@ def write_data(num_shots, d_list, l, p_list, eta, ID, corr_type, circuit_data):
     all_data.to_csv(data_file, index=False)
 
 
-def concat_csv(folder_path, output_file):
+def concat_csv(folder_path, circuit_data):
     """Combines all CSV files is in folder 'folder_path' and writes them to one common 
         'output_file'. The CSV files in folder_path are deleted.
         in: folder_path - the folder that stores all the csv files to be combined
@@ -381,28 +381,70 @@ def concat_csv(folder_path, output_file):
         out: no output. The folder_path files are deleted and the output_file has the files in folder_path added to it
     """
     data_files = glob.glob(os.path.join(folder_path, '*.csv'))
-    df_list = []
+    df_list_XZ = []
+    df_list_ZX = []
+    df_list_CL = []
     for file in data_files:
         df = pd.read_csv(file)
-        df_list.append(df)
+        if not circuit_data: # the error types are X, Z, CORR_XZ, CORR_ZX, TOTAL, want to classify based on CORR_XZ and CORR_ZX
+            if 'CORR_XZ' in df['error_type'].values:
+                df_list_XZ.append(df)
+            elif 'CORR_ZX' in df['error_type'].values:
+                df_list_ZX.append(df)
+        else:
+            df_list_CL.append(df) # the error types are X_Mem and Z_Mem
     
-    new_data = pd.concat(df_list, ignore_index=True)
+    if circuit_data:
+        new_data_CL = pd.concat(df_list_CL, ignore_index=True)
+    else:
+        new_data_XZ = pd.concat(df_list_XZ, ignore_index=True)
+        new_data_ZX = pd.concat(df_list_ZX, ignore_index=True)
+    
+    print(len(new_data_XZ), len(new_data_ZX))
+    output_file_XZ = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/xz_corr_err_data.csv'
+    output_file_ZX = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/zx_corr_err_data.csv'
+    output_file_CL = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/zx_circuit_data.csv'
+    
+    all_data_XZ = pd.DataFrame()
+    all_data_ZX = pd.DataFrame()
+    all_data_CL = pd.DataFrame()
+
+    xz_exists = os.path.exists(output_file_XZ)
+    zx_exists = os.path.exists(output_file_ZX)
+    cl_exists = os.path.exists(output_file_CL)
 
     # Check if the output file already exists
-    if os.path.exists(output_file):
+    if xz_exists and not circuit_data:
         # If it exists, load the existing data
-        existing_data = pd.read_csv(output_file)
+        existing_data = pd.read_csv(output_file_XZ)
         # Append the new data to the existing data
-        all_data = pd.concat([existing_data, new_data], ignore_index=True)
-    else:
+        all_data_XZ = pd.concat([existing_data, new_data_XZ], ignore_index=True)
+    elif not xz_exists and not circuit_data:
         # If the file doesn't exist, the new data is the combined data
-        all_data = new_data
+        all_data_XZ = new_data_XZ
 
-    # change this for XZ
-    # all_data.loc[all_data['error_type'] == 'corr_z', 'error_type'] = 'CORR_ZX'
+    if zx_exists and not circuit_data:
+        # If it exists, load the existing data
+        existing_data = pd.read_csv(output_file_ZX)
+        # Append the new data to the existing data
+        all_data_ZX = pd.concat([existing_data, new_data_ZX], ignore_index=True)
+    elif not circuit_data and not zx_exists:
+        # If the file doesn't exist, the new data is the combined data
+        all_data_ZX = new_data_ZX
+
+    if cl_exists and circuit_data:
+        # If it exists, load the existing data
+        existing_data = pd.read_csv(output_file_CL)
+        # Append the new data to the existing data
+        all_data_CL = pd.concat([existing_data, new_data_CL], ignore_index=True)
+    elif circuit_data and not cl_exists:
+        # If the file doesn't exist, the new data is the combined data
+        all_data_CL = output_file_CL
 
     
-    all_data.to_csv(output_file, index=False)
+    all_data_XZ.to_csv(output_file_XZ, index=False)
+    all_data_ZX.to_csv(output_file_ZX, index=False)
+    all_data_CL.to_csv(output_file_CL, index=False)
     
     for file in data_files:
         os.remove(file)
@@ -413,9 +455,9 @@ def full_error_plot(full_df, curr_eta, curr_l, curr_num_shots, corr_type, file, 
     prob_scale = get_prob_scale(corr_type, curr_eta)
 
     # Filter the DataFrame based on the input parameters
-    filtered_df = full_df[(full_df['l'] == curr_l) & (full_df['eta'] == curr_eta) & (full_df['num_shots'] == curr_num_shots) 
+    # filtered_df = full_df[(full_df['l'] == curr_l) & (full_df['eta'] == curr_eta) & (full_df['num_shots'] == curr_num_shots)] 
                     # & (df['time_stamp'].apply(lambda x: x[0:10]) == datetime.today().date())
-                    ]
+    filtered_df = full_df[(full_df['l'] == curr_l) & (full_df['eta'] == curr_eta)]
 
     # Get unique error types and unique d values
     error_types = filtered_df['error_type'].unique()
@@ -521,7 +563,7 @@ def get_threshold(full_df, pth0, p_range, l, eta, corr_type, num_shots):
     error_list = df['num_log_errors'].to_numpy().flatten()
 
     # run the fitting function
-    popt, pcov = curve_fit(threshold_fit, (p_list, d_list), error_list, p0=[pth0, 1, 1, 1, 1])
+    popt, pcov = curve_fit(threshold_fit, (p_list, d_list), error_list, p0=[pth0, 0.5, 1, 1, 1])
     
     pth = popt[0] # the threshold probability
     pth_error = np.sqrt(pcov[0][0])
@@ -543,10 +585,11 @@ def get_prob_scale(corr_type, eta):
 #
 
 if __name__ == "__main__":
-    task_id = int(os.environ['SLURM_ARRAY_TASK_ID']) # will iter over 30 sized array, later add num_shots
-    slurm_array_size = int(os.environ['SLURM_ARRAY_TASK_MAX']) # the size of the slurm array, used to determine how many tasks to run
-    l_eta_corr_type_arr = list(itertools.product([2,3,4,5,6],[0.5,1,5], ["CORR_XZ", "CORR_ZX"])) # list of tuples (l, eta, corr_type)
-    reps = slurm_array_size//len(l_eta_corr_type_arr) # how many times to run file, num_shots each time
+    ## for simulation results
+    # task_id = int(os.environ['SLURM_ARRAY_TASK_ID']) # will iter over 30 sized array, later add num_shots
+    # slurm_array_size = int(os.environ['SLURM_ARRAY_TASK_MAX']) # the size of the slurm array, used to determine how many tasks to run
+    # l_eta_corr_type_arr = list(itertools.product([2,3,4,5,6],[0.5,1,5], ["CORR_XZ", "CORR_ZX"])) # list of tuples (l, eta, corr_type)
+    # reps = slurm_array_size//len(l_eta_corr_type_arr) # how many times to run file, num_shots each time
     p_th_init_dict = {(2,0.5, "CORR_ZX"):0.157, (2,1, "CORR_ZX"):0.149, (2,5, "CORR_ZX"):0.110,
                       (3,0.5, "CORR_ZX"):0.177, (3,1, "CORR_ZX"):0.178, (3,5, "CORR_ZX"):0.155,
                       (4,0.5, "CORR_ZX"):0.146, (4,1, "CORR_ZX"):0.173, (4,5, "CORR_ZX"):0.187,
@@ -559,23 +602,33 @@ if __name__ == "__main__":
                       (6,0.5, "CORR_XZ"):0.065, (6,1, "CORR_XZ"):0.090, (6,5, "CORR_XZ"):0.230}
                       
 
-    ind = task_id%reps # get the index of the task_id in the l_eta__corr_type_arr
-    l,eta, corr_type = l_eta_corr_type_arr[ind] # get the l and eta from the task_id
-    p_th_init = p_th_init_dict[(l,eta,corr_type)]
+    # ind = task_id%reps # get the index of the task_id in the l_eta__corr_type_arr
+    # l,eta, corr_type = l_eta_corr_type_arr[ind] # get the l and eta from the task_id
+    # p_th_init = p_th_init_dict[(l,eta,corr_type)]
 
     
 
-    num_shots = int(1e6//reps) # number of shots to sample
+    # num_shots = int(1e6//reps) # number of shots to sample
+    num_shots = 30303 # from file using ^
     circuit_data = False # whether circuit level or code cap data is desired
+
+    # for plotting
+    eta = 0.5
+    l = 5
+    corr_type = "CORR_XZ"
+
+    # simulation
     d_list = [11,13,15,17,19]
+    p_th_init = p_th_init_dict[(l,eta,corr_type)]
     p_list = np.linspace(p_th_init-0.01, p_th_init + 0.01, 20)
-    # corr_type = "CORR_XZ"
+    
+    
     if circuit_data:
         folder_path = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/circuit_data/'
-        if corr_type == "CORR_ZX":
-            output_file = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/zx_circuit_data.csv'
-        elif corr_type == "CORR_XZ":
-            output_file = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/xz_circuit_data.csv'
+    #     if corr_type == "CORR_ZX":
+    #         output_file = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/zx_circuit_data.csv'
+    #     elif corr_type == "CORR_XZ":
+    #         output_file = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/xz_circuit_data.csv'
     else:
         folder_path = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/corr_err_data/'
         if corr_type == "CORR_ZX":
@@ -585,9 +638,9 @@ if __name__ == "__main__":
 
     
     # run this to get data from the dcc
-    write_data(num_shots, d_list, l, p_list, eta, task_id, corr_type, circuit_data=circuit_data)
+    # write_data(num_shots, d_list, l, p_list, eta, task_id, corr_type, circuit_data=circuit_data)
     # run this once you have data and want to combo it to one csv
-    # concat_csv(folder_path, output_file)
+    # concat_csv(folder_path, circuit_data)
 
 
     # threshold today - 0.2075 ZX, 0.217
@@ -595,11 +648,12 @@ if __name__ == "__main__":
 
 
     # Load and filter only X_mem and Z_mem
-    # df = pd.read_csv(output_file)
+    df = pd.read_csv(output_file)
 
-    # df = df[(df['num_shots'] == num_shots) & (df['eta'] == eta)]
 
-    # threshold_plot(df, 0.15, 0.05, eta, l, num_shots, corr_type, output_file, loglog=True, averaging=True, show_threshold=True)
+    df = df[(df['num_shots'] == num_shots) & (df['eta'] == eta)]
+
+    threshold_plot(df, p_th_init, 0.01, eta, l, num_shots, corr_type, output_file, loglog=True, averaging=True, show_threshold=True)
 
 
     # # Group by p, d, l and sum the num_log_errors to create 'tot_mem'
