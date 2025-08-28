@@ -8,3 +8,17 @@ zx_circuit_data.csv
 xz_circuit_data.csv
 
 
+__pycache__/
+*.py[cod]
+*.pyd
+*.so
+*.dll
+*.lib
+*.exp
+build/
+dist/
+*.egg-info/
+.eggs/
+.ipynb_checkpoints/
+.venv/
+.venv312/
