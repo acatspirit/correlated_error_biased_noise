@@ -384,6 +384,7 @@ def concat_csv(folder_path, circuit_data):
     df_list_XZ = []
     df_list_ZX = []
     df_list_CL = []
+    
     for file in data_files:
         df = pd.read_csv(file)
         if not circuit_data: # the error types are X, Z, CORR_XZ, CORR_ZX, TOTAL, want to classify based on CORR_XZ and CORR_ZX
@@ -400,7 +401,6 @@ def concat_csv(folder_path, circuit_data):
         new_data_XZ = pd.concat(df_list_XZ, ignore_index=True)
         new_data_ZX = pd.concat(df_list_ZX, ignore_index=True)
     
-    print(len(new_data_XZ), len(new_data_ZX))
     output_file_XZ = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/xz_corr_err_data.csv'
     output_file_ZX = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/zx_corr_err_data.csv'
     output_file_CL = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/zx_circuit_data.csv'
@@ -586,29 +586,29 @@ def get_prob_scale(corr_type, eta):
 
 if __name__ == "__main__":
     ## for simulation results
-    task_id = int(os.environ['SLURM_ARRAY_TASK_ID']) # will iter over 30 sized array, later add num_shots
-    slurm_array_size = int(os.environ['SLURM_ARRAY_TASK_MAX']) # the size of the slurm array, used to determine how many tasks to run
-    l_eta_corr_type_arr = list(itertools.product([2,3,4,5,6],[0.5,1,5], ["CORR_XZ", "CORR_ZX"])) # list of tuples (l, eta, corr_type)
-    reps = slurm_array_size//len(l_eta_corr_type_arr) # how many times to run file, num_shots each time
-    p_th_init_dict = {(2,0.5, "CORR_ZX"):0.157, (2,1, "CORR_ZX"):0.149, (2,5, "CORR_ZX"):0.110,
-                      (3,0.5, "CORR_ZX"):0.177, (3,1, "CORR_ZX"):0.178, (3,5, "CORR_ZX"):0.155,
-                      (4,0.5, "CORR_ZX"):0.146, (4,1, "CORR_ZX"):0.173, (4,5, "CORR_ZX"):0.187,
-                      (5,0.5, "CORR_ZX"):0.120, (5,1, "CORR_ZX"):0.148, (5,5, "CORR_ZX"):0.210,
-                      (6,0.5, "CORR_ZX"):0.093, (6,1, "CORR_ZX"):0.109, (6,5, "CORR_ZX"):0.235,
-                      (2,0.5, "CORR_XZ"):0.160, (2,1, "CORR_XZ"):0.167, (2,5, "CORR_XZ"):0.120,
-                      (3,0.5, "CORR_XZ"):0.128, (3,1, "CORR_XZ"):0.165, (3,5, "CORR_XZ"):0.160,
-                      (4,0.5, "CORR_XZ"):0.090, (4,1, "CORR_XZ"):0.145, (4,5, "CORR_XZ"):0.190,
-                      (5,0.5, "CORR_XZ"):0.075, (5,1, "CORR_XZ"):0.110, (5,5, "CORR_XZ"):0.210,
-                      (6,0.5, "CORR_XZ"):0.065, (6,1, "CORR_XZ"):0.090, (6,5, "CORR_XZ"):0.230}
+    # task_id = int(os.environ['SLURM_ARRAY_TASK_ID']) # will iter over 30 sized array, later add num_shots
+    # slurm_array_size = int(os.environ['SLURM_ARRAY_TASK_MAX']) # the size of the slurm array, used to determine how many tasks to run
+    # l_eta_corr_type_arr = list(itertools.product([2,3,4,5,6],[0.5,1,5], ["CORR_XZ", "CORR_ZX"])) # list of tuples (l, eta, corr_type)
+    # reps = slurm_array_size//len(l_eta_corr_type_arr) # how many times to run file, num_shots each time
+    # p_th_init_dict = {(2,0.5, "CORR_ZX"):0.157, (2,1, "CORR_ZX"):0.149, (2,5, "CORR_ZX"):0.110,
+    #                   (3,0.5, "CORR_ZX"):0.177, (3,1, "CORR_ZX"):0.178, (3,5, "CORR_ZX"):0.155,
+    #                   (4,0.5, "CORR_ZX"):0.146, (4,1, "CORR_ZX"):0.173, (4,5, "CORR_ZX"):0.187,
+    #                   (5,0.5, "CORR_ZX"):0.120, (5,1, "CORR_ZX"):0.148, (5,5, "CORR_ZX"):0.210,
+    #                   (6,0.5, "CORR_ZX"):0.093, (6,1, "CORR_ZX"):0.109, (6,5, "CORR_ZX"):0.235,
+    #                   (2,0.5, "CORR_XZ"):0.160, (2,1, "CORR_XZ"):0.167, (2,5, "CORR_XZ"):0.120,
+    #                   (3,0.5, "CORR_XZ"):0.128, (3,1, "CORR_XZ"):0.165, (3,5, "CORR_XZ"):0.160,
+    #                   (4,0.5, "CORR_XZ"):0.090, (4,1, "CORR_XZ"):0.145, (4,5, "CORR_XZ"):0.190,
+    #                   (5,0.5, "CORR_XZ"):0.075, (5,1, "CORR_XZ"):0.110, (5,5, "CORR_XZ"):0.210,
+    #                   (6,0.5, "CORR_XZ"):0.065, (6,1, "CORR_XZ"):0.090, (6,5, "CORR_XZ"):0.230}
                       
 
-    ind = task_id%reps # get the index of the task_id in the l_eta__corr_type_arr
+    # ind = task_id%reps # get the index of the task_id in the l_eta__corr_type_arr
 
-    l,eta, corr_type = l_eta_corr_type_arr[ind] # get the l and eta from the task_id
+    # l,eta, corr_type = l_eta_corr_type_arr[ind] # get the l and eta from the task_id
 
     
 
-    num_shots = int(1e6//reps) # number of shots to sample
+    # num_shots = int(1e6//reps) # number of shots to sample
     # num_shots = 30303 # from file using ^
     circuit_data = False # whether circuit level or code cap data is desired
 
@@ -618,9 +618,9 @@ if __name__ == "__main__":
     # corr_type = "CORR_XZ"
 
     # simulation
-    d_list = [11,13,15,17,19]
-    p_th_init = p_th_init_dict[(l,eta,corr_type)]
-    p_list = np.linspace(p_th_init-0.03, p_th_init + 0.03, 40)
+    # d_list = [11,13,15,17,19]
+    # p_th_init = p_th_init_dict[(l,eta,corr_type)]
+    # p_list = np.linspace(p_th_init-0.03, p_th_init + 0.03, 40)
     
     
     if circuit_data:
@@ -631,16 +631,16 @@ if __name__ == "__main__":
     #         output_file = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/xz_circuit_data.csv'
     else:
         folder_path = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/corr_err_data/'
-        if corr_type == "CORR_ZX":
-            output_file = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/zx_corr_err_data.csv'
-        elif corr_type == "CORR_XZ":
-            output_file = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/xz_corr_err_data.csv'
+        # if corr_type == "CORR_ZX":
+        #     output_file = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/zx_corr_err_data.csv'
+        # elif corr_type == "CORR_XZ":
+        #     output_file = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/xz_corr_err_data.csv'
 
     
     # run this to get data from the dcc
-    write_data(num_shots, d_list, l, p_list, eta, task_id, corr_type, circuit_data=circuit_data)
+    # write_data(num_shots, d_list, l, p_list, eta, task_id, corr_type, circuit_data=circuit_data)
     # run this once you have data and want to combo it to one csv
-    # concat_csv(folder_path, circuit_data)
+    concat_csv(folder_path, circuit_data)
 
 
     # threshold today - 0.2075 ZX, 0.217
