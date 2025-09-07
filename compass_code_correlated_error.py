@@ -547,7 +547,31 @@ def threshold_plot(full_df, p_th0, p_range, curr_eta, curr_l, curr_num_shots, co
 def eta_threshold_plot(eta_df):
     """ Make a plot of threshold vs eta given a df with unedited contents
     """
-    
+    eta_values = eta_df['eta'].unique()
+    l_values = eta_df['l'].unique()
+
+    num_lines = len(l_values)
+    cmap = colormaps['Blues_r']
+    color_values = np.linspace(0.1, 0.8, num_lines)
+    colors = [cmap(val) for val in color_values]
+
+    fig, ax = plt.subplots(1, 2, figsize=(12, 6))
+
+    for ind, type in enumerate(['CORR_XZ', 'CORR_ZX']):
+        for i,l in enumerate(l_values):
+            mask = (eta_df['l'] == l) & (eta_df['error_type'] == type)
+            pth_list = eta_df[mask]['pth'].to_numpy().flatten()
+            pth_error_list = eta_df[mask]['stderr'].to_numpy().flatten()
+            ax[ind].errorbar(eta_values, pth_list, yerr=pth_error_list, label=f'l={l}', color=colors[i], marker='o', capsize=5)
+
+        ax[ind].set_title(f"Threshold vs Noise Bias for {type} Errors", fontsize=20)
+        ax[ind].set_xlabel('Noise Bias', fontsize=14)
+        ax[ind].set_ylabel('Threshold p_th', fontsize=20)
+    plt.legend()
+
+    plt.tight_layout()
+    plt.show()
+
 
 # def threshold_fit(x, pth, nu, a, b, c):
 #     p,d = x
@@ -600,10 +624,10 @@ def get_prob_scale(corr_type, eta):
 
 if __name__ == "__main__":
     ## for simulation results
-    # task_id = int(os.environ['SLURM_ARRAY_TASK_ID']) # will iter over 30 sized array, later add num_shots
-    # slurm_array_size = int(os.environ['SLURM_ARRAY_TASK_MAX']) # the size of the slurm array, used to determine how many tasks to run
-    # l_eta_corr_type_arr = list(itertools.product([2,3,4,5,6],[0.5,1,5], ["CORR_XZ", "CORR_ZX"])) # list of tuples (l, eta, corr_type)
-    # reps = slurm_array_size//len(l_eta_corr_type_arr) # how many times to run file, num_shots each time
+    task_id = int(os.environ['SLURM_ARRAY_TASK_ID']) # will iter over 30 sized array, later add num_shots
+    slurm_array_size = int(os.environ['SLURM_ARRAY_TASK_MAX']) # the size of the slurm array, used to determine how many tasks to run
+    l_eta_corr_type_arr = list(itertools.product([2,3,4,5,6],[0.75,2,3,4], ["CORR_XZ", "CORR_ZX"])) # list of tuples (l, eta, corr_type)
+    reps = slurm_array_size//len(l_eta_corr_type_arr) # how many times to run file, num_shots each time
     p_th_init_dict = {(2,0.5, "CORR_ZX"):0.157, (2,1, "CORR_ZX"):0.149, (2,5, "CORR_ZX"):0.110,
                       (3,0.5, "CORR_ZX"):0.177, (3,1, "CORR_ZX"):0.178, (3,5, "CORR_ZX"):0.155,
                       (4,0.5, "CORR_ZX"):0.146, (4,1, "CORR_ZX"):0.173, (4,5, "CORR_ZX"):0.187,
@@ -616,27 +640,28 @@ if __name__ == "__main__":
                       (6,0.5, "CORR_XZ"):0.065, (6,1, "CORR_XZ"):0.090, (6,5, "CORR_XZ"):0.230}
                       
 
-    # ind = task_id%reps # get the index of the task_id in the l_eta__corr_type_arr
+    ind = task_id%reps # get the index of the task_id in the l_eta__corr_type_arr
 
-    # l,eta, corr_type = l_eta_corr_type_arr[ind] # get the l and eta from the task_id
+    l,eta, corr_type = l_eta_corr_type_arr[ind] # get the l and eta from the task_id
 
     
 
-    # num_shots = int(1e6//reps) # number of shots to sample
-    num_shots = 30303 # from file using ^
+    num_shots = int(1e6//reps) # number of shots to sample
+    # num_shots = 30303 # from file using ^
     circuit_data = False # whether circuit level or code cap data is desired
 
     # for plotting
-    eta = 5
-    l = 6
-    corr_type = "CORR_XZ"
-    error_type = "CORR_XZ"
+    # eta = 5
+    # l = 6
+    # corr_type = "CORR_XZ"
+    # error_type = "CORR_XZ"
 
     # simulation
-    # d_list = [11,13,15,17,19]
-    p_th_init = p_th_init_dict[(l,eta,corr_type)]
+    d_list = [11,13,15,17,19]
+    # p_th_init = p_th_init_dict[(l,eta,corr_type)]
     # p_th_init = 0.158
     # p_list = np.linspace(p_th_init-0.03, p_th_init + 0.03, 40)
+    p_list = np.linspace(0.07, 0.24, 40)
     
     
     if circuit_data:
@@ -654,7 +679,7 @@ if __name__ == "__main__":
 
     
     # run this to get data from the dcc
-    # write_data(num_shots, d_list, l, p_list, eta, task_id, corr_type, circuit_data=circuit_data)
+    write_data(num_shots, d_list, l, p_list, eta, task_id, corr_type, circuit_data=circuit_data)
     # run this once you have data and want to combo it to one csv
     # concat_csv(folder_path, circuit_data)
 
@@ -667,8 +692,10 @@ if __name__ == "__main__":
     # get all the thresholds and store the data in a csv
 
 
-    df = pd.read_csv(output_file)
-    # threshold_d = {}
+
+    # df = pd.read_csv(output_file)
+    # df = pd.read_csv('/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/all_thresholds_per_eta_elongated.csv')
+    # eta_threshold_plot(df)
 
     # for key in p_th_init_dict:
     #     l, eta, corr_type = key
