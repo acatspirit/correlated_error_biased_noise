@@ -544,10 +544,20 @@ def threshold_plot(full_df, p_th0, p_range, curr_eta, curr_l, curr_num_shots, co
     plt.tight_layout()
     plt.show()
 
-def threshold_fit(x, pth, nu, a, b, c):
+def eta_threshold_plot(eta_df):
+    """ Make a plot of threshold vs eta given a df with unedited contents
+    """
+    
+
+# def threshold_fit(x, pth, nu, a, b, c):
+#     p,d = x
+#     X = (d**(1/nu))*(p-pth)
+#     return c + b*X + a*X**2
+
+def threshold_fit(x, pth, nu, c):
     p,d = x
     X = (d**(1/nu))*(p-pth)
-    return c + b*X + a*X**2
+    return c + X 
 
 
 def get_threshold(full_df, pth0, p_range, l, eta, corr_type, num_shots):
@@ -555,19 +565,23 @@ def get_threshold(full_df, pth0, p_range, l, eta, corr_type, num_shots):
         in: df - the dataframe containing all data, filtered for one error_type, l eta, and probability range
         out: p_thr - a float, the probability where intersection of different lattice distances occurred
     """
+
     df = full_df[(full_df['p'] < pth0 + p_range) & ( full_df['p'] > pth0 - p_range) & (full_df['l'] == l) & (full_df['eta'] == eta) & (full_df['error_type'] == corr_type) & (full_df['num_shots'] == num_shots)]
-    
+
     # get the p_list and d_list from the dataframe
     p_list = df['p'].to_numpy().flatten()
     d_list = df['d'].to_numpy().flatten()
     error_list = df['num_log_errors'].to_numpy().flatten()
 
     # run the fitting function
-    popt, pcov = curve_fit(threshold_fit, (p_list, d_list), error_list, p0=[pth0, 0.5, 1, 1, 1])
+    # popt, pcov = curve_fit(threshold_fit, (p_list, d_list), error_list, p0=[pth0, 0.5, 1, 1, 1])
+    popt, pcov = curve_fit(threshold_fit, (p_list, d_list), error_list, p0=[pth0, 1, 1])
     
     pth = popt[0] # the threshold probability
-    pth_error = np.sqrt(pcov[0][0])
-
+    pth_error = np.sqrt(np.trace(pcov))
+    overfitting = np.linalg.cond(pcov)
+    # print(f"Overfitting condition number: {overfitting}")
+    # print(f"diag of covariance matrix: {np.diag(pcov)}")
     return pth, pth_error
 
 
@@ -590,16 +604,16 @@ if __name__ == "__main__":
     # slurm_array_size = int(os.environ['SLURM_ARRAY_TASK_MAX']) # the size of the slurm array, used to determine how many tasks to run
     # l_eta_corr_type_arr = list(itertools.product([2,3,4,5,6],[0.5,1,5], ["CORR_XZ", "CORR_ZX"])) # list of tuples (l, eta, corr_type)
     # reps = slurm_array_size//len(l_eta_corr_type_arr) # how many times to run file, num_shots each time
-    # p_th_init_dict = {(2,0.5, "CORR_ZX"):0.157, (2,1, "CORR_ZX"):0.149, (2,5, "CORR_ZX"):0.110,
-    #                   (3,0.5, "CORR_ZX"):0.177, (3,1, "CORR_ZX"):0.178, (3,5, "CORR_ZX"):0.155,
-    #                   (4,0.5, "CORR_ZX"):0.146, (4,1, "CORR_ZX"):0.173, (4,5, "CORR_ZX"):0.187,
-    #                   (5,0.5, "CORR_ZX"):0.120, (5,1, "CORR_ZX"):0.148, (5,5, "CORR_ZX"):0.210,
-    #                   (6,0.5, "CORR_ZX"):0.093, (6,1, "CORR_ZX"):0.109, (6,5, "CORR_ZX"):0.235,
-    #                   (2,0.5, "CORR_XZ"):0.160, (2,1, "CORR_XZ"):0.167, (2,5, "CORR_XZ"):0.120,
-    #                   (3,0.5, "CORR_XZ"):0.128, (3,1, "CORR_XZ"):0.165, (3,5, "CORR_XZ"):0.160,
-    #                   (4,0.5, "CORR_XZ"):0.090, (4,1, "CORR_XZ"):0.145, (4,5, "CORR_XZ"):0.190,
-    #                   (5,0.5, "CORR_XZ"):0.075, (5,1, "CORR_XZ"):0.110, (5,5, "CORR_XZ"):0.210,
-    #                   (6,0.5, "CORR_XZ"):0.065, (6,1, "CORR_XZ"):0.090, (6,5, "CORR_XZ"):0.230}
+    p_th_init_dict = {(2,0.5, "CORR_ZX"):0.157, (2,1, "CORR_ZX"):0.149, (2,5, "CORR_ZX"):0.110,
+                      (3,0.5, "CORR_ZX"):0.177, (3,1, "CORR_ZX"):0.178, (3,5, "CORR_ZX"):0.155,
+                      (4,0.5, "CORR_ZX"):0.146, (4,1, "CORR_ZX"):0.173, (4,5, "CORR_ZX"):0.187,
+                      (5,0.5, "CORR_ZX"):0.120, (5,1, "CORR_ZX"):0.148, (5,5, "CORR_ZX"):0.210,
+                      (6,0.5, "CORR_ZX"):0.093, (6,1, "CORR_ZX"):0.109, (6,5, "CORR_ZX"):0.235,
+                      (2,0.5, "CORR_XZ"):0.160, (2,1, "CORR_XZ"):0.167, (2,5, "CORR_XZ"):0.120,
+                      (3,0.5, "CORR_XZ"):0.128, (3,1, "CORR_XZ"):0.165, (3,5, "CORR_XZ"):0.160,
+                      (4,0.5, "CORR_XZ"):0.090, (4,1, "CORR_XZ"):0.145, (4,5, "CORR_XZ"):0.190,
+                      (5,0.5, "CORR_XZ"):0.075, (5,1, "CORR_XZ"):0.110, (5,5, "CORR_XZ"):0.210,
+                      (6,0.5, "CORR_XZ"):0.065, (6,1, "CORR_XZ"):0.090, (6,5, "CORR_XZ"):0.230}
                       
 
     # ind = task_id%reps # get the index of the task_id in the l_eta__corr_type_arr
@@ -609,17 +623,19 @@ if __name__ == "__main__":
     
 
     # num_shots = int(1e6//reps) # number of shots to sample
-    # num_shots = 30303 # from file using ^
+    num_shots = 30303 # from file using ^
     circuit_data = False # whether circuit level or code cap data is desired
 
     # for plotting
-    # eta = 0.5
-    # l = 5
-    # corr_type = "CORR_XZ"
+    eta = 5
+    l = 6
+    corr_type = "CORR_XZ"
+    error_type = "CORR_XZ"
 
     # simulation
     # d_list = [11,13,15,17,19]
-    # p_th_init = p_th_init_dict[(l,eta,corr_type)]
+    p_th_init = p_th_init_dict[(l,eta,corr_type)]
+    # p_th_init = 0.158
     # p_list = np.linspace(p_th_init-0.03, p_th_init + 0.03, 40)
     
     
@@ -631,16 +647,16 @@ if __name__ == "__main__":
     #         output_file = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/xz_circuit_data.csv'
     else:
         folder_path = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/corr_err_data/'
-        # if corr_type == "CORR_ZX":
-        #     output_file = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/zx_corr_err_data.csv'
-        # elif corr_type == "CORR_XZ":
-        #     output_file = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/xz_corr_err_data.csv'
+        if corr_type == "CORR_ZX":
+            output_file = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/zx_corr_err_data.csv'
+        elif corr_type == "CORR_XZ":
+            output_file = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/xz_corr_err_data.csv'
 
     
     # run this to get data from the dcc
     # write_data(num_shots, d_list, l, p_list, eta, task_id, corr_type, circuit_data=circuit_data)
     # run this once you have data and want to combo it to one csv
-    concat_csv(folder_path, circuit_data)
+    # concat_csv(folder_path, circuit_data)
 
 
     # threshold today - 0.2075 ZX, 0.217
@@ -648,12 +664,38 @@ if __name__ == "__main__":
 
 
     # Load and filter only X_mem and Z_mem
-    # df = pd.read_csv(output_file)
+    # get all the thresholds and store the data in a csv
+
+
+    df = pd.read_csv(output_file)
+    # threshold_d = {}
+
+    # for key in p_th_init_dict:
+    #     l, eta, corr_type = key
+
+    #     if corr_type == "CORR_ZX":
+    #         output_file = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/zx_corr_err_data.csv'
+    #     elif corr_type == "CORR_XZ":
+    #         output_file = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/xz_corr_err_data.csv'
+    #     df = pd.read_csv(output_file)
+    #     # threshold_d = {}
+
+    #     p_th_init = p_th_init_dict[key]
+    #     threshold = get_threshold(df, p_th_init, 0.03, l, eta, corr_type, num_shots)
+    #     threshold_d[key] = threshold
+    
+    # threshold_df = pd.DataFrame(threshold_d)
+
+    # threshold_df.to_csv('/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/all_thresholds.csv', index=False)
+
+
+
+
 
 
     # df = df[(df['num_shots'] == num_shots) & (df['eta'] == eta)]
 
-    # threshold_plot(df, p_th_init, 0.01, eta, l, num_shots, corr_type, output_file, loglog=True, averaging=True, show_threshold=True)
+    # threshold_plot(df, p_th_init, 0.03, eta, l, num_shots, error_type, output_file, loglog=True, averaging=True, show_threshold=True)
 
 
     # # Group by p, d, l and sum the num_log_errors to create 'tot_mem'
