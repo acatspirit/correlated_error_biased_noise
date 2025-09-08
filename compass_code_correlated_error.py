@@ -458,7 +458,7 @@ def full_error_plot(full_df, curr_eta, curr_l, curr_num_shots, corr_type, file, 
     # filtered_df = full_df[(full_df['l'] == curr_l) & (full_df['eta'] == curr_eta) & (full_df['num_shots'] == curr_num_shots)] 
                     # & (df['time_stamp'].apply(lambda x: x[0:10]) == datetime.today().date())
     filtered_df = full_df[(full_df['l'] == curr_l) & (full_df['eta'] == curr_eta)]
-
+   
     # Get unique error types and unique d values
     error_types = filtered_df['error_type'].unique()
 
@@ -506,6 +506,7 @@ def threshold_plot(full_df, p_th0, p_range, curr_eta, curr_l, curr_num_shots, co
 
     # Filter the DataFrame based on the input parameters
     filtered_df = full_df[(full_df['p'] > p_th0 - p_range)&(full_df['p'] < p_th0 + p_range)&(full_df['error_type'] == corr_type)&(full_df['l'] == curr_l) & (full_df['eta'] == curr_eta) & (full_df['num_shots'] == curr_num_shots)]
+    
 
     d_values = filtered_df['d'].unique()
     num_lines = len(d_values)
@@ -623,10 +624,13 @@ def get_prob_scale(corr_type, eta):
 #
 
 if __name__ == "__main__":
-    ## for simulation results
-    task_id = int(os.environ['SLURM_ARRAY_TASK_ID']) # will iter over 30 sized array, later add num_shots
-    slurm_array_size = int(os.environ['SLURM_ARRAY_TASK_MAX']) # the size of the slurm array, used to determine how many tasks to run
-    l_eta_corr_type_arr = list(itertools.product([2,3,4,5,6],[0.75,2,3,4], ["CORR_XZ", "CORR_ZX"])) # list of tuples (l, eta, corr_type)
+    # for simulation results
+    task_id = int(os.environ['SLURM_ARRAY_TASK_ID']) # will iter over the total slurm array size and points to where you are 
+
+    print(f"Task ID: {task_id}")
+    slurm_array_size = int(os.environ['SLURM_ARRAY_TASK_MAX']) # the size of the slurm array, used to determine how many tasks to run, currently 1000
+    print(f"SLURM Array Size: {slurm_array_size}")
+    l_eta_corr_type_arr = list(itertools.product([2,3,4,5,6],[0.75,2,3,4], ["CORR_XZ", "CORR_ZX"])) # list of tuples (l, eta, corr_type), currently 40
     reps = slurm_array_size//len(l_eta_corr_type_arr) # how many times to run file, num_shots each time
     p_th_init_dict = {(2,0.5, "CORR_ZX"):0.157, (2,1, "CORR_ZX"):0.149, (2,5, "CORR_ZX"):0.110,
                       (3,0.5, "CORR_ZX"):0.177, (3,1, "CORR_ZX"):0.178, (3,5, "CORR_ZX"):0.155,
@@ -637,22 +641,26 @@ if __name__ == "__main__":
                       (3,0.5, "CORR_XZ"):0.128, (3,1, "CORR_XZ"):0.165, (3,5, "CORR_XZ"):0.160,
                       (4,0.5, "CORR_XZ"):0.090, (4,1, "CORR_XZ"):0.145, (4,5, "CORR_XZ"):0.190,
                       (5,0.5, "CORR_XZ"):0.075, (5,1, "CORR_XZ"):0.110, (5,5, "CORR_XZ"):0.210,
-                      (6,0.5, "CORR_XZ"):0.065, (6,1, "CORR_XZ"):0.090, (6,5, "CORR_XZ"):0.230}
+                      (6,0.5, "CORR_XZ"):0.065, (6,1, "CORR_XZ"):0.090, (6,5, "CORR_XZ"):0.230,
+                      (2,0.75,"CORR_XZ"):0.166, (3,0.75,"CORR_XZ"):0.149, (4,0.75,"CORR_XZ"):0.114, 
+                      (5,0.75,"CORR_XZ"):0.000, (6,0.75,"CORR_XZ"):0.000}
                       
 
     ind = task_id%reps # get the index of the task_id in the l_eta__corr_type_arr
 
     l,eta, corr_type = l_eta_corr_type_arr[ind] # get the l and eta from the task_id
 
-    
+    print("l,eta,corr_type", l,eta, corr_type)
+    print("reps", reps)
+    print("ind", ind)
 
     num_shots = int(1e6//reps) # number of shots to sample
-    # num_shots = 30303 # from file using ^
+    print("num_shots", num_shots)
     circuit_data = False # whether circuit level or code cap data is desired
 
     # for plotting
-    # eta = 5
-    # l = 6
+    # eta = 0.75
+    # l = 5
     # corr_type = "CORR_XZ"
     # error_type = "CORR_XZ"
 
