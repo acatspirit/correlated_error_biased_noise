@@ -646,7 +646,7 @@ if __name__ == "__main__":
                       (5,0.75,"CORR_XZ"):0.000, (6,0.75,"CORR_XZ"):0.000}
                       
 
-    ind = task_id%reps # get the index of the task_id in the l_eta__corr_type_arr
+    ind = task_id%len(l_eta_corr_type_arr) # get the index of the task_id in the l_eta__corr_type_arr
 
     l,eta, corr_type = l_eta_corr_type_arr[ind] # get the l and eta from the task_id
 
@@ -654,6 +654,7 @@ if __name__ == "__main__":
     print("reps", reps)
     print("ind", ind)
 
+    # maybe the bug is in the // , maybe it doesn't have enough cells from the modding
     num_shots = int(1e6//reps) # number of shots to sample
     print("num_shots", num_shots)
     circuit_data = False # whether circuit level or code cap data is desired
