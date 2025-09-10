@@ -642,8 +642,21 @@ if __name__ == "__main__":
                       (4,0.5, "CORR_XZ"):0.090, (4,1, "CORR_XZ"):0.145, (4,5, "CORR_XZ"):0.190,
                       (5,0.5, "CORR_XZ"):0.075, (5,1, "CORR_XZ"):0.110, (5,5, "CORR_XZ"):0.210,
                       (6,0.5, "CORR_XZ"):0.065, (6,1, "CORR_XZ"):0.090, (6,5, "CORR_XZ"):0.230,
-                      (2,0.75,"CORR_XZ"):0.166, (3,0.75,"CORR_XZ"):0.149, (4,0.75,"CORR_XZ"):0.114, 
-                      (5,0.75,"CORR_XZ"):0.000, (6,0.75,"CORR_XZ"):0.000}
+                      (2,0.75,"CORR_XZ"): 0.149, (2,0.75,"CORR_ZX"):0.155, (2,2,"CORR_XZ"): 0.139,
+                        (2,2,"CORR_ZX"): 0.122, (2,3,"CORR_XZ"): 0.127, (2,3,"CORR_ZX"): 0.115,
+                        (2,4,"CORR_XZ"): 0.121, (2,4,"CORR_ZX"): 0.112, (3,0.75,"CORR_XZ"): 0.149,
+                        (3,0.75,"CORR_ZX"): 0.176, (3,2,"CORR_XZ"): 0.177, (3,2,"CORR_ZX"): 0.175,
+                        (3,3,"CORR_XZ"): 0.167, (3,3,"CORR_ZX"): 0.165, (3,4,"CORR_XZ"): 0.160,
+                        (3,4,"CORR_ZX"): 0.160, (4,0.75,"CORR_XZ"): 0.114, (4,0.75,"CORR_ZX"): 0.159,
+                        (4,2,"CORR_XZ"): 0.187, (4,2,"CORR_ZX"): 0.189, (4,3,"CORR_XZ"): 0.196,
+                        (4,3,"CORR_ZX"): 0.196, (4,4,"CORR_XZ"): 0.192, (4,4,"CORR_ZX"): 0.192,
+                        (5,0.75,"CORR_XZ"): 0.009, (5,0.75,"CORR_ZX"): 0.118, (5,2,"CORR_XZ"): 0.188,
+                        (5,2,"CORR_ZX"): 0.189, (5,3,"CORR_XZ"): 0.206,(5,3,"CORR_ZX"): 0.205,
+                        (5,4,"CORR_XZ"): 0.209,(5,4,"CORR_ZX"): 0.210,(6,0.75,"CORR_XZ"): 0.07,
+                        (6,0.75,"CORR_ZX"): 0.092,(6,2,"CORR_XZ"): 0.185,(6,2,"CORR_ZX"): 0.180,
+                        (6,3,"CORR_XZ"): 0.210,(6,3,"CORR_ZX"): 0.212,(6,4,"CORR_XZ"): 0.222,
+                        (6,4,"CORR_ZX"): 0.222}
+
                       
 
     ind = task_id%len(l_eta_corr_type_arr) # get the index of the task_id in the l_eta__corr_type_arr
@@ -656,21 +669,22 @@ if __name__ == "__main__":
 
     # maybe the bug is in the // , maybe it doesn't have enough cells from the modding
     num_shots = int(1e6//reps) # number of shots to sample
+    # num_shots = 41666
     print("num_shots", num_shots)
     circuit_data = False # whether circuit level or code cap data is desired
 
     # for plotting
-    # eta = 0.75
-    # l = 5
+    # eta = 4
+    # l = 6
     # corr_type = "CORR_XZ"
     # error_type = "CORR_XZ"
 
     # simulation
     d_list = [11,13,15,17,19]
-    # p_th_init = p_th_init_dict[(l,eta,corr_type)]
+    p_th_init = p_th_init_dict[(l,eta,corr_type)]
     # p_th_init = 0.158
-    # p_list = np.linspace(p_th_init-0.03, p_th_init + 0.03, 40)
-    p_list = np.linspace(0.07, 0.24, 40)
+    p_list = np.linspace(p_th_init-0.03, p_th_init + 0.03, 40)
+    # p_list = np.linspace(0.07, 0.24, 40)
     
     
     if circuit_data:
@@ -797,4 +811,3 @@ if __name__ == "__main__":
 # l=5 # eta=4.26 # pzx=0.203 # pthr=0.217 # pz=0.195 # px=0.041 #
 # l=6 # eta=5.89 # pzx=0.259 # pthr=0.221 # pz=0.216 # px=0.033 # from 1000000 shots
 #################################################################
-

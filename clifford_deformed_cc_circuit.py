@@ -514,7 +514,7 @@ class CDCompassCodeCircuit:
             - measurement outcomes are preceded by a bit flip with probability p_meas (x)
             - idling qubits are between rounds, biased pauli channel with probability p_i_round (x)
 
-            Z memory - measuring X stabs first time is random, don't add detectors to these, just hte second round
+            Z memory - measuring X stabs first time is random, don't add detectors to these, just the second round
         """
         p_gate = after_clifford_depolarization # gate error on two-qubit gates
         p_meas = before_measure_flip # measurement error
@@ -524,10 +524,10 @@ class CDCompassCodeCircuit:
         p_i = idling_dephasing # idling error on all qubits during rounds
 
         # num_rounds = self.d
-        num_rounds = 2
+        num_rounds = 1
 
-        px_data = 0.5*p_data_dep/(1+self.eta) # biased depolarizing error on data qubits before measurement
-        pz_data = p_data_dep*(self.eta/(1+self.eta)) # biased depolarizing error on data qubits before measurement
+        px_data = 0.5*p_data_dep/(1+self.eta) # biased depolarizing error on data qubits before round
+        pz_data = p_data_dep*(self.eta/(1+self.eta)) # biased depolarizing error on data qubits before round
         py_data = px_data
 
         px_meas = 0.5*p_data_meas/(1+self.eta) # biased depolarizing error on data qubits before measurement
@@ -638,7 +638,7 @@ class CDCompassCodeCircuit:
         loop_circuit.append("TICK") # add a tick to the circuit to mark the end of the t>0 iteration
         
         # repeat the loop circuit d-1 times - circuit level only
-        circuit.append(stim.CircuitRepeatBlock(repeat_count=num_rounds-1, body=loop_circuit))# end the repeat block
+        # circuit.append(stim.CircuitRepeatBlock(repeat_count=num_rounds-1, body=loop_circuit))# end the repeat block
 
         # reconstruct the stabilizers and measure the data qubits
         # for X mem measure X stabs
