@@ -545,30 +545,47 @@ def threshold_plot(full_df, p_th0, p_range, curr_eta, curr_l, curr_num_shots, co
     plt.tight_layout()
     plt.show()
 
+
 def eta_threshold_plot(eta_df):
-    """ Make a plot of threshold vs eta given a df with unedited contents
+    """Make a single figure with a 2-column grid of subplots.
+    Each row corresponds to a different `l`, with CORR_XZ on left and CORR_ZX on right.
     """
-    eta_values = eta_df['eta'].unique()
-    l_values = eta_df['l'].unique()
+    eta_values = sorted(eta_df['eta'].unique())
+    l_values = sorted(eta_df['l'].unique())
+    num_rows = len(l_values)
 
-    num_lines = len(l_values)
+    # Set up colors
     cmap = colormaps['Blues_r']
-    color_values = np.linspace(0.1, 0.8, num_lines)
-    colors = [cmap(val) for val in color_values]
+    color_values = np.linspace(0.1, 0.8, num_rows)
+    l_colors = [cmap(val) for val in color_values]
 
-    fig, ax = plt.subplots(1, 2, figsize=(12, 6))
+    # Create figure and 2-column grid
+    fig, axes = plt.subplots(num_rows, 2, figsize=(12, 2 * num_rows), sharex=True, sharey=True)
 
-    for ind, type in enumerate(['CORR_XZ', 'CORR_ZX']):
-        for i,l in enumerate(l_values):
-            mask = (eta_df['l'] == l) & (eta_df['error_type'] == type)
-            pth_list = eta_df[mask]['pth'].to_numpy().flatten()
-            pth_error_list = eta_df[mask]['stderr'].to_numpy().flatten()
-            ax[ind].errorbar(eta_values, pth_list, yerr=pth_error_list, label=f'l={l}', color=colors[i], marker='o', capsize=5)
+    for row_idx, l in enumerate(l_values):
+        for col_idx, error_type in enumerate(['CORR_XZ', 'CORR_ZX']):
+            ax = axes[row_idx, col_idx] if num_rows > 1 else axes[col_idx]
+            mask = (eta_df['l'] == l) & (eta_df['error_type'] == error_type)
+            df_filtered = eta_df[mask].sort_values(by='eta')
 
-        ax[ind].set_title(f"Threshold vs Noise Bias for {type} Errors", fontsize=20)
-        ax[ind].set_xlabel('Noise Bias', fontsize=14)
-        ax[ind].set_ylabel('Threshold p_th', fontsize=20)
-    plt.legend()
+            eta_vals = df_filtered['eta'].to_numpy()
+            pth_list = df_filtered['pth'].to_numpy()
+            pth_error_list = df_filtered['stderr'].to_numpy()
+
+            ax.errorbar(eta_vals, pth_list, yerr=pth_error_list,
+                        label=f'l = {l}', color=l_colors[row_idx], marker='o', capsize=5)
+
+            if row_idx == 0:
+                ax.set_title(f"{error_type}", fontsize=16)
+
+            if col_idx == 0:
+                ax.set_ylabel(f"l = {l}\nThreshold $p_{{th}}$", fontsize=12)
+
+            if row_idx == num_rows - 1:
+                ax.set_xlabel("Noise Bias (η)", fontsize=12)
+
+            ax.grid(True)
+            ax.legend()
 
     plt.tight_layout()
     plt.show()
@@ -590,8 +607,11 @@ def get_threshold(full_df, pth0, p_range, l, eta, corr_type, num_shots):
         in: df - the dataframe containing all data, filtered for one error_type, l eta, and probability range
         out: p_thr - a float, the probability where intersection of different lattice distances occurred
     """
-
+    print(f"Getting threshold for l = {l}, eta = {eta}, error type = {corr_type}, num_shots = {num_shots}")
     df = full_df[(full_df['p'] < pth0 + p_range) & ( full_df['p'] > pth0 - p_range) & (full_df['l'] == l) & (full_df['eta'] == eta) & (full_df['error_type'] == corr_type) & (full_df['num_shots'] == num_shots)]
+    # df = full_df
+    if df.empty:
+        return 0, 0
 
     # get the p_list and d_list from the dataframe
     p_list = df['p'].to_numpy().flatten()
@@ -625,13 +645,13 @@ def get_prob_scale(corr_type, eta):
 
 if __name__ == "__main__":
     # for simulation results
-    task_id = int(os.environ['SLURM_ARRAY_TASK_ID']) # will iter over the total slurm array size and points to where you are 
+    # task_id = int(os.environ['SLURM_ARRAY_TASK_ID']) # will iter over the total slurm array size and points to where you are 
 
-    print(f"Task ID: {task_id}")
-    slurm_array_size = int(os.environ['SLURM_ARRAY_TASK_MAX']) # the size of the slurm array, used to determine how many tasks to run, currently 1000
-    print(f"SLURM Array Size: {slurm_array_size}")
+    # print(f"Task ID: {task_id}")
+    # slurm_array_size = int(os.environ['SLURM_ARRAY_TASK_MAX']) # the size of the slurm array, used to determine how many tasks to run, currently 1000
+    # print(f"SLURM Array Size: {slurm_array_size}")
     l_eta_corr_type_arr = list(itertools.product([2,3,4,5,6],[0.75,2,3,4], ["CORR_XZ", "CORR_ZX"])) # list of tuples (l, eta, corr_type), currently 40
-    reps = slurm_array_size//len(l_eta_corr_type_arr) # how many times to run file, num_shots each time
+    # reps = slurm_array_size//len(l_eta_corr_type_arr) # how many times to run file, num_shots each time
     p_th_init_dict = {(2,0.5, "CORR_ZX"):0.157, (2,1, "CORR_ZX"):0.149, (2,5, "CORR_ZX"):0.110,
                       (3,0.5, "CORR_ZX"):0.177, (3,1, "CORR_ZX"):0.178, (3,5, "CORR_ZX"):0.155,
                       (4,0.5, "CORR_ZX"):0.146, (4,1, "CORR_ZX"):0.173, (4,5, "CORR_ZX"):0.187,
@@ -659,25 +679,25 @@ if __name__ == "__main__":
 
                       
 
-    ind = task_id%len(l_eta_corr_type_arr) # get the index of the task_id in the l_eta__corr_type_arr
+    # ind = task_id%len(l_eta_corr_type_arr) # get the index of the task_id in the l_eta__corr_type_arr
 
-    l,eta, corr_type = l_eta_corr_type_arr[ind] # get the l and eta from the task_id
+    # l,eta, corr_type = l_eta_corr_type_arr[ind] # get the l and eta from the task_id
 
-    print("l,eta,corr_type", l,eta, corr_type)
-    print("reps", reps)
-    print("ind", ind)
+    # print("l,eta,corr_type", l,eta, corr_type)
+    # print("reps", reps)
+    # print("ind", ind)
 
     # maybe the bug is in the // , maybe it doesn't have enough cells from the modding
-    num_shots = int(1e6//reps) # number of shots to sample
-    # num_shots = 41666
+    # num_shots = int(1e6//reps) # number of shots to sample
+    num_shots = 41666
     print("num_shots", num_shots)
     circuit_data = False # whether circuit level or code cap data is desired
 
     # for plotting
-    # eta = 4
-    # l = 6
-    # corr_type = "CORR_XZ"
-    # error_type = "CORR_XZ"
+    eta = 4
+    l = 6
+    corr_type = "CORR_XZ"
+    error_type = "CORR_XZ"
 
     # simulation
     d_list = [11,13,15,17,19]
@@ -702,7 +722,7 @@ if __name__ == "__main__":
 
     
     # run this to get data from the dcc
-    write_data(num_shots, d_list, l, p_list, eta, task_id, corr_type, circuit_data=circuit_data)
+    # write_data(num_shots, d_list, l, p_list, eta, task_id, corr_type, circuit_data=circuit_data)
     # run this once you have data and want to combo it to one csv
     # concat_csv(folder_path, circuit_data)
 
@@ -717,11 +737,27 @@ if __name__ == "__main__":
 
 
     # df = pd.read_csv(output_file)
-    # df = pd.read_csv('/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/all_thresholds_per_eta_elongated.csv')
-    # eta_threshold_plot(df)
+    df = pd.read_csv('/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/all_thresholds_per_eta_elongated.csv')
+    eta_threshold_plot(df)
 
-    # for key in p_th_init_dict:
+    # threshold_d = {(2,0.75,"CORR_XZ"): 0.149, (2,0.75,"CORR_ZX"):0.155, (2,2,"CORR_XZ"): 0.139,
+    #                     (2,2,"CORR_ZX"): 0.122, (2,3,"CORR_XZ"): 0.127, (2,3,"CORR_ZX"): 0.115,
+    #                     (2,4,"CORR_XZ"): 0.121, (2,4,"CORR_ZX"): 0.112, (3,0.75,"CORR_XZ"): 0.149,
+    #                     (3,0.75,"CORR_ZX"): 0.176, (3,2,"CORR_XZ"): 0.177, (3,2,"CORR_ZX"): 0.175,
+    #                     (3,3,"CORR_XZ"): 0.167, (3,3,"CORR_ZX"): 0.165, (3,4,"CORR_XZ"): 0.160,
+    #                     (3,4,"CORR_ZX"): 0.160, (4,0.75,"CORR_XZ"): 0.114, (4,0.75,"CORR_ZX"): 0.159,
+    #                     (4,2,"CORR_XZ"): 0.187, (4,2,"CORR_ZX"): 0.189, (4,3,"CORR_XZ"): 0.196,
+    #                     (4,3,"CORR_ZX"): 0.196, (4,4,"CORR_XZ"): 0.192, (4,4,"CORR_ZX"): 0.192,
+    #                     (5,0.75,"CORR_XZ"): 0.009, (5,0.75,"CORR_ZX"): 0.118, (5,2,"CORR_XZ"): 0.188,
+    #                     (5,2,"CORR_ZX"): 0.189, (5,3,"CORR_XZ"): 0.206,(5,3,"CORR_ZX"): 0.205,
+    #                     (5,4,"CORR_XZ"): 0.209,(5,4,"CORR_ZX"): 0.210,(6,0.75,"CORR_XZ"): 0.07,
+    #                     (6,0.75,"CORR_ZX"): 0.092,(6,2,"CORR_XZ"): 0.185,(6,2,"CORR_ZX"): 0.180,
+    #                     (6,3,"CORR_XZ"): 0.210,(6,3,"CORR_ZX"): 0.212,(6,4,"CORR_XZ"): 0.222,
+    #                     (6,4,"CORR_ZX"): 0.222}
+
+    # for key in threshold_d.keys():
     #     l, eta, corr_type = key
+    #     print("l,eta,corr_type", l,eta, corr_type)
 
     #     if corr_type == "CORR_ZX":
     #         output_file = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/zx_corr_err_data.csv'
@@ -738,6 +774,7 @@ if __name__ == "__main__":
 
     # threshold_df.to_csv('/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/all_thresholds.csv', index=False)
 
+    
 
 
 
@@ -799,7 +836,7 @@ if __name__ == "__main__":
     # threshold, confidence = get_threshold(df, p_th_init, p_diff, l, eta, corr_type)
     # print(threshold, confidence)
 
-    # threshold_plot(df, p_th_init, p_diff, eta, l, num_shots, "Z", output_file, loglog=True, averaging=True,show_threshold=True)
+    # threshold_plot(df, 0.123, 0.03, 0.75, 5, num_shots, "CORR_XZ", output_file, loglog=True, averaging=True,show_threshold=True)
     # full_error_plot(df, eta, l, num_shots, corr_type, output_file, loglog=False, averaging=True)
 
 
