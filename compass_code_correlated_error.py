@@ -231,21 +231,35 @@ class CorrelatedDecoder:
         num_errors = np.sum(np.any(np.array(observable_flips) != np.array(predictions), axis=1))
         return num_errors
 
-    def get_log_error_circuit_level(self, p_list, meas_type, num_shots):
+    def get_log_error_circuit_level(self, p_list, meas_type, num_shots, noise_model="code_cap", cd_type=None):
         """
         Get the logical error rate for a list of physical error rates of gates at the circuit level
         :param p_list: list of p values
         :param meas_type: type of memory experiment(X or Z), stabilizers measured
         :param num_shots: number of shots to sample
+        :param noise_model: the noise model to use, either "code_cap", "phenom", or "circuit_level". Code cap has a biased depolarizing channel on data 
+            qubits at the beginning of rounds. Phenominological model has a biased depolarizing channel on data qubits at the beginning of rounds and bit-flip noise on 
+            measurement qubits before measurement. Circuit level has biased depolarizing channel at the beginning of rounds, bit-flip noise on measurement qubits before measurement, 
+            and a two-qubit depolarizing channel after each two-qubit clifford gate.
+        :param cd_type: the type of clifford defomation applied to the circuit. Either None, XZZXonSqu, or ZXXZonSqu.
         :return: list of logical error rates, opposite type of the measurement type (e.g. if meas_type is X, then Z logical errors are returned)
         """
+        
 
         log_error_L = []
         for p in p_list:
             # make the circuit
-            circuit = cc_circuit.CDCompassCodeCircuit(self.d, self.l, self.eta, [0.003, 0.001, p], meas_type) # change list of ps dependent on model
-
-            log_errors = self.get_num_log_errors_DEM(circuit.circuit, num_shots)
+            circuit_obj = cc_circuit.CDCompassCodeCircuit(self.d, self.l, self.eta, meas_type) # change list of ps dependent on model
+            if noise_model == "code_cap":# change this based on the noise model you want
+                circuit = circuit_obj.make_elongated_circuit_from_parity(0,0,0,p,0,0,CD_type=cd_type)  
+            elif noise_model == "phenom":
+                circuit = circuit_obj.make_elongated_circuit_from_parity(p,0,0,p,0,0,CD_type=cd_type)
+            elif noise_model == "circuit_level":
+                circuit = circuit_obj.make_elongated_circuit_from_parity(p,0,p,0,p,0,CD_type=cd_type)
+            else:
+                raise ValueError("Invalid noise model. Choose either 'code_cap', 'phenom', or 'circuit_level'.")
+            
+            log_errors = self.get_num_log_errors_DEM(circuit, num_shots)
             log_error_L.append(log_errors)
 
         return log_error_L
@@ -274,7 +288,7 @@ class CorrelatedDecoder:
 #
 ############################################
 
-def get_data(num_shots, d_list, l, p_list, eta, corr_type, circuit_data):
+def get_data(num_shots, d_list, l, p_list, eta, corr_type, circuit_data, noise_model="code_cap", cd_type=None):
     """ Generate logical error rates for x,z, correlatex z, and total errors
         via MC sim in decoding_failures_correlated and add it to a shared pandas df
         
@@ -298,15 +312,15 @@ def get_data(num_shots, d_list, l, p_list, eta, corr_type, circuit_data):
                 # circuit_z = cc_circuit.CDCompassCodeCircuit(d, l, eta, [0.003, 0.001, p], "Z")
     
             decoder = CorrelatedDecoder(eta, d, l, corr_type)
-            log_errors_z = decoder.get_log_error_circuit_level(p_list, "Z", num_shots) # get the Z logical errors from Z memory experiment
-            log_errors_x = decoder.get_log_error_circuit_level(p_list, "X", num_shots) # get the X logical errors from X memory experiment
+            log_errors_z = decoder.get_log_error_circuit_level(p_list, "Z", num_shots, noise_model, cd_type) # get the Z logical errors from Z memory experiment, X errors
+            log_errors_x = decoder.get_log_error_circuit_level(p_list, "X", num_shots, noise_model, cd_type) # get the X logical errors from X memory experiment, Z errors
 
 
             for i,log_error in enumerate(log_errors_x):
-                curr_row = {"d":d, "num_shots":num_shots, "p":p_list[i], "l": l, "eta":eta, "error_type":"X_Mem", "num_log_errors":log_error/num_shots, "time_stamp":datetime.now()}
+                curr_row = {"d":d, "num_shots":num_shots, "p":p_list[i], "l": l, "eta":eta, "error_type":"X_MEM", "noise_model": noise_model, "CD_type":cd_type, "num_log_errors":log_error/num_shots, "time_stamp":datetime.now()}
                 data = pd.concat([data, pd.DataFrame([curr_row])], ignore_index=True)
             for i,log_error in enumerate(log_errors_z):
-                curr_row = {"d":d, "num_shots":num_shots, "p":p_list[i], "l": l, "eta":eta, "error_type":"Z_Mem", "num_log_errors":log_error/num_shots, "time_stamp":datetime.now()}
+                curr_row = {"d":d, "num_shots":num_shots, "p":p_list[i], "l": l, "eta":eta, "error_type":"Z_MEM", "noise_model": noise_model, "CD_type":cd_type, "num_log_errors":log_error/num_shots, "time_stamp":datetime.now()}
                 data = pd.concat([data, pd.DataFrame([curr_row])], ignore_index=True)
 
         else:
@@ -403,7 +417,7 @@ def concat_csv(folder_path, circuit_data):
     
     output_file_XZ = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/xz_corr_err_data.csv'
     output_file_ZX = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/zx_corr_err_data.csv'
-    output_file_CL = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/zx_circuit_data.csv'
+    output_file_CL = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/circuit_data.csv'
     
     all_data_XZ = pd.DataFrame()
     all_data_ZX = pd.DataFrame()
@@ -702,7 +716,7 @@ if __name__ == "__main__":
     d_list = [11,13,15,17,19]
     # p_th_init = p_th_init_dict[(l,eta,corr_type)]
     # p_th_init = 0.158
-    # p_list = np.linspace(p_th_init-0.03, p_th_init + 0.03, 40)
+    p_list = np.linspace(p_th_init-0.03, p_th_init + 0.03, 40)
     p_list = np.linspace(0.07, 0.3, 40)
     
     

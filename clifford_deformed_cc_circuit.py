@@ -27,7 +27,7 @@ class CDCompassCodeCircuit:
 
         self.qubit_order_d = self.check_order_d_elongated()
         
-        # self.circuit, self.detectors_d = self.make_elongated_MPP_circuit_from_parity() # uncomment to make the circuit from the parity check matrix
+        # self.circuit= self.make_elongated_circuit_from_parity() # uncomment to make the circuit from the parity check matrix
 
     def get_circuit(self, before_measure_flip, after_clifford_depolarization, before_round_data_depolarization, idling_dephasing):
         """ 
@@ -496,7 +496,8 @@ class CDCompassCodeCircuit:
 
     
 
-    def make_elongated_circuit_from_parity(self, before_measure_flip, before_measure_pauli_channel, after_clifford_depolarization, before_round_data_pauli_channel, between_round_idling_pauli_channel, idling_dephasing, CD_circuit):
+    def make_elongated_circuit_from_parity(self, before_measure_flip, before_measure_pauli_channel, after_clifford_depolarization, before_round_data_pauli_channel,
+                                            between_round_idling_pauli_channel, idling_dephasing, CD_type = None):
         """ 
         create a surface code memory experiment circuit from a parity check matrix
         Inputs:
@@ -507,6 +508,7 @@ class CDCompassCodeCircuit:
                 between_round_idling_pauli_channel - (float) the probability of a biased pauli channel on all qubits between rounds, biased towards Z
                 idling_dephasing - (float) the probability of a dephasing error on idling qubits during rounds
                 CD_circuit - (bool) whether to apply clifford deformation to the circuit, ZXXZonSqu is the only option right now 
+                CD_type - (str) the type of clifford deformation to apply, only ZXXZonSqu and XZZXonSq are valid, otherwise None which indicates no clifford deformation
             Returns: (stim.Circuit) the circuit with noise added
 
             The error model is the biased noise model from the paper: PRA (101)042312, 2020
@@ -523,8 +525,8 @@ class CDCompassCodeCircuit:
         p_i_round = between_round_idling_pauli_channel # idling error on all qubits between the measurement rounds
         p_i = idling_dephasing # idling error on all qubits during rounds
 
-        # num_rounds = self.d
-        num_rounds = 1
+        num_rounds = self.d
+        # num_rounds = 1
 
         px_data = 0.5*p_data_dep/(1+self.eta) # biased depolarizing error on data qubits before round
         pz_data = p_data_dep*(self.eta/(1+self.eta)) # biased depolarizing error on data qubits before round
@@ -548,10 +550,10 @@ class CDCompassCodeCircuit:
         qubit_d_x,qubit_d_z = self.qubit_to_stab_d()
 
         # get the data for the clifford deformation for the basis setup
-        if CD_circuit:
-            CD_data_ZXXZonSqu = cc.CD_data_func(self.code.qbit_dict.values(), special='ZXXZonSqu', ell=self.l, size=self.d) # data for which qubits have a transformation applied, dictionary 
+        if CD_type != None:
+            CD_data_transform = cc.CD_data_func(self.code.qbit_dict.values(), special=CD_type, ell=self.l, size=self.d) # data for which qubits have a transformation applied, dictionary 
         else:
-            CD_data_ZXXZonSqu = None
+            CD_data_transform = None
             
         
         # general parameters
@@ -575,16 +577,16 @@ class CDCompassCodeCircuit:
             circuit.append("RX", data_q_list)
             
         
-            if CD_circuit:
-                circuit.append("H", [q + num_ancillas for q in CD_data_ZXXZonSqu if CD_data_ZXXZonSqu[q] == 2]) # put code into 0L of the CD code 
+            if CD_type != None:
+                circuit.append("H", [q + num_ancillas for q in CD_data_transform if CD_data_transform[q] == 2]) # put code into 0L of the CD code 
 
             circuit.append("PAULI_CHANNEL_1", data_q_list, [px_data, py_data, pz_data]) # biased pauli channel on data qubits before the round
             circuit.append("Z_ERROR", [anc for anc in range(num_ancillas)], p_i) # idling error on the ancillas
         elif self.type == "Z":
             
-            if CD_circuit:
+            if CD_type != None:
                 circuit.append("RX", data_q_list)
-                circuit.append("H", [q + num_ancillas for q in CD_data_ZXXZonSqu if CD_data_ZXXZonSqu[q] == 0]) # put the code into the 1L of the CD code
+                circuit.append("H", [q + num_ancillas for q in CD_data_transform if CD_data_transform[q] == 0]) # put the code into the 1L of the CD code
             else:
                 circuit.append("R", data_q_list)
                 
@@ -598,7 +600,7 @@ class CDCompassCodeCircuit:
 
         # Round 0 - t=0 measurements
         circuit.append("TICK")
-        circuit = self.add_meas_round(circuit, stab_d_x, stab_d_z, order_d_x, order_d_z, qubit_d_x, qubit_d_z, num_ancillas, num_qubits_x, num_qubits_z, CD_data_ZXXZonSqu, p_i, p_gate, 0, CD_circuit) # set the idling error between rounds to 0 on first round
+        circuit = self.add_meas_round(circuit, stab_d_x, stab_d_z, order_d_x, order_d_z, qubit_d_x, qubit_d_z, num_ancillas, num_qubits_x, num_qubits_z, CD_data_transform, p_i, p_gate, 0, CD_type) # set the idling error between rounds to 0 on first round
 
         # idling errors on the data qubits during round 
         circuit.append("Z_ERROR", data_q_z_list, p_i)
@@ -624,7 +626,7 @@ class CDCompassCodeCircuit:
         # add error to the data qubits
         loop_circuit.append("PAULI_CHANNEL_1", data_q_list, [px_data, py_data, pz_data])
        
-        loop_circuit = self.add_meas_round(loop_circuit, stab_d_x, stab_d_z, order_d_x, order_d_z, qubit_d_x, qubit_d_z, num_ancillas, num_qubits_x, num_qubits_z, CD_data_ZXXZonSqu, p_i, p_gate, p_i_round, CD_circuit)
+        loop_circuit = self.add_meas_round(loop_circuit, stab_d_x, stab_d_z, order_d_x, order_d_z, qubit_d_x, qubit_d_z, num_ancillas, num_qubits_x, num_qubits_z, CD_data_transform, p_i, p_gate, p_i_round, CD_type)
 
         # idling errors on the data qubits, measure the ancillas, bit flip errors on measurements
         loop_circuit.append("Z_ERROR", data_q_z_list, p_i)
@@ -638,7 +640,7 @@ class CDCompassCodeCircuit:
         loop_circuit.append("TICK") # add a tick to the circuit to mark the end of the t>0 iteration
         
         # repeat the loop circuit d-1 times - circuit level only
-        # circuit.append(stim.CircuitRepeatBlock(repeat_count=num_rounds-1, body=loop_circuit))# end the repeat block
+        circuit.append(stim.CircuitRepeatBlock(repeat_count=num_rounds-1, body=loop_circuit))# end the repeat block
 
         # reconstruct the stabilizers and measure the data qubits
         # for X mem measure X stabs
@@ -648,8 +650,8 @@ class CDCompassCodeCircuit:
             circuit.append("Z_ERROR", data_q_list, p_meas)
             circuit.append("PAULI_CHANNEL_1", data_q_list, [px_meas, py_meas, pz_meas]) # apply biased depolarizing error on data qubits before measurement
 
-            if CD_circuit:
-                circuit.append("H", [q + num_ancillas for q in CD_data_ZXXZonSqu if CD_data_ZXXZonSqu[q] == 2]) # apply H to the qubits that have a transformation applied 
+            if CD_type != None:
+                circuit.append("H", [q + num_ancillas for q in CD_data_transform if CD_data_transform[q] == 2]) # apply H to the qubits that have a transformation applied 
             
             
             circuit.append("MX", data_q_list)
@@ -670,8 +672,8 @@ class CDCompassCodeCircuit:
             circuit.append("X_ERROR", data_q_list, p_meas) # add the error to the data qubits
             circuit.append("PAULI_CHANNEL_1", data_q_list, [px_meas, py_meas, pz_meas]) # apply biased depolarizing error on data qubits before measurement
 
-            if CD_circuit:
-                circuit.append("H", [q + num_ancillas for q in CD_data_ZXXZonSqu if CD_data_ZXXZonSqu[q] == 0]) # apply H to the qubits that have no transformation applied
+            if CD_type != None:
+                circuit.append("H", [q + num_ancillas for q in CD_data_transform if CD_data_transform[q] == 0]) # apply H to the qubits that have no transformation applied
                 circuit.append("MX", data_q_list)
             else:
                 circuit.append("M", data_q_list)
