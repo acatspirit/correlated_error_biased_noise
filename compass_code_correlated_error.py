@@ -353,7 +353,7 @@ def shots_averaging(num_shots, l, eta, err_type, in_df, file):
 
 
 
-def write_data(num_shots, d_list, l, p_list, eta, ID, corr_type, circuit_data):
+def write_data(num_shots, d_list, l, p_list, eta, ID, corr_type, circuit_data, noise_model="code_cap", cd_type=None):
     """ Writes data from pandas df to a csv file, for use with SLURM arrays. Generates data for each slurm output on a CSV
         in: num_shots - the number of MC iterations
             l - the integer repition of the compass code
@@ -362,7 +362,7 @@ def write_data(num_shots, d_list, l, p_list, eta, ID, corr_type, circuit_data):
             d_list - the distances of compass code to scan
             ID - SLURM input task_ID number, corresponds to which array element we run
     """
-    data = get_data(num_shots, d_list, l, p_list, eta, corr_type, circuit_data)
+    data = get_data(num_shots, d_list, l, p_list, eta, corr_type, circuit_data, noise_model=noise_model, cd_type=cd_type)
     if circuit_data:
         data_file = f'circuit_data/{ID}.csv'
         if not os.path.exists('circuit_data/'):
@@ -664,8 +664,9 @@ if __name__ == "__main__":
     print(f"Task ID: {task_id}")
     slurm_array_size = int(os.environ['SLURM_ARRAY_TASK_MAX']) # the size of the slurm array, used to determine how many tasks to run, currently 1000
     print(f"SLURM Array Size: {slurm_array_size}")
-    l_eta_corr_type_arr = list(itertools.product([2,3,4,5,6],[1.5,2.5,3.5,4.5,6,7], ["CORR_XZ", "CORR_ZX"])) # list of tuples (l, eta, corr_type), currently 40
-    reps = slurm_array_size//len(l_eta_corr_type_arr) # how many times to run file, num_shots each time
+    # l_eta_corr_type_arr = list(itertools.product([2,3,4,5,6],[1.5,2.5,3.5,4.5,6,7], ["CORR_XZ", "CORR_ZX"])) # list of tuples (l, eta, corr_type), currently 40
+    l_eta_cd_type_arr = list(itertools.product([2,3,4,5,6],[0.5,5,10,50,100,500,1000],[None, "XZZXonSqu", "ZXXZonSqu"])) # list of tuples (l, eta, CD_type), currently 105
+    reps = slurm_array_size//len(l_eta_cd_type_arr) # how many times to run file, num_shots each time
     p_th_init_dict = {(2,0.5, "CORR_ZX"):0.157, (2,1, "CORR_ZX"):0.149, (2,5, "CORR_ZX"):0.110,
                       (3,0.5, "CORR_ZX"):0.177, (3,1, "CORR_ZX"):0.178, (3,5, "CORR_ZX"):0.155,
                       (4,0.5, "CORR_ZX"):0.146, (4,1, "CORR_ZX"):0.173, (4,5, "CORR_ZX"):0.187,
@@ -689,35 +690,35 @@ if __name__ == "__main__":
                         (5,4,"CORR_XZ"): 0.209,(5,4,"CORR_ZX"): 0.210,(6,0.75,"CORR_XZ"): 0.07,
                         (6,0.75,"CORR_ZX"): 0.092,(6,2,"CORR_XZ"): 0.185,(6,2,"CORR_ZX"): 0.180,
                         (6,3,"CORR_XZ"): 0.210,(6,3,"CORR_ZX"): 0.212,(6,4,"CORR_XZ"): 0.222,
-                        (6,4,"CORR_ZX"): 0.222}
+                        (6,4,"CORR_ZX"): 0.222, (2,1.5,"CORR_XZ"):0.147, (2,1.5,"CORR_ZX"):0.152}
 
                       
 
-    ind = task_id%len(l_eta_corr_type_arr) # get the index of the task_id in the l_eta__corr_type_arr
+    ind = task_id%len(l_eta_cd_type_arr) # get the index of the task_id in the l_eta__corr_type_arr
 
-    l,eta, corr_type = l_eta_corr_type_arr[ind] # get the l and eta from the task_id
+    l,eta, cd_type = l_eta_cd_type_arr[ind] # get the l and eta from the task_id
 
-    print("l,eta,corr_type", l,eta, corr_type)
+    print("l,eta,corr_type", l,eta, cd_type)
     print("reps", reps)
     print("ind", ind)
 
     num_shots = int(1e6//reps) # number of shots to sample
     # num_shots = 41666
     print("num_shots", num_shots)
-    circuit_data = False # whether circuit level or code cap data is desired
+    circuit_data = True # whether circuit level or code cap data is desired
 
     # for plotting
     # eta = 4
     # l = 6
-    # corr_type = "CORR_XZ"
+    corr_type = "CORR_XZ"
     # error_type = "CORR_XZ"
 
     # simulation
     d_list = [11,13,15,17,19]
     # p_th_init = p_th_init_dict[(l,eta,corr_type)]
     # p_th_init = 0.158
-    p_list = np.linspace(p_th_init-0.03, p_th_init + 0.03, 40)
-    p_list = np.linspace(0.07, 0.3, 40)
+    # p_list = np.linspace(p_th_init-0.03, p_th_init + 0.03, 40)
+    p_list = np.linspace(0.05, 0.5, 40)
     
     
     if circuit_data:
@@ -735,7 +736,7 @@ if __name__ == "__main__":
 
     
     # run this to get data from the dcc
-    write_data(num_shots, d_list, l, p_list, eta, task_id, corr_type, circuit_data=circuit_data)
+    write_data(num_shots, d_list, l, p_list, eta, task_id, corr_type, circuit_data=circuit_data, noise_model="code_cap", cd_type="XZZXonSqu")
     # run this once you have data and want to combo it to one csv
     # concat_csv(folder_path, circuit_data)
 
