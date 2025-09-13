@@ -364,11 +364,11 @@ def write_data(num_shots, d_list, l, p_list, eta, ID, corr_type, circuit_data, n
     """
     data = get_data(num_shots, d_list, l, p_list, eta, corr_type, circuit_data, noise_model=noise_model, cd_type=cd_type)
     if circuit_data:
-        data_file = f'circuit_data/{ID}.csv'
+        data_file = f'circuit_data/circuit_level_{ID}.csv'
         if not os.path.exists('circuit_data/'):
             os.mkdir('circuit_data')
     else:
-        data_file = f'corr_err_data/{ID}.csv'
+        data_file = f'corr_err_data/code_cap_{ID}.csv'
         if not os.path.exists('corr_err_data/'):
             os.mkdir('corr_err_data')
    
@@ -664,9 +664,9 @@ if __name__ == "__main__":
     print(f"Task ID: {task_id}")
     slurm_array_size = int(os.environ['SLURM_ARRAY_TASK_MAX']) # the size of the slurm array, used to determine how many tasks to run, currently 1000
     print(f"SLURM Array Size: {slurm_array_size}")
-    # l_eta_corr_type_arr = list(itertools.product([2,3,4,5,6],[1.5,2.5,3.5,4.5,6,7], ["CORR_XZ", "CORR_ZX"])) # list of tuples (l, eta, corr_type), currently 40
-    l_eta_cd_type_arr = list(itertools.product([2,3,4,5,6],[0.5,5,10,50,100,500,1000],[None, "XZZXonSqu", "ZXXZonSqu"])) # list of tuples (l, eta, CD_type), currently 105
-    reps = slurm_array_size//len(l_eta_cd_type_arr) # how many times to run file, num_shots each time
+    l_eta_corr_type_arr = list(itertools.product([2,3,4,5,6],[1.5,2.5,3.5,4.5,6,7], ["CORR_XZ", "CORR_ZX"])) # list of tuples (l, eta, corr_type), currently 40
+    # l_eta_cd_type_arr = list(itertools.product([2,3,4,5,6],[0.5,5,10,50,100,500,1000],[None, "XZZXonSqu", "ZXXZonSqu"])) # list of tuples (l, eta, CD_type), currently 105
+    reps = slurm_array_size//len(l_eta_corr_type_arr) # how many times to run file, num_shots each time
     p_th_init_dict = {(2,0.5, "CORR_ZX"):0.157, (2,1, "CORR_ZX"):0.149, (2,5, "CORR_ZX"):0.110,
                       (3,0.5, "CORR_ZX"):0.177, (3,1, "CORR_ZX"):0.178, (3,5, "CORR_ZX"):0.155,
                       (4,0.5, "CORR_ZX"):0.146, (4,1, "CORR_ZX"):0.173, (4,5, "CORR_ZX"):0.187,
@@ -690,35 +690,51 @@ if __name__ == "__main__":
                         (5,4,"CORR_XZ"): 0.209,(5,4,"CORR_ZX"): 0.210,(6,0.75,"CORR_XZ"): 0.07,
                         (6,0.75,"CORR_ZX"): 0.092,(6,2,"CORR_XZ"): 0.185,(6,2,"CORR_ZX"): 0.180,
                         (6,3,"CORR_XZ"): 0.210,(6,3,"CORR_ZX"): 0.212,(6,4,"CORR_XZ"): 0.222,
-                        (6,4,"CORR_ZX"): 0.222, (2,1.5,"CORR_XZ"):0.147, (2,1.5,"CORR_ZX"):0.152}
+                        (6,4,"CORR_ZX"): 0.222,
+                        (2,1.5,"CORR_XZ"): 0.152, (2,1.5,"CORR_ZX"):0.130, (2,2.5,"CORR_XZ"):0.131, (2,2.5,"CORR_ZX"):0.118,
+                        (2,3.5,"CORR_XZ"): 0.123, (2,3.5,"CORR_ZX"): 0.113, (2,4.5,"CORR_XZ"): 0.118, (2,4.5,"CORR_ZX"): 0.111,
+                        (2,6,"CORR_XZ"): 0.114, (2,6,"CORR_ZX"): 0.108, (2,7,"CORR_XZ"): 0.112, (2,7,"CORR_ZX"): 0.107,
+                        (3,1.5,"CORR_XZ"): 0.175, (3,1.5,"CORR_ZX"): 0.173, (3,2.5,"CORR_XZ"): 0.174, (3,2.5,"CORR_ZX"): 0.170,
+                        (3,3.5,"CORR_XZ"): 0.163, (3,3.5,"CORR_ZX"): 0.160, (3,4.5,"CORR_XZ"): 0.159, (3,4.5,"CORR_ZX"): 0.158,
+                        (3,6,"CORR_XZ"): 0.154, (3,6,"CORR_ZX"): 0.152, (3,7,"CORR_XZ"): 0.153, (3,7,"CORR_ZX"): 0.151,
+                        (4,1.5,"CORR_XZ"): 0.176, (4,1.5,"CORR_ZX"): 0.177, (4,2.5,"CORR_XZ"): 0.193, (4,2.5,"CORR_ZX"): 0.194,
+                        (4,3.5,"CORR_XZ"): 0.194, (4,3.5,"CORR_ZX"): 0.194, (4,4.5,"CORR_XZ"): 0.189, (4,4.5,"CORR_ZX"): 0.189,
+                        (4,6,"CORR_XZ"): 0.183, (4,6,"CORR_ZX"): 0.184, (4,7,"CORR_XZ"): 0.181, (4,7,"CORR_ZX"): 0.180,
+                        (5,1.5,"CORR_XZ"): 0.169, (5,1.5,"CORR_ZX"): 0.163, (5,2.5,"CORR_XZ"): 0.198, (5,2.5,"CORR_ZX"): 0.201,
+                        (5,3.5,"CORR_XZ"): 0.209,(5,3.5,"CORR_ZX"): 0.210, (5,4.5,"CORR_XZ"): 0.209,(5,4.5,"CORR_ZX"): 0.209,
+                        (5,6,"CORR_XZ"): 0.203, (5,6,"CORR_ZX"): 0.205, (5,7,"CORR_XZ"): 0.200, (5,7,"CORR_ZX"): 0.202,
+                        (6,1.5,"CORR_XZ"): 0.135, (6,1.5,"CORR_ZX"): 0.118, (6,2.5,"CORR_XZ"): 0.20, (6,2.5,"CORR_ZX"): 0.202,
+                        (6,3.5,"CORR_XZ"): 0.217, (6,3.5,"CORR_ZX"): 0.224, (6,4.5,"CORR_XZ"): 0.224, (6,4.5,"CORR_ZX"): 0.227,
+                        (6,6,"CORR_XZ"): 0.224, (6,6,"CORR_ZX"): 0.227, (6,7,"CORR_XZ"): 0.222, (6,7,"CORR_ZX"): 0.225
+                        }
 
                       
 
-    ind = task_id%len(l_eta_cd_type_arr) # get the index of the task_id in the l_eta__corr_type_arr
+    ind = task_id%len(l_eta_corr_type_arr) # get the index of the task_id in the l_eta__corr_type_arr
 
-    l,eta, cd_type = l_eta_cd_type_arr[ind] # get the l and eta from the task_id
+    l,eta, corr_type = l_eta_corr_type_arr[ind] # get the l and eta from the task_id
 
-    print("l,eta,corr_type", l,eta, cd_type)
+    print("l,eta,corr_type", l,eta, corr_type)
     print("reps", reps)
     print("ind", ind)
 
     num_shots = int(1e6//reps) # number of shots to sample
-    # num_shots = 41666
+    # num_shots = 62500
     print("num_shots", num_shots)
-    circuit_data = True # whether circuit level or code cap data is desired
+    circuit_data = False # whether circuit level or code cap data is desired
 
     # for plotting
-    # eta = 4
-    # l = 6
-    corr_type = "CORR_XZ"
+    # l = 2
+    # eta = 1.5
+    # corr_type = "CORR_XZ"
     # error_type = "CORR_XZ"
 
     # simulation
     d_list = [11,13,15,17,19]
-    # p_th_init = p_th_init_dict[(l,eta,corr_type)]
+    p_th_init = p_th_init_dict[(l,eta,corr_type)]
     # p_th_init = 0.158
-    # p_list = np.linspace(p_th_init-0.03, p_th_init + 0.03, 40)
-    p_list = np.linspace(0.05, 0.5, 40)
+    p_list = np.linspace(p_th_init-0.03, p_th_init + 0.03, 40)
+    # p_list = np.linspace(0.05, 0.5, 40)
     
     
     if circuit_data:
@@ -741,12 +757,6 @@ if __name__ == "__main__":
     # concat_csv(folder_path, circuit_data)
 
 
-    # threshold today - 0.2075 ZX, 0.217
-    # threshold old - 0.20 ZX, 0.22 
-
-
-    # Load and filter only X_mem and Z_mem
-    # get all the thresholds and store the data in a csv
 
 
 
