@@ -428,37 +428,39 @@ def concat_csv(folder_path, circuit_data):
     cl_exists = os.path.exists(output_file_CL)
 
     # Check if the output file already exists
-    if xz_exists and not circuit_data:
-        # If it exists, load the existing data
-        existing_data = pd.read_csv(output_file_XZ)
-        # Append the new data to the existing data
-        all_data_XZ = pd.concat([existing_data, new_data_XZ], ignore_index=True)
-    elif not xz_exists and not circuit_data:
-        # If the file doesn't exist, the new data is the combined data
-        all_data_XZ = new_data_XZ
+    if not circuit_data:
+        if xz_exists:
+            # If it exists, load the existing data
+            existing_data = pd.read_csv(output_file_XZ)
+            # Append the new data to the existing data
+            all_data_XZ = pd.concat([existing_data, new_data_XZ], ignore_index=True)
+        elif not xz_exists:
+            # If the file doesn't exist, the new data is the combined data
+            all_data_XZ = new_data_XZ
 
-    if zx_exists and not circuit_data:
-        # If it exists, load the existing data
-        existing_data = pd.read_csv(output_file_ZX)
-        # Append the new data to the existing data
-        all_data_ZX = pd.concat([existing_data, new_data_ZX], ignore_index=True)
-    elif not circuit_data and not zx_exists:
-        # If the file doesn't exist, the new data is the combined data
-        all_data_ZX = new_data_ZX
+        if zx_exists:
+            # If it exists, load the existing data
+            existing_data = pd.read_csv(output_file_ZX)
+            # Append the new data to the existing data
+            all_data_ZX = pd.concat([existing_data, new_data_ZX], ignore_index=True)
+        elif not zx_exists:
+            # If the file doesn't exist, the new data is the combined data
+            all_data_ZX = new_data_ZX
+        all_data_XZ.to_csv(output_file_XZ, index=False)
+        all_data_ZX.to_csv(output_file_ZX, index=False)
 
-    if cl_exists and circuit_data:
-        # If it exists, load the existing data
-        existing_data = pd.read_csv(output_file_CL)
-        # Append the new data to the existing data
-        all_data_CL = pd.concat([existing_data, new_data_CL], ignore_index=True)
-    elif circuit_data and not cl_exists:
-        # If the file doesn't exist, the new data is the combined data
-        all_data_CL = output_file_CL
+    else:
+        if cl_exists:
+            # If it exists, load the existing data
+            existing_data = pd.read_csv(output_file_CL)
+            # Append the new data to the existing data
+            all_data_CL = pd.concat([existing_data, new_data_CL], ignore_index=True)
+        else:
+            # If the file doesn't exist, the new data is the combined data
+            all_data_CL = output_file_CL
+        
+        all_data_CL.to_csv(output_file_CL, index=False)
 
-    
-    all_data_XZ.to_csv(output_file_XZ, index=False)
-    all_data_ZX.to_csv(output_file_ZX, index=False)
-    all_data_CL.to_csv(output_file_CL, index=False)
     
     for file in data_files:
         os.remove(file)
@@ -659,14 +661,14 @@ def get_prob_scale(corr_type, eta):
 
 if __name__ == "__main__":
     # for simulation results
-    task_id = int(os.environ['SLURM_ARRAY_TASK_ID']) # will iter over the total slurm array size and points to where you are 
+    # task_id = int(os.environ['SLURM_ARRAY_TASK_ID']) # will iter over the total slurm array size and points to where you are 
 
-    print(f"Task ID: {task_id}")
-    slurm_array_size = int(os.environ['SLURM_ARRAY_TASK_MAX']) # the size of the slurm array, used to determine how many tasks to run, currently 1000
-    print(f"SLURM Array Size: {slurm_array_size}")
-    l_eta_corr_type_arr = list(itertools.product([2,3,4,5,6],[1.5,2.5,3.5,4.5,6,7], ["CORR_XZ", "CORR_ZX"])) # list of tuples (l, eta, corr_type), currently 40
+    # print(f"Task ID: {task_id}")
+    # slurm_array_size = int(os.environ['SLURM_ARRAY_TASK_MAX']) # the size of the slurm array, used to determine how many tasks to run, currently 1000
+    # print(f"SLURM Array Size: {slurm_array_size}")
+    # l_eta_corr_type_arr = list(itertools.product([2,3,4,5,6],[1.5,2.5,3.5,4.5,6,7], ["CORR_XZ", "CORR_ZX"])) # list of tuples (l, eta, corr_type), currently 40
     # l_eta_cd_type_arr = list(itertools.product([2,3,4,5,6],[0.5,5,10,50,100,500,1000],[None, "XZZXonSqu", "ZXXZonSqu"])) # list of tuples (l, eta, CD_type), currently 105
-    reps = slurm_array_size//len(l_eta_corr_type_arr) # how many times to run file, num_shots each time
+    # reps = slurm_array_size//len(l_eta_corr_type_arr) # how many times to run file, num_shots each time
     p_th_init_dict = {(2,0.5, "CORR_ZX"):0.157, (2,1, "CORR_ZX"):0.149, (2,5, "CORR_ZX"):0.110,
                       (3,0.5, "CORR_ZX"):0.177, (3,1, "CORR_ZX"):0.178, (3,5, "CORR_ZX"):0.155,
                       (4,0.5, "CORR_ZX"):0.146, (4,1, "CORR_ZX"):0.173, (4,5, "CORR_ZX"):0.187,
@@ -710,24 +712,24 @@ if __name__ == "__main__":
 
                       
 
-    ind = task_id%len(l_eta_corr_type_arr) # get the index of the task_id in the l_eta__corr_type_arr
+    # ind = task_id%len(l_eta_corr_type_arr) # get the index of the task_id in the l_eta__corr_type_arr
 
-    l,eta, corr_type = l_eta_corr_type_arr[ind] # get the l and eta from the task_id
+    # l,eta, corr_type = l_eta_corr_type_arr[ind] # get the l and eta from the task_id
 
-    print("l,eta,corr_type", l,eta, corr_type)
-    print("reps", reps)
-    print("ind", ind)
+    # print("l,eta,corr_type", l,eta, corr_type)
+    # print("reps", reps)
+    # print("ind", ind)
 
-    num_shots = int(1e6//reps) # number of shots to sample
-    # num_shots = 62500
-    print("num_shots", num_shots)
+    # num_shots = int(1e6//reps) # number of shots to sample
+    num_shots = 62500
+    # print("num_shots", num_shots)
     circuit_data = False # whether circuit level or code cap data is desired
 
     # for plotting
-    # l = 2
-    # eta = 1.5
-    # corr_type = "CORR_XZ"
-    # error_type = "CORR_XZ"
+    l = 2
+    eta = 1.5
+    corr_type = "CORR_XZ"
+    error_type = "CORR_XZ"
 
     # simulation
     d_list = [11,13,15,17,19]
@@ -752,7 +754,7 @@ if __name__ == "__main__":
 
     
     # run this to get data from the dcc
-    write_data(num_shots, d_list, l, p_list, eta, task_id, corr_type, circuit_data=circuit_data, noise_model="code_cap", cd_type="XZZXonSqu")
+    # write_data(num_shots, d_list, l, p_list, eta, task_id, corr_type, circuit_data=circuit_data, noise_model="code_cap", cd_type="XZZXonSqu")
     # run this once you have data and want to combo it to one csv
     # concat_csv(folder_path, circuit_data)
 
