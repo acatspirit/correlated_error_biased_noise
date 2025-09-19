@@ -711,20 +711,26 @@ def get_data_DCC(circuit_data, corr_decoding, noise_model, d_list, p_list):
         reps = slurm_array_size//len(l_eta_cd_type_arr) # how many times to run file, num_shots each time
         ind = task_id%len(l_eta_cd_type_arr) # get the index of the task_id in the l_eta__corr_type_arr
         l, eta, cd_type = l_eta_cd_type_arr[ind] # get the l and eta from the task_id
+        num_shots = int(1e6//reps) # number of shots to sample
         print("l,eta,corr_type", l,eta, cd_type)
+        corr_type = "None"
+        write_data(num_shots, d_list, l, p_list, eta, task_id, corr_type, circuit_data=circuit_data, noise_model=noise_model, cd_type=cd_type)
     if corr_decoding: # change this to get different data for eta plot
-        l_eta_corr_type_arr = list(itertools.product([2,3,4,5,6],[1.5,2.5,3.5,4.5,6,7], ["CORR_XZ", "CORR_ZX"])) # list of tuples (l, eta, corr_type), currently 40
+        l_eta_corr_type_arr = list(itertools.product([2,3,4,5,6],[1.67,3,4.26,5.89], ["CORR_XZ", "CORR_ZX"])) # list of tuples (l, eta, corr_type), currently 40
         reps = slurm_array_size//len(l_eta_corr_type_arr) # how many times to run file, num_shots each time
         ind = task_id%len(l_eta_corr_type_arr) # get the index of the task_id in the l_eta__corr_type_arr
         l, eta, corr_type = l_eta_corr_type_arr[ind] # get the l and eta from the task_id
+        num_shots = int(1e6//reps) # number of shots to sample
+        cd_type = "SC"
+        noise_model = "code_cap"
         print("l,eta,corr_type", l,eta, corr_type)
+        write_data(num_shots, d_list, l, p_list, eta, task_id, corr_type, circuit_data=circuit_data, noise_model=noise_model, cd_type=cd_type)
     
     print("reps", reps)
     print("ind", ind)
-    num_shots = int(1e6//reps) # number of shots to sample
     print("num_shots", num_shots)
 
-    write_data(num_shots, d_list, l, p_list, eta, task_id, corr_type, circuit_data=circuit_data, noise_model=noise_model, cd_type=cd_type)
+
 
 def get_thresholds_from_data_exactish(num_shots, threshold_d, p_th_init_dict):
     all_thresholds_df = pd.read_csv('/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/all_thresholds_per_eta_elongated.csv')
