@@ -724,7 +724,7 @@ def get_data_DCC(circuit_data, corr_decoding, noise_model, d_list, p_list):
     num_shots = int(1e6//reps) # number of shots to sample
     print("num_shots", num_shots)
 
-    write_data(num_shots, d_list, l, p_list, eta, task_id, corr_type, circuit_data=circuit_data, noise_model="code_cap", cd_type=cd_type)
+    write_data(num_shots, d_list, l, p_list, eta, task_id, corr_type, circuit_data=circuit_data, noise_model=noise_model, cd_type=cd_type)
 
 def get_thresholds_from_data_exactish(num_shots, threshold_d, p_th_init_dict):
     all_thresholds_df = pd.read_csv('/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/all_thresholds_per_eta_elongated.csv')
@@ -889,9 +889,9 @@ if __name__ == "__main__":
     # df = pd.read_csv(output_file)
     # df_filtered = df[(df['l'] == l) & (df['eta'] == eta) & (df['CD_type'] == CD_type)]
     # print(len(df_filtered))
-    df = pd.read_csv('/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/all_thresholds_per_eta_elongated.csv', index_col=False)
+    # df = pd.read_csv('/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/all_thresholds_per_eta_elongated.csv', index_col=False)
     # print(df)
-    eta_threshold_plot(df)
+    # eta_threshold_plot(df)
 
     # threshold_d = {(2,1.5,"CORR_XZ"): 0.152, (2,1.5,"CORR_ZX"):0.130, (2,2.5,"CORR_XZ"):0.131, (2,2.5,"CORR_ZX"):0.118,
     #                     (2,3.5,"CORR_XZ"): 0.123, (2,3.5,"CORR_ZX"): 0.113, (2,4.5,"CORR_XZ"): 0.118, (2,4.5,"CORR_ZX"): 0.111,
