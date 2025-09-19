@@ -188,10 +188,52 @@ class CorrelatedDecoder:
         
         return num_errors_x, num_errors_z
     
+    
+    def probability_edge_mapping(self, matching):
+        """ Maps the probabilities to the corresponding edge weight in the matching graph. Takes into
+            account the 'type' of qubit, whether it is clifford deformed or not.
+        """
+        return
+    
+    def get_cond_prob_edges(self, dem):
+        """ Creates a dictionary mapping the edge index to the joint probability of that edge.
+        """
+
+        probs_dem = {}
+
+        for inst in dem:
+            detectors = inst.detectors
+            observable = inst.observables
+
+            if len(detectors) > 2: # hyperedge
+                pass
+        return 
+
+
+
+    def decoding_failures_correlated_circuit_level(self, circuit, p, shots):
+        """
+        Finds the number of logical errors after decoding from a circuit level noise model.
+        """
+
+        # get the DEM and decompose the errors
+        dem = circuit.detector_error_model()
+
+        # log the "y" detectors / check if the DEM instruction is a hyperedge. If it is, add to the y_detectors list
+        y_detectors = []
+        # for inst in enumerate(dem):
+        #     if 
+
+        # make a matching graph for the DEM
+        # use the weights to update the weight probabilities of the Y error detectors
+        # make another matching graph with the updated weights
+        # decode the syndromes with the new matching graph
+        return 
+
 
     #
     #
-    # Circuit functions
+    # Circuit sampling functions
     #
     #
 
@@ -302,7 +344,10 @@ def get_data(num_shots, d_list, l, p_list, eta, corr_type, circuit_data, noise_m
 
     """
     err_type = {0:"X", 1:"Z", 2:corr_type, 3:"TOTAL"}
-    data_dict = {"d":[], "num_shots":[], "p":[], "l": [], "eta":[], "error_type":[], "num_log_errors":[], "time_stamp":[]}
+    if circuit_data:
+        data_dict = {"d":[], "num_shots":[], "p":[], "l": [], "eta":[], "error_type":[], "noise_model": [], "CD_type":[], "num_log_errors":[], "time_stamp":[]}
+    else:
+        data_dict = {"d":[], "num_shots":[], "p":[], "l": [], "eta":[], "error_type":[], "num_log_errors":[], "time_stamp":[]}
     data = pd.DataFrame(data_dict)
 
     for d in d_list:
@@ -353,7 +398,7 @@ def shots_averaging(num_shots, l, eta, err_type, in_df, file):
 
 
 
-def write_data(num_shots, d_list, l, p_list, eta, ID, corr_type, circuit_data, noise_model="code_cap", cd_type=None):
+def write_data(num_shots, d_list, l, p_list, eta, ID, corr_type, circuit_data, noise_model="code_cap", cd_type="SC"):
     """ Writes data from pandas df to a csv file, for use with SLURM arrays. Generates data for each slurm output on a CSV
         in: num_shots - the number of MC iterations
             l - the integer repition of the compass code
@@ -474,9 +519,10 @@ def full_error_plot(full_df, curr_eta, curr_l, curr_num_shots, corr_type, file, 
     # filtered_df = full_df[(full_df['l'] == curr_l) & (full_df['eta'] == curr_eta) & (full_df['num_shots'] == curr_num_shots)] 
                     # & (df['time_stamp'].apply(lambda x: x[0:10]) == datetime.today().date())
     filtered_df = full_df[(full_df['l'] == curr_l) & (full_df['eta'] == curr_eta)]
-   
+
     # Get unique error types and unique d values
     error_types = filtered_df['error_type'].unique()
+    
 
     d_values = filtered_df['d'].unique()
 
@@ -566,7 +612,6 @@ def eta_threshold_plot(eta_df):
     """Make a single figure with a 2-column grid of subplots.
     Each row corresponds to a different `l`, with CORR_XZ on left and CORR_ZX on right.
     """
-    eta_values = sorted(eta_df['eta'].unique())
     l_values = sorted(eta_df['l'].unique())
     num_rows = len(l_values)
 
@@ -649,10 +694,58 @@ def get_threshold(full_df, pth0, p_range, l, eta, corr_type, num_shots):
 def get_prob_scale(corr_type, eta):
     """ extract the amount to be scaled by given a noise bias and the type of error
     """
-    prob_scale = {'X': 0.5/(1+eta), 'Z': (1+2*eta)/(2*(1+eta)), corr_type: 1, 'TOTAL':1, 'X_Mem':  1, 'Z_Mem': 1}
+    prob_scale = {'X': 0.5/(1+eta), 'Z': (1+2*eta)/(2*(1+eta)), corr_type: 1, 'TOTAL':1, 'X_MEM':  1, 'Z_MEM': 1}
     return prob_scale
 
 
+def get_data_DCC(circuit_data, corr_decoding, noise_model, d_list, p_list):
+    task_id = int(os.environ['SLURM_ARRAY_TASK_ID']) # will iter over the total slurm array size and points to where you are 
+    slurm_array_size = int(os.environ['SLURM_ARRAY_TASK_MAX']) # the size of the slurm array, used to determine how many tasks to run, currently 1000
+
+    print(f"Task ID: {task_id}")
+    print(f"SLURM Array Size: {slurm_array_size}")
+
+
+    if circuit_data and not corr_decoding: # change this to get different data for circuit level plot
+        l_eta_cd_type_arr = list(itertools.product([2,3,4,5,6],[0.5,5,10,50,100,500,1000],["SC", "XZZXonSqu", "ZXXZonSqu"]))
+        reps = slurm_array_size//len(l_eta_cd_type_arr) # how many times to run file, num_shots each time
+        ind = task_id%len(l_eta_cd_type_arr) # get the index of the task_id in the l_eta__corr_type_arr
+        l, eta, cd_type = l_eta_cd_type_arr[ind] # get the l and eta from the task_id
+        print("l,eta,corr_type", l,eta, cd_type)
+    if corr_decoding: # change this to get different data for eta plot
+        l_eta_corr_type_arr = list(itertools.product([2,3,4,5,6],[1.5,2.5,3.5,4.5,6,7], ["CORR_XZ", "CORR_ZX"])) # list of tuples (l, eta, corr_type), currently 40
+        reps = slurm_array_size//len(l_eta_corr_type_arr) # how many times to run file, num_shots each time
+        ind = task_id%len(l_eta_corr_type_arr) # get the index of the task_id in the l_eta__corr_type_arr
+        l, eta, corr_type = l_eta_corr_type_arr[ind] # get the l and eta from the task_id
+        print("l,eta,corr_type", l,eta, corr_type)
+    
+    print("reps", reps)
+    print("ind", ind)
+    num_shots = int(1e6//reps) # number of shots to sample
+    print("num_shots", num_shots)
+
+    write_data(num_shots, d_list, l, p_list, eta, task_id, corr_type, circuit_data=circuit_data, noise_model="code_cap", cd_type=cd_type)
+
+def get_thresholds_from_data_exactish(num_shots, threshold_d, p_th_init_dict):
+    all_thresholds_df = pd.read_csv('/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/all_thresholds_per_eta_elongated.csv')
+    for key in threshold_d.keys():
+        l, eta, corr_type = key
+        print("l,eta,corr_type", l,eta, corr_type)
+
+        if corr_type == "CORR_ZX":
+            output_file = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/zx_corr_err_data.csv'
+        elif corr_type == "CORR_XZ":
+            output_file = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/xz_corr_err_data.csv'
+        df = pd.read_csv(output_file)
+        # threshold_d = {}
+
+        p_th_init = p_th_init_dict[key]
+        threshold,std_error = get_threshold(df, p_th_init, 0.03, l, eta, corr_type, num_shots)
+        threshold_d[key] = threshold
+        all_thresholds_df = all_thresholds_df.append({'l':l, 'eta':eta, 'error_type':corr_type, 'pth':threshold, 'stderr':std_error}, ignore_index=True)
+    
+
+    all_thresholds_df.to_csv('/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/all_thresholds_per_eta_elongated.csv', index=False)
 
 
 #
@@ -660,15 +753,7 @@ def get_prob_scale(corr_type, eta):
 #
 
 if __name__ == "__main__":
-    # for simulation results
-    # task_id = int(os.environ['SLURM_ARRAY_TASK_ID']) # will iter over the total slurm array size and points to where you are 
 
-    # print(f"Task ID: {task_id}")
-    # slurm_array_size = int(os.environ['SLURM_ARRAY_TASK_MAX']) # the size of the slurm array, used to determine how many tasks to run, currently 1000
-    # print(f"SLURM Array Size: {slurm_array_size}")
-    # l_eta_corr_type_arr = list(itertools.product([2,3,4,5,6],[1.5,2.5,3.5,4.5,6,7], ["CORR_XZ", "CORR_ZX"])) # list of tuples (l, eta, corr_type), currently 40
-    # l_eta_cd_type_arr = list(itertools.product([2,3,4,5,6],[0.5,5,10,50,100,500,1000],[None, "XZZXonSqu", "ZXXZonSqu"])) # list of tuples (l, eta, CD_type), currently 105
-    # reps = slurm_array_size//len(l_eta_corr_type_arr) # how many times to run file, num_shots each time
     p_th_init_dict = {(2,0.5, "CORR_ZX"):0.157, (2,1, "CORR_ZX"):0.149, (2,5, "CORR_ZX"):0.110,
                       (3,0.5, "CORR_ZX"):0.177, (3,1, "CORR_ZX"):0.178, (3,5, "CORR_ZX"):0.155,
                       (4,0.5, "CORR_ZX"):0.146, (4,1, "CORR_ZX"):0.173, (4,5, "CORR_ZX"):0.187,
@@ -710,39 +795,76 @@ if __name__ == "__main__":
                         (6,6,"CORR_XZ"): 0.224, (6,6,"CORR_ZX"): 0.227, (6,7,"CORR_XZ"): 0.222, (6,7,"CORR_ZX"): 0.225
                         }
 
-                      
+    
+    # unscaled X and Z mem thresholds. Options are:
+    # eta - 0.5, 50, 100, 500, 1000
+    # CD_type - XZZXonSqu, ZXXZonSqu, None (for some reason only took XZZX on squares)
+    # l - 2, 3, 4, 5, 6
+    # d - 11, 13, 15, 17, 19
+    # noise model - code cap
+    # error types - X_MEM and Z_MEM
+    # num_shots - 111111
+    # in order of l, eta, mem type, cd_type, noise model
 
-    # ind = task_id%len(l_eta_corr_type_arr) # get the index of the task_id in the l_eta__corr_type_arr
+    # l = 6
+    # eta = 1000
+    # corr_type = "CORR_XZ"
+    # error_type = "X_MEM"
+    # num_shots = 1111111
+    # noise_model = "code_cap"
+    # CD_type = "XZZXonSqu"
 
-    # l,eta, corr_type = l_eta_corr_type_arr[ind] # get the l and eta from the task_id
 
-    # print("l,eta,corr_type", l,eta, corr_type)
-    # print("reps", reps)
-    # print("ind", ind)
+    p_th_init_dict_CL = {(2, 0.5, "X_MEM", "XZZXonSqu", "code_cap"):0.11, (2, 0.5, "Z_MEM", "XZZXonSqu", "code_cap"):0.11,
+                         (2, 50, "X_MEM", "XZZXonSqu", "code_cap"):0.27, (2, 50, "Z_MEM", "XZZXonSqu", "code_cap"):0.23,
+                         (2, 100, "X_MEM", "XZZXonSqu", "code_cap"):0.29, (2, 100, "Z_MEM", "XZZXonSqu", "code_cap"):0.24,
+                         (2, 500, "X_MEM", "XZZXonSqu", "code_cap"):0.3, (2, 500, "Z_MEM", "XZZXonSqu", "code_cap"):0.22,
+                         (2, 1000, "X_MEM", "XZZXonSqu", "code_cap"):0.35, (2, 1000, "Z_MEM", "XZZXonSqu", "code_cap"):0.21,
+                         (3, 0.5, "X_MEM", "XZZXonSqu", "code_cap"):0.15, (3, 0.5, "Z_MEM", "XZZXonSqu", "code_cap"):0.082,
+                         (3, 50, "X_MEM", "XZZXonSqu", "code_cap"):0.33, (3, 50, "Z_MEM", "XZZXonSqu", "code_cap"):0.1376,
+                         (3, 100, "X_MEM", "XZZXonSqu", "code_cap"):0.33, (3, 100, "Z_MEM", "XZZXonSqu", "code_cap"):0.135,
+                         (3, 500, "X_MEM", "XZZXonSqu", "code_cap"):0.35, (3, 500, "Z_MEM", "XZZXonSqu", "code_cap"):0.133,
+                         (3, 1000, "X_MEM", "XZZXonSqu", "code_cap"):0.35, (3, 1000, "Z_MEM", "XZZXonSqu", "code_cap"):0.135,
+                         (4, 0.5, "X_MEM", "XZZXonSqu", "code_cap"):0.186, (4, 0.5, "Z_MEM", "XZZXonSqu", "code_cap"):0.061,
+                         (4, 50, "X_MEM", "XZZXonSqu", "code_cap"):0.33, (4, 50, "Z_MEM", "XZZXonSqu", "code_cap"):0.133,
+                         (4, 100, "X_MEM", "XZZXonSqu", "code_cap"):0.34, (4, 100, "Z_MEM", "XZZXonSqu", "code_cap"):0.136,
+                         (4, 500, "X_MEM", "XZZXonSqu", "code_cap"):0.35, (4, 500, "Z_MEM", "XZZXonSqu", "code_cap"):0.132,
+                         (4, 1000, "X_MEM", "XZZXonSqu", "code_cap"):0.36, (4, 1000, "Z_MEM", "XZZXonSqu", "code_cap"):0.135,
+                         (5, 0.5, "X_MEM", "XZZXonSqu", "code_cap"):0.21, (5, 0.5, "Z_MEM", "XZZXonSqu", "code_cap"):0.055,
+                         (5, 50, "X_MEM", "XZZXonSqu", "code_cap"):0.33, (5, 50, "Z_MEM", "XZZXonSqu", "code_cap"):0.127,
+                         (5, 100, "X_MEM", "XZZXonSqu", "code_cap"):0.346, (5, 100, "Z_MEM", "XZZXonSqu", "code_cap"):0.133,
+                         (5, 500, "X_MEM", "XZZXonSqu", "code_cap"):0.36, (5, 500, "Z_MEM", "XZZXonSqu", "code_cap"):0.133,
+                         (5, 1000, "X_MEM", "XZZXonSqu", "code_cap"):0.36, (5, 1000, "Z_MEM", "XZZXonSqu", "code_cap"):0.132,
+                         (6, 0.5, "X_MEM", "XZZXonSqu", "code_cap"):0.23, (6, 0.5, "Z_MEM", "XZZXonSqu", "code_cap"):0.05,
+                         (6, 50, "X_MEM", "XZZXonSqu", "code_cap"):0.33, (6, 50, "Z_MEM", "XZZXonSqu", "code_cap"):0.125,
+                         (6, 100, "X_MEM", "XZZXonSqu", "code_cap"):0.35, (6, 100, "Z_MEM", "XZZXonSqu", "code_cap"):0.133,
+                         (6, 500, "X_MEM", "XZZXonSqu", "code_cap"):0.35, (6, 500, "Z_MEM", "XZZXonSqu", "code_cap"):0.13,
+                         (6, 1000, "X_MEM", "XZZXonSqu", "code_cap"):0.36, (6, 1000, "Z_MEM", "XZZXonSqu", "code_cap"):0.126,
+                         }
 
-    # num_shots = int(1e6//reps) # number of shots to sample
-    num_shots = 62500
-    # print("num_shots", num_shots)
-    circuit_data = False # whether circuit level or code cap data is desired
+
+    circuit_data = True # whether circuit level or code cap data is desired
 
     # for plotting
-    l = 2
-    eta = 1.5
+    # l = 2
+    # eta = 0.5
     corr_type = "CORR_XZ"
     error_type = "CORR_XZ"
+    # num_shots = 1111111
+    # noise_model = "code_cap"
+    # CD_type = "XZZXonSqu"
 
     # simulation
     d_list = [11,13,15,17,19]
-    p_th_init = p_th_init_dict[(l,eta,corr_type)]
+    # p_th_init = p_th_init_dict[(l,eta,corr_type)]
     # p_th_init = 0.158
-    p_list = np.linspace(p_th_init-0.03, p_th_init + 0.03, 40)
-    # p_list = np.linspace(0.05, 0.5, 40)
+    # p_list = np.linspace(p_th_init-0.03, p_th_init + 0.03, 40)
+    p_list = np.linspace(0.05, 0.5, 40)
     
     
     if circuit_data:
         folder_path = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/circuit_data/'
-    #     if corr_type == "CORR_ZX":
-    #         output_file = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/zx_circuit_data.csv'
+        output_file = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/circuit_data.csv'
     #     elif corr_type == "CORR_XZ":
     #         output_file = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/xz_circuit_data.csv'
     else:
@@ -753,6 +875,8 @@ if __name__ == "__main__":
             output_file = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/xz_corr_err_data.csv'
 
     
+    get_data_DCC(circuit_data, False, "code_cap", d_list, p_list)
+
     # run this to get data from the dcc
     # write_data(num_shots, d_list, l, p_list, eta, task_id, corr_type, circuit_data=circuit_data, noise_model="code_cap", cd_type="XZZXonSqu")
     # run this once you have data and want to combo it to one csv
@@ -763,44 +887,27 @@ if __name__ == "__main__":
 
 
     # df = pd.read_csv(output_file)
-    # df = pd.read_csv('/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/all_thresholds_per_eta_elongated.csv')
-    # eta_threshold_plot(df)
+    # df_filtered = df[(df['l'] == l) & (df['eta'] == eta) & (df['CD_type'] == CD_type)]
+    # print(len(df_filtered))
+    df = pd.read_csv('/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/all_thresholds_per_eta_elongated.csv', index_col=False)
+    # print(df)
+    eta_threshold_plot(df)
 
-    # threshold_d = {(2,0.75,"CORR_XZ"): 0.149, (2,0.75,"CORR_ZX"):0.155, (2,2,"CORR_XZ"): 0.139,
-    #                     (2,2,"CORR_ZX"): 0.122, (2,3,"CORR_XZ"): 0.127, (2,3,"CORR_ZX"): 0.115,
-    #                     (2,4,"CORR_XZ"): 0.121, (2,4,"CORR_ZX"): 0.112, (3,0.75,"CORR_XZ"): 0.149,
-    #                     (3,0.75,"CORR_ZX"): 0.176, (3,2,"CORR_XZ"): 0.177, (3,2,"CORR_ZX"): 0.175,
-    #                     (3,3,"CORR_XZ"): 0.167, (3,3,"CORR_ZX"): 0.165, (3,4,"CORR_XZ"): 0.160,
-    #                     (3,4,"CORR_ZX"): 0.160, (4,0.75,"CORR_XZ"): 0.114, (4,0.75,"CORR_ZX"): 0.159,
-    #                     (4,2,"CORR_XZ"): 0.187, (4,2,"CORR_ZX"): 0.189, (4,3,"CORR_XZ"): 0.196,
-    #                     (4,3,"CORR_ZX"): 0.196, (4,4,"CORR_XZ"): 0.192, (4,4,"CORR_ZX"): 0.192,
-    #                     (5,0.75,"CORR_XZ"): 0.009, (5,0.75,"CORR_ZX"): 0.118, (5,2,"CORR_XZ"): 0.188,
-    #                     (5,2,"CORR_ZX"): 0.189, (5,3,"CORR_XZ"): 0.206,(5,3,"CORR_ZX"): 0.205,
-    #                     (5,4,"CORR_XZ"): 0.209,(5,4,"CORR_ZX"): 0.210,(6,0.75,"CORR_XZ"): 0.07,
-    #                     (6,0.75,"CORR_ZX"): 0.092,(6,2,"CORR_XZ"): 0.185,(6,2,"CORR_ZX"): 0.180,
-    #                     (6,3,"CORR_XZ"): 0.210,(6,3,"CORR_ZX"): 0.212,(6,4,"CORR_XZ"): 0.222,
-    #                     (6,4,"CORR_ZX"): 0.222}
-
-    # for key in threshold_d.keys():
-    #     l, eta, corr_type = key
-    #     print("l,eta,corr_type", l,eta, corr_type)
-
-    #     if corr_type == "CORR_ZX":
-    #         output_file = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/zx_corr_err_data.csv'
-    #     elif corr_type == "CORR_XZ":
-    #         output_file = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/xz_corr_err_data.csv'
-    #     df = pd.read_csv(output_file)
-    #     # threshold_d = {}
-
-    #     p_th_init = p_th_init_dict[key]
-    #     threshold = get_threshold(df, p_th_init, 0.03, l, eta, corr_type, num_shots)
-    #     threshold_d[key] = threshold
-    
-    # threshold_df = pd.DataFrame(threshold_d)
-
-    # threshold_df.to_csv('/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/all_thresholds.csv', index=False)
-
-    
+    # threshold_d = {(2,1.5,"CORR_XZ"): 0.152, (2,1.5,"CORR_ZX"):0.130, (2,2.5,"CORR_XZ"):0.131, (2,2.5,"CORR_ZX"):0.118,
+    #                     (2,3.5,"CORR_XZ"): 0.123, (2,3.5,"CORR_ZX"): 0.113, (2,4.5,"CORR_XZ"): 0.118, (2,4.5,"CORR_ZX"): 0.111,
+    #                     (2,6,"CORR_XZ"): 0.114, (2,6,"CORR_ZX"): 0.108, (2,7,"CORR_XZ"): 0.112, (2,7,"CORR_ZX"): 0.107,
+    #                     (3,1.5,"CORR_XZ"): 0.175, (3,1.5,"CORR_ZX"): 0.173, (3,2.5,"CORR_XZ"): 0.174, (3,2.5,"CORR_ZX"): 0.170,
+    #                     (3,3.5,"CORR_XZ"): 0.163, (3,3.5,"CORR_ZX"): 0.160, (3,4.5,"CORR_XZ"): 0.159, (3,4.5,"CORR_ZX"): 0.158,
+    #                     (3,6,"CORR_XZ"): 0.154, (3,6,"CORR_ZX"): 0.152, (3,7,"CORR_XZ"): 0.153, (3,7,"CORR_ZX"): 0.151,
+    #                     (4,1.5,"CORR_XZ"): 0.176, (4,1.5,"CORR_ZX"): 0.177, (4,2.5,"CORR_XZ"): 0.193, (4,2.5,"CORR_ZX"): 0.194,
+    #                     (4,3.5,"CORR_XZ"): 0.194, (4,3.5,"CORR_ZX"): 0.194, (4,4.5,"CORR_XZ"): 0.189, (4,4.5,"CORR_ZX"): 0.189,
+    #                     (4,6,"CORR_XZ"): 0.183, (4,6,"CORR_ZX"): 0.184, (4,7,"CORR_XZ"): 0.181, (4,7,"CORR_ZX"): 0.180,
+    #                     (5,1.5,"CORR_XZ"): 0.169, (5,1.5,"CORR_ZX"): 0.163, (5,2.5,"CORR_XZ"): 0.198, (5,2.5,"CORR_ZX"): 0.201,
+    #                     (5,3.5,"CORR_XZ"): 0.209,(5,3.5,"CORR_ZX"): 0.210, (5,4.5,"CORR_XZ"): 0.209,(5,4.5,"CORR_ZX"): 0.209,
+    #                     (5,6,"CORR_XZ"): 0.203, (5,6,"CORR_ZX"): 0.205, (5,7,"CORR_XZ"): 0.200, (5,7,"CORR_ZX"): 0.202,
+    #                     (6,1.5,"CORR_XZ"): 0.135, (6,1.5,"CORR_ZX"): 0.118, (6,2.5,"CORR_XZ"): 0.20, (6,2.5,"CORR_ZX"): 0.202,
+    #                     (6,3.5,"CORR_XZ"): 0.217, (6,3.5,"CORR_ZX"): 0.224, (6,4.5,"CORR_XZ"): 0.224, (6,4.5,"CORR_ZX"): 0.227,
+    #                     (6,6,"CORR_XZ"): 0.224, (6,6,"CORR_ZX"): 0.227, (6,7,"CORR_XZ"): 0.222, (6,7,"CORR_ZX"): 0.225}
 
 
 
@@ -863,7 +970,7 @@ if __name__ == "__main__":
     # print(threshold, confidence)
 
     # threshold_plot(df, 0.123, 0.03, 0.75, 5, num_shots, "CORR_XZ", output_file, loglog=True, averaging=True,show_threshold=True)
-    # full_error_plot(df, eta, l, num_shots, corr_type, output_file, loglog=False, averaging=True)
+    # full_error_plot(df_filtered, eta, l, num_shots, error_type, output_file, loglog=False, averaging=True)
 
 
 
