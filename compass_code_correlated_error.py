@@ -242,21 +242,21 @@ class CorrelatedDecoder:
         Get the number of logical errors from a circuit phenom. model, not the detector error model
         :param circuit: stim.Circuit object
         :param num_shots: number of shots to sample
-        :return: number of logical errors
+        :return: logical errors array. Sum of array is the number of logical errors
         """
         matching = Matching.from_stim_circuit(circuit)
-        sampler = circuit.compile_detector_sampler()
+        sampler = circuit.compile_detector_sampler(seed=42)
         detection_events, observable_flips = sampler.sample(num_shots, separate_observables=True)
         predictions = matching.decode_batch(detection_events)
         
         
-        num_errors = 0
+        num_errors_array = np.zeros(num_shots)
         for shot in range(num_shots):
             actual_for_shot = observable_flips[shot]
             predicted_for_shot = predictions[shot]
             if not np.array_equal(actual_for_shot, predicted_for_shot):
-                num_errors += 1
-        return num_errors
+                num_errors_array[shot] = 1
+        return num_errors_array
 
     def get_num_log_errors_DEM(self, circuit, num_shots):
         """
@@ -267,13 +267,13 @@ class CorrelatedDecoder:
         """
         dem = circuit.detector_error_model() # what does the decompose do?
         matchgraph = Matching.from_detector_error_model(dem)
-        sampler = circuit.compile_detector_sampler()
+        sampler = circuit.compile_detector_sampler(seed=42)
         syndrome, observable_flips = sampler.sample(num_shots, separate_observables=True)
         predictions = matchgraph.decode_batch(syndrome)
-        num_errors = np.sum(np.any(np.array(observable_flips) != np.array(predictions), axis=1))
-        return num_errors
+        log_errors_array = np.any(np.array(observable_flips) != np.array(predictions), axis=1)
+        return log_errors_array
 
-    def get_log_error_circuit_level(self, p_list, meas_type, num_shots, noise_model="code_cap", cd_type=None):
+    def get_log_error_circuit_level(self, p_list, meas_type, num_shots, noise_model="code_cap", cd_type="SC"):
         """
         Get the logical error rate for a list of physical error rates of gates at the circuit level
         :param p_list: list of p values
@@ -301,8 +301,8 @@ class CorrelatedDecoder:
             else:
                 raise ValueError("Invalid noise model. Choose either 'code_cap', 'phenom', or 'circuit_level'.")
             
-            log_errors = self.get_num_log_errors_DEM(circuit, num_shots)
-            log_error_L.append(log_errors)
+            log_errors_array = self.get_num_log_errors_DEM(circuit, num_shots)
+            log_error_L.append(log_errors_array)
 
         return log_error_L
 
@@ -330,7 +330,7 @@ class CorrelatedDecoder:
 #
 ############################################
 
-def get_data(num_shots, d_list, l, p_list, eta, corr_type, circuit_data, noise_model="code_cap", cd_type=None):
+def get_data(num_shots, d_list, l, p_list, eta, corr_type, circuit_data, noise_model="code_cap", cd_type="SC"):
     """ Generate logical error rates for x,z, correlatex z, and total errors
         via MC sim in decoding_failures_correlated and add it to a shared pandas df
         
@@ -343,6 +343,7 @@ def get_data(num_shots, d_list, l, p_list, eta, corr_type, circuit_data, noise_m
         out: a pandas df recording the logical error rate with all corresponding params
 
     """
+    print(f"in get data,  l = {l}, eta = {eta}, corr_type = {corr_type}, num_shots = {num_shots}, noise_model = {noise_model}, cd_type = {cd_type}")
     err_type = {0:"X", 1:"Z", 2:corr_type, 3:"TOTAL"}
     if circuit_data:
         data_dict = {"d":[], "num_shots":[], "p":[], "l": [], "eta":[], "error_type":[], "noise_model": [], "CD_type":[], "num_log_errors":[], "time_stamp":[]}
@@ -357,15 +358,22 @@ def get_data(num_shots, d_list, l, p_list, eta, corr_type, circuit_data, noise_m
                 # circuit_z = cc_circuit.CDCompassCodeCircuit(d, l, eta, [0.003, 0.001, p], "Z")
     
             decoder = CorrelatedDecoder(eta, d, l, corr_type)
-            log_errors_z = decoder.get_log_error_circuit_level(p_list, "Z", num_shots, noise_model, cd_type) # get the Z logical errors from Z memory experiment, X errors
-            log_errors_x = decoder.get_log_error_circuit_level(p_list, "X", num_shots, noise_model, cd_type) # get the X logical errors from X memory experiment, Z errors
+            log_errors_z_array = decoder.get_log_error_circuit_level(p_list, "Z", num_shots, noise_model, cd_type) # get the Z logical errors from Z memory experiment, X errors
+            log_errors_x_array = decoder.get_log_error_circuit_level(p_list, "X", num_shots, noise_model, cd_type) # get the X logical errors from X memory experiment, Z errors
+            log_errors_z = np.sum(log_errors_z_array, axis=1) 
+            log_errors_x = np.sum(log_errors_x_array, axis=1) 
+            log_errors_total = np.sum(np.logical_xor(log_errors_x_array, log_errors_z_array), axis=1)
 
+            log_errors_total = [] # XOR each element
 
             for i,log_error in enumerate(log_errors_x):
                 curr_row = {"d":d, "num_shots":num_shots, "p":p_list[i], "l": l, "eta":eta, "error_type":"X_MEM", "noise_model": noise_model, "CD_type":cd_type, "num_log_errors":log_error/num_shots, "time_stamp":datetime.now()}
                 data = pd.concat([data, pd.DataFrame([curr_row])], ignore_index=True)
             for i,log_error in enumerate(log_errors_z):
                 curr_row = {"d":d, "num_shots":num_shots, "p":p_list[i], "l": l, "eta":eta, "error_type":"Z_MEM", "noise_model": noise_model, "CD_type":cd_type, "num_log_errors":log_error/num_shots, "time_stamp":datetime.now()}
+                data = pd.concat([data, pd.DataFrame([curr_row])], ignore_index=True)
+            for i,log_error in enumerate(log_errors_total):
+                curr_row = {"d":d, "num_shots":num_shots, "p":p_list[i], "l": l, "eta":eta, "error_type":"TOTAL_MEM", "noise_model": noise_model, "CD_type":cd_type, "num_log_errors":log_error/num_shots, "time_stamp":datetime.now()}
                 data = pd.concat([data, pd.DataFrame([curr_row])], ignore_index=True)
 
         else:
@@ -407,6 +415,7 @@ def write_data(num_shots, d_list, l, p_list, eta, ID, corr_type, circuit_data, n
             d_list - the distances of compass code to scan
             ID - SLURM input task_ID number, corresponds to which array element we run
     """
+    print(f"in write data, ID = {ID}, l = {l}, eta = {eta}, corr_type = {corr_type}, num_shots = {num_shots}, noise_model = {noise_model}, cd_type = {cd_type}")
     data = get_data(num_shots, d_list, l, p_list, eta, corr_type, circuit_data, noise_model=noise_model, cd_type=cd_type)
     if circuit_data:
         data_file = f'circuit_data/circuit_level_{ID}.csv'
@@ -707,12 +716,13 @@ def get_data_DCC(circuit_data, corr_decoding, noise_model, d_list, p_list):
 
 
     if circuit_data and not corr_decoding: # change this to get different data for circuit level plot
-        l_eta_cd_type_arr = list(itertools.product([2,3,4,5,6],[0.5,5,10,50,100,500,1000],["SC", "XZZXonSqu", "ZXXZonSqu"]))
+        l_eta_cd_type_arr = list(itertools.product([2,3,4,5,6],[0.5,5,10,50,100],["SC", "XZZXonSqu", "ZXXZonSqu"]))
         reps = slurm_array_size//len(l_eta_cd_type_arr) # how many times to run file, num_shots each time
         ind = task_id%len(l_eta_cd_type_arr) # get the index of the task_id in the l_eta__corr_type_arr
         l, eta, cd_type = l_eta_cd_type_arr[ind] # get the l and eta from the task_id
-        num_shots = int(1e6//reps) # number of shots to sample
-        print("l,eta,corr_type", l,eta, cd_type)
+        # num_shots = int(1e6//reps) # number of shots to sample
+        num_shots = int(100//reps)
+        print("l,eta,cd_type", l,eta, cd_type)
         corr_type = "None"
         write_data(num_shots, d_list, l, p_list, eta, task_id, corr_type, circuit_data=circuit_data, noise_model=noise_model, cd_type=cd_type)
     if corr_decoding: # change this to get different data for eta plot
@@ -812,36 +822,40 @@ if __name__ == "__main__":
     # num_shots - 111111
     # in order of l, eta, mem type, cd_type, noise model
 
-    # l = 6
-    # eta = 1000
-    # corr_type = "CORR_XZ"
-    # error_type = "X_MEM"
-    # num_shots = 1111111
-    # noise_model = "code_cap"
-    # CD_type = "XZZXonSqu"
+  
 
 
     p_th_init_dict_CL = {(2, 0.5, "X_MEM", "XZZXonSqu", "code_cap"):0.11, (2, 0.5, "Z_MEM", "XZZXonSqu", "code_cap"):0.11,
+                         (2, 5, "X_MEM", "XZZXonSqu", "code_cap"):0.17, (2, 5, "Z_MEM", "XZZXonSqu", "code_cap"):0.16,
+                         (2, 10, "X_MEM", "XZZXonSqu", "code_cap"):0.19, (2, 10, "Z_MEM", "XZZXonSqu", "code_cap"):0.19,
                          (2, 50, "X_MEM", "XZZXonSqu", "code_cap"):0.27, (2, 50, "Z_MEM", "XZZXonSqu", "code_cap"):0.23,
                          (2, 100, "X_MEM", "XZZXonSqu", "code_cap"):0.29, (2, 100, "Z_MEM", "XZZXonSqu", "code_cap"):0.24,
                          (2, 500, "X_MEM", "XZZXonSqu", "code_cap"):0.3, (2, 500, "Z_MEM", "XZZXonSqu", "code_cap"):0.22,
                          (2, 1000, "X_MEM", "XZZXonSqu", "code_cap"):0.35, (2, 1000, "Z_MEM", "XZZXonSqu", "code_cap"):0.21,
                          (3, 0.5, "X_MEM", "XZZXonSqu", "code_cap"):0.15, (3, 0.5, "Z_MEM", "XZZXonSqu", "code_cap"):0.082,
+                         (3, 5, "X_MEM", "XZZXonSqu", "code_cap"):0.245, (3, 5, "Z_MEM", "XZZXonSqu", "code_cap"):0.105,
+                         (3, 10, "X_MEM", "XZZXonSqu", "code_cap"):0.277, (3, 10, "Z_MEM", "XZZXonSqu", "code_cap"):0.115,
                          (3, 50, "X_MEM", "XZZXonSqu", "code_cap"):0.33, (3, 50, "Z_MEM", "XZZXonSqu", "code_cap"):0.1376,
                          (3, 100, "X_MEM", "XZZXonSqu", "code_cap"):0.33, (3, 100, "Z_MEM", "XZZXonSqu", "code_cap"):0.135,
                          (3, 500, "X_MEM", "XZZXonSqu", "code_cap"):0.35, (3, 500, "Z_MEM", "XZZXonSqu", "code_cap"):0.133,
                          (3, 1000, "X_MEM", "XZZXonSqu", "code_cap"):0.35, (3, 1000, "Z_MEM", "XZZXonSqu", "code_cap"):0.135,
                          (4, 0.5, "X_MEM", "XZZXonSqu", "code_cap"):0.186, (4, 0.5, "Z_MEM", "XZZXonSqu", "code_cap"):0.061,
+                         (4, 5, "X_MEM", "XZZXonSqu", "code_cap"):0.255, (4, 5, "Z_MEM", "XZZXonSqu", "code_cap"):0.098,
+                         (4, 10, "X_MEM", "XZZXonSqu", "code_cap"):0.282, (4, 10, "Z_MEM", "XZZXonSqu", "code_cap"):0.11,
                          (4, 50, "X_MEM", "XZZXonSqu", "code_cap"):0.33, (4, 50, "Z_MEM", "XZZXonSqu", "code_cap"):0.133,
                          (4, 100, "X_MEM", "XZZXonSqu", "code_cap"):0.34, (4, 100, "Z_MEM", "XZZXonSqu", "code_cap"):0.136,
                          (4, 500, "X_MEM", "XZZXonSqu", "code_cap"):0.35, (4, 500, "Z_MEM", "XZZXonSqu", "code_cap"):0.132,
                          (4, 1000, "X_MEM", "XZZXonSqu", "code_cap"):0.36, (4, 1000, "Z_MEM", "XZZXonSqu", "code_cap"):0.135,
                          (5, 0.5, "X_MEM", "XZZXonSqu", "code_cap"):0.21, (5, 0.5, "Z_MEM", "XZZXonSqu", "code_cap"):0.055,
+                         (5, 5, "X_MEM", "XZZXonSqu", "code_cap"):0.26, (5, 5, "Z_MEM", "XZZXonSqu", "code_cap"):0.090,
+                         (5, 10, "X_MEM", "XZZXonSqu", "code_cap"):0.287, (5, 10, "Z_MEM", "XZZXonSqu", "code_cap"):0.10,
                          (5, 50, "X_MEM", "XZZXonSqu", "code_cap"):0.33, (5, 50, "Z_MEM", "XZZXonSqu", "code_cap"):0.127,
                          (5, 100, "X_MEM", "XZZXonSqu", "code_cap"):0.346, (5, 100, "Z_MEM", "XZZXonSqu", "code_cap"):0.133,
                          (5, 500, "X_MEM", "XZZXonSqu", "code_cap"):0.36, (5, 500, "Z_MEM", "XZZXonSqu", "code_cap"):0.133,
                          (5, 1000, "X_MEM", "XZZXonSqu", "code_cap"):0.36, (5, 1000, "Z_MEM", "XZZXonSqu", "code_cap"):0.132,
                          (6, 0.5, "X_MEM", "XZZXonSqu", "code_cap"):0.23, (6, 0.5, "Z_MEM", "XZZXonSqu", "code_cap"):0.05,
+                         (6, 5, "X_MEM", "XZZXonSqu", "code_cap"):0.265, (6, 5, "Z_MEM", "XZZXonSqu", "code_cap"):0.090,
+                         (6, 10, "X_MEM", "XZZXonSqu", "code_cap"):0.29, (6, 10, "Z_MEM", "XZZXonSqu", "code_cap"):0.10,
                          (6, 50, "X_MEM", "XZZXonSqu", "code_cap"):0.33, (6, 50, "Z_MEM", "XZZXonSqu", "code_cap"):0.125,
                          (6, 100, "X_MEM", "XZZXonSqu", "code_cap"):0.35, (6, 100, "Z_MEM", "XZZXonSqu", "code_cap"):0.133,
                          (6, 500, "X_MEM", "XZZXonSqu", "code_cap"):0.35, (6, 500, "Z_MEM", "XZZXonSqu", "code_cap"):0.13,
@@ -849,17 +863,17 @@ if __name__ == "__main__":
                          }
 
 
-    circuit_data = False # whether circuit level or code cap data is desired
-    corr_decoding = True # whether to get data for correlated decoding (eta plot) or circuit level (X/Z mem)
+    circuit_data = True # whether circuit level or code cap data is desired
+    corr_decoding = False # whether to get data for correlated decoding (eta plot) or circuit level (X/Z mem)
 
     # for plotting
-    # l = 2
-    # eta = 0.5
+    # l = 6
+    # eta = 100
     corr_type = "CORR_XZ"
-    error_type = "CORR_XZ"
+    # error_type = "X_MEM"
     # num_shots = 1111111
     # noise_model = "code_cap"
-    # CD_type = "XZZXonSqu"
+    # CD_type = "ZXXZonSqu"
 
     # simulation
     d_list = [11,13,15,17,19]
@@ -893,8 +907,8 @@ if __name__ == "__main__":
 
 
 
-    # df = pd.read_csv(output_file)
-    # df_filtered = df[(df['l'] == l) & (df['eta'] == eta) & (df['CD_type'] == CD_type)]
+    df = pd.read_csv(output_file)
+    df_filtered = df[(df['l'] == l) & (df['eta'] == eta) & (df['CD_type'] == CD_type)]
     # print(len(df_filtered))
     # df = pd.read_csv('/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/all_thresholds_per_eta_elongated.csv', index_col=False)
     # print(df)
@@ -977,7 +991,7 @@ if __name__ == "__main__":
     # print(threshold, confidence)
 
     # threshold_plot(df, 0.123, 0.03, 0.75, 5, num_shots, "CORR_XZ", output_file, loglog=True, averaging=True,show_threshold=True)
-    # full_error_plot(df_filtered, eta, l, num_shots, error_type, output_file, loglog=False, averaging=True)
+    full_error_plot(df_filtered, eta, l, num_shots, error_type, output_file, loglog=False, averaging=True)
 
 
 
