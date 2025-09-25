@@ -553,7 +553,7 @@ class CDCompassCodeCircuit:
         if CD_type != "SC":
             CD_data_transform = cc.CD_data_func(self.code.qbit_dict.values(), special=CD_type, ell=self.l, size=self.d) # data for which qubits have a transformation applied, dictionary 
         else:
-            CD_data_transform = None
+            CD_data_transform = cc.CD_data_func(self.code.qbit_dict.values(), special="I", ell=self.l, size=self.d)
             
         
         # general parameters
