@@ -907,8 +907,8 @@ if __name__ == "__main__":
 
 
 
-    df = pd.read_csv(output_file)
-    df_filtered = df[(df['l'] == l) & (df['eta'] == eta) & (df['CD_type'] == CD_type)]
+    # df = pd.read_csv(output_file)
+    # df_filtered = df[(df['l'] == l) & (df['eta'] == eta) & (df['CD_type'] == CD_type)]
     # print(len(df_filtered))
     # df = pd.read_csv('/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/all_thresholds_per_eta_elongated.csv', index_col=False)
     # print(df)
@@ -991,7 +991,7 @@ if __name__ == "__main__":
     # print(threshold, confidence)
 
     # threshold_plot(df, 0.123, 0.03, 0.75, 5, num_shots, "CORR_XZ", output_file, loglog=True, averaging=True,show_threshold=True)
-    full_error_plot(df_filtered, eta, l, num_shots, error_type, output_file, loglog=False, averaging=True)
+    # full_error_plot(df_filtered, eta, l, num_shots, error_type, output_file, loglog=False, averaging=True)
 
 
 
