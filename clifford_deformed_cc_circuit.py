@@ -448,7 +448,7 @@ class CDCompassCodeCircuit:
                 circuit.append("Z_ERROR", full_inactive_list, p_i) # Idling error on the ancillas and qubits outside the stabilizer
 
 
-        circuit.append("Z_ERROR", [num_ancillas + q for q in data_q_x_list], p_i)# idling error on the data qubits during round
+        circuit.append("Z_ERROR", [num_ancillas + q for q in list(qubit_d_x.keys())], p_i)# idling error on the data qubits during round
         circuit.append("TICK")
 
         # now do the Z stabilizers
