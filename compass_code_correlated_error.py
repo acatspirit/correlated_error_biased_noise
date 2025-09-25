@@ -343,7 +343,7 @@ def get_data(num_shots, d_list, l, p_list, eta, corr_type, circuit_data, noise_m
         out: a pandas df recording the logical error rate with all corresponding params
 
     """
-    print(f"in get data,  l = {l}, eta = {eta}, corr_type = {corr_type}, num_shots = {num_shots}, noise_model = {noise_model}, cd_type = {cd_type}")
+    # print(f"in get data,  l = {l}, eta = {eta}, corr_type = {corr_type}, num_shots = {num_shots}, noise_model = {noise_model}, cd_type = {cd_type}")
     err_type = {0:"X", 1:"Z", 2:corr_type, 3:"TOTAL"}
     if circuit_data:
         data_dict = {"d":[], "num_shots":[], "p":[], "l": [], "eta":[], "error_type":[], "noise_model": [], "CD_type":[], "num_log_errors":[], "time_stamp":[]}
@@ -415,7 +415,7 @@ def write_data(num_shots, d_list, l, p_list, eta, ID, corr_type, circuit_data, n
             d_list - the distances of compass code to scan
             ID - SLURM input task_ID number, corresponds to which array element we run
     """
-    print(f"in write data, ID = {ID}, l = {l}, eta = {eta}, corr_type = {corr_type}, num_shots = {num_shots}, noise_model = {noise_model}, cd_type = {cd_type}")
+    # print(f"in write data, ID = {ID}, l = {l}, eta = {eta}, corr_type = {corr_type}, num_shots = {num_shots}, noise_model = {noise_model}, cd_type = {cd_type}")
     data = get_data(num_shots, d_list, l, p_list, eta, corr_type, circuit_data, noise_model=noise_model, cd_type=cd_type)
     if circuit_data:
         data_file = f'circuit_data/circuit_level_{ID}.csv'
@@ -720,8 +720,7 @@ def get_data_DCC(circuit_data, corr_decoding, noise_model, d_list, p_list):
         reps = slurm_array_size//len(l_eta_cd_type_arr) # how many times to run file, num_shots each time
         ind = task_id%len(l_eta_cd_type_arr) # get the index of the task_id in the l_eta__corr_type_arr
         l, eta, cd_type = l_eta_cd_type_arr[ind] # get the l and eta from the task_id
-        # num_shots = int(1e6//reps) # number of shots to sample
-        num_shots = int(100//reps)
+        num_shots = int(1e6//reps) # number of shots to sample
         print("l,eta,cd_type", l,eta, cd_type)
         corr_type = "None"
         write_data(num_shots, d_list, l, p_list, eta, task_id, corr_type, circuit_data=circuit_data, noise_model=noise_model, cd_type=cd_type)
@@ -868,12 +867,12 @@ if __name__ == "__main__":
 
     # for plotting
     # l = 6
-    # eta = 100
+    # eta = 5
     corr_type = "CORR_XZ"
     # error_type = "X_MEM"
-    # num_shots = 1111111
+    # num_shots = 7
     # noise_model = "code_cap"
-    # CD_type = "ZXXZonSqu"
+    # CD_type = "SC"
 
     # simulation
     d_list = [11,13,15,17,19]
