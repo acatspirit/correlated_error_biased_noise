@@ -403,7 +403,7 @@ class CDCompassCodeCircuit:
         print(repr(circuit))
         return circuit
     
-    def add_meas_round(self, curr_circuit, stab_d_x, stab_d_z, order_d_x, order_d_z, qubit_d_x, qubit_d_z, num_ancillas, num_qubits_x, num_qubits_z, CD_data, p_i, p_gate, p_i_round, CD_circuit):
+    def add_meas_round(self, curr_circuit, stab_d_x, stab_d_z, order_d_x, order_d_z, qubit_d_x, qubit_d_z, num_ancillas, num_qubits_x, num_qubits_z, CD_data, p_i, p_gate, p_i_round, CD_type):
         """
         Add a measurement round to the circuit. Construct the gates with error model 
         for one round of stabilizer construction.
@@ -421,71 +421,61 @@ class CDCompassCodeCircuit:
 
         # go through each stabilizer in order, X stabilizers first
         for order in order_d_x:
-            q_x_list = order_d_x[order] # (qubit, ancilla) in each X stabilizer, qubit is not adjusted for ancilla offset
-            q_idling_list = [q for q,_ in q_x_list] # the dummy list for qubits that are idling. All the qubits in the stabilizer idle at some point
+            q_x_list = order_d_x[order] # (qubit, ancilla) in each stabilizer, not offset for x ancillas for the z ancillas, or ancillas for the data qubits
+            active_qubits = {q for q,_ in q_x_list} # the dummy list for qubits that are idling
+            active_ancilla = order
 
-            # keep track of the idling qubits outside the stabilizer, including ancillas
-            q_inactive_list = [anc for anc in range(num_ancillas) if anc != order]
-            for q in range(num_qubits_x):
-                if (q, order) not in q_x_list:
-                    q_inactive_list.append(q+num_ancillas)
-
+            # keep track of the idling qubits outside the stabilizer
+            inactive_ancillas = [anc for anc in range(num_ancillas) if anc != active_ancilla]
+            inactive_qubits = [q + num_ancillas for q in range(num_qubits_z) if q not in active_qubits]
+            full_inactive_list = inactive_ancillas + inactive_qubits
             
             # apply a CX to each qubit in the stabilizer in the correct order
             for q,anc in q_x_list:
+                ctrl = anc
+                target = q + num_ancillas
 
-                if not CD_circuit:
-                    circuit.append("CX", [anc, q + num_ancillas])
-                else:
-                    # check if the qubit has a transformation applied
-                    if CD_data[q] == 2:
-                        circuit.append("CZ", [anc, q + num_ancillas]) # apply the CX gate
-                    else:
-                        circuit.append("CX", [anc, q + num_ancillas]) # apply the CZ gate
+                gate = "CX" if CD_type == "SC" else ("CZ" if CD_data[q] == 2 else "CX")
+
+                circuit.append(gate, [ctrl, target]) # apply the gate gate
 
                 # apply the depolarizing channel to the CX gate
-                circuit.append("DEPOLARIZE2", [anc, q+num_ancillas], p_gate)
+                circuit.append("DEPOLARIZE2", [ctrl, target], p_gate)
 
-                    # apply idling errors to the qubits in the stabilizer without CX
-                for other_q in q_idling_list:
-                    if other_q != q:
-                        circuit.append("Z_ERROR", [other_q + num_ancillas], p_i) # Idling error on the X qubits 
-                circuit.append("Z_ERROR", q_inactive_list, p_i) # Idling error on the ancillas and qubits outside the stabilizer
-        
+                # apply idling errors to the qubits in the stabilizer without CX
+                for other_q in active_qubits - {q}:
+                    circuit.append("Z_ERROR", [other_q + num_ancillas], p_i) # Idling error on the X qubits
+                circuit.append("Z_ERROR", full_inactive_list, p_i) # Idling error on the ancillas and qubits outside the stabilizer
 
-        circuit.append("Z_ERROR", [num_ancillas + q for q in list(qubit_d_x.keys())], p_i)# idling error on the data qubits during round
+
+        circuit.append("Z_ERROR", [num_ancillas + q for q in data_q_x_list], p_i)# idling error on the data qubits during round
         circuit.append("TICK")
 
         # now do the Z stabilizers
         for order in order_d_z: 
             q_z_list = order_d_z[order] # (qubit, ancilla) in each stabilizer, not offset for x ancillas for the z ancillas, or ancillas for the data qubits
-            q_idling_list = [q for q,_ in q_z_list] # the dummy list for qubits that are idling
-
+            active_qubits = {q for q,_ in q_z_list} # the dummy list for qubits that are idling
+            active_ancilla = order + len(stab_d_x) # the ancilla for this stabilizer, shifted to account for X stabs
 
             # keep track of the idling qubits outside the stabilizer
-            q_inactive_list = [anc for anc in range(num_ancillas) if anc != (order + len(stab_d_x))]
-            for q in range(num_qubits_z):
-                if (q, order) not in q_z_list:
-                    q_inactive_list.append(q+num_ancillas)
+            inactive_ancillas = [anc for anc in range(num_ancillas) if anc != active_ancilla]
+            inactive_qubits = [q + num_ancillas for q in range(num_qubits_z) if q not in active_qubits]
+            full_inactive_list = inactive_ancillas + inactive_qubits
 
             # apply a CX to each qubit in the stabilizer in the correct order
             for q,anc in q_z_list:
-                if not CD_circuit:
-                    circuit.append("CZ", [anc + len(stab_d_x), q + num_ancillas]) # apply the CZ gate, ancillas are shifted to account for X stabs
-                else:
-                    if CD_data[q] == 2:
-                        circuit.append("CX", [anc + len(stab_d_x), q + num_ancillas])
-                    else:
-                        circuit.append("CZ", [anc + len(stab_d_x), q + num_ancillas])
+                ctrl = anc + len(stab_d_x) # ancillas are shifted to account for X stabs
+                target = q + num_ancillas
 
-                circuit.append("DEPOLARIZE2", [q + num_ancillas, anc + len(stab_d_x)], p_gate) # CNOT gate errors
+                gate = "CZ" if CD_type == "SC" else ("CX" if CD_data[q] == 2 else "CZ")
 
+                circuit.append(gate, [target, ctrl]) # apply the CX gate
+                circuit.append("DEPOLARIZE2", [target, ctrl], p_gate) # CNOT gate errors
 
                 # apply idling errors to the qubits in the stabilizer without CX
-                for other_q in q_idling_list:
-                    if other_q != q:
-                        circuit.append("Z_ERROR", [other_q + num_ancillas], p_i) # Idling error on the X qubits
-                circuit.append("Z_ERROR", q_inactive_list, p_i) # Idling error on the ancillas and qubits outside the stabilizer
+                for other_q in active_qubits - {q}:
+                    circuit.append("Z_ERROR", [other_q + num_ancillas], p_i) # Idling error on the X qubits
+                circuit.append("Z_ERROR", full_inactive_list, p_i) # Idling error on the ancillas and qubits outside the stabilizer
 
         circuit.append("H", range(num_ancillas))
         circuit.append("TICK")
@@ -525,8 +515,8 @@ class CDCompassCodeCircuit:
         p_i_round = between_round_idling_pauli_channel # idling error on all qubits between the measurement rounds
         p_i = idling_dephasing # idling error on all qubits during rounds
 
-        num_rounds = self.d
-        # num_rounds = 1
+        # num_rounds = self.d
+        num_rounds = 1
 
         px_data = 0.5*p_data_dep/(1+self.eta) # biased depolarizing error on data qubits before round
         pz_data = p_data_dep*(self.eta/(1+self.eta)) # biased depolarizing error on data qubits before round
@@ -600,8 +590,8 @@ class CDCompassCodeCircuit:
 
         # Round 0 - t=0 measurements
         circuit.append("TICK")
-        circuit = self.add_meas_round(circuit, stab_d_x, stab_d_z, order_d_x, order_d_z, qubit_d_x, qubit_d_z, num_ancillas, num_qubits_x, num_qubits_z, CD_data_transform, p_i, p_gate, 0, CD_type) # set the idling error between rounds to 0 on first round
-
+        circuit_meas_round = self.add_meas_round(circuit, stab_d_x, stab_d_z, order_d_x, order_d_z, qubit_d_x, qubit_d_z, num_ancillas, num_qubits_x, num_qubits_z, CD_data_transform, p_i, p_gate, p_i_round, CD_type) # set the idling error between rounds to 0 on first round
+        circuit = circuit + circuit_meas_round
         # idling errors on the data qubits during round 
         circuit.append("Z_ERROR", data_q_z_list, p_i)
         
@@ -626,7 +616,8 @@ class CDCompassCodeCircuit:
         # add error to the data qubits
         loop_circuit.append("PAULI_CHANNEL_1", data_q_list, [px_data, py_data, pz_data])
        
-        loop_circuit = self.add_meas_round(loop_circuit, stab_d_x, stab_d_z, order_d_x, order_d_z, qubit_d_x, qubit_d_z, num_ancillas, num_qubits_x, num_qubits_z, CD_data_transform, p_i, p_gate, p_i_round, CD_type)
+        # loop_circuit = self.add_meas_round(loop_circuit, stab_d_x, stab_d_z, order_d_x, order_d_z, qubit_d_x, qubit_d_z, num_ancillas, num_qubits_x, num_qubits_z, CD_data_transform, p_i, p_gate, p_i_round, CD_type)
+        loop_circuit = loop_circuit + circuit_meas_round
 
         # idling errors on the data qubits, measure the ancillas, bit flip errors on measurements
         loop_circuit.append("Z_ERROR", data_q_z_list, p_i)
@@ -640,7 +631,7 @@ class CDCompassCodeCircuit:
         loop_circuit.append("TICK") # add a tick to the circuit to mark the end of the t>0 iteration
         
         # repeat the loop circuit d-1 times - circuit level only
-        circuit.append(stim.CircuitRepeatBlock(repeat_count=num_rounds-1, body=loop_circuit))# end the repeat block
+        # circuit.append(stim.CircuitRepeatBlock(repeat_count=num_rounds-1, body=loop_circuit))# end the repeat block
 
         # reconstruct the stabilizers and measure the data qubits
         # for X mem measure X stabs
