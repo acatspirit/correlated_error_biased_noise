@@ -712,7 +712,7 @@ def get_prob_scale(corr_type, eta):
     return prob_scale
 
 
-def get_data_DCC(circuit_data, corr_decoding, noise_model, d_list, p_list):
+def get_data_DCC(circuit_data, corr_decoding, noise_model, d_list, p_list=None, p_th_init_d=None):
     task_id = int(os.environ['SLURM_ARRAY_TASK_ID']) # will iter over the total slurm array size and points to where you are 
     slurm_array_size = int(os.environ['SLURM_ARRAY_TASK_MAX']) # the size of the slurm array, used to determine how many tasks to run, currently 1000
 
@@ -728,12 +728,18 @@ def get_data_DCC(circuit_data, corr_decoding, noise_model, d_list, p_list):
         num_shots = int(1e6//reps) # number of shots to sample
         print("l,eta,cd_type", l,eta, cd_type)
         corr_type = "None"
+        if p_th_init_d is not None:
+            p_th_init = p_th_init_d[(l, eta, cd_type)]
+            p_list = np.linspace(p_th_init - 0.03, p_th_init + 0.03, 40)
         write_data(num_shots, d_list, l, p_list, eta, task_id, corr_type, circuit_data=circuit_data, noise_model=noise_model, cd_type=cd_type)
     if corr_decoding: # change this to get different data for eta plot
         l_eta_corr_type_arr = list(itertools.product([2,3,4,5,6],[1.67,3,4.26,5.89], ["CORR_XZ", "CORR_ZX"])) # list of tuples (l, eta, corr_type), currently 40
         reps = slurm_array_size//len(l_eta_corr_type_arr) # how many times to run file, num_shots each time
         ind = task_id%len(l_eta_corr_type_arr) # get the index of the task_id in the l_eta__corr_type_arr
         l, eta, corr_type = l_eta_corr_type_arr[ind] # get the l and eta from the task_id
+        if p_th_init_d is not None:
+            p_th_init = p_th_init_d[(l, eta, corr_type)]
+            p_list = np.linspace(p_th_init - 0.03, p_th_init + 0.03, 40)
         num_shots = int(1e6//reps) # number of shots to sample
         cd_type = "SC"
         noise_model = "code_cap"
@@ -812,9 +818,28 @@ if __name__ == "__main__":
                         (5,6,"CORR_XZ"): 0.203, (5,6,"CORR_ZX"): 0.205, (5,7,"CORR_XZ"): 0.200, (5,7,"CORR_ZX"): 0.202,
                         (6,1.5,"CORR_XZ"): 0.135, (6,1.5,"CORR_ZX"): 0.118, (6,2.5,"CORR_XZ"): 0.20, (6,2.5,"CORR_ZX"): 0.202,
                         (6,3.5,"CORR_XZ"): 0.217, (6,3.5,"CORR_ZX"): 0.224, (6,4.5,"CORR_XZ"): 0.224, (6,4.5,"CORR_ZX"): 0.227,
-                        (6,6,"CORR_XZ"): 0.224, (6,6,"CORR_ZX"): 0.227, (6,7,"CORR_XZ"): 0.222, (6,7,"CORR_ZX"): 0.225
+                        (6,6,"CORR_XZ"): 0.224, (6,6,"CORR_ZX"): 0.227, (6,7,"CORR_XZ"): 0.222, (6,7,"CORR_ZX"): 0.225,
+                        (2,1.67, "CORR_XZ"): 0.127, (2,1.67, "CORR_ZX"):0.148, (2,3, "CORR_XZ"):0.127, (2,3, "CORR_ZX"):0.116,
+                        (2,4.26, "CORR_XZ"):0.121, (2,4.26, "CORR_ZX"):0.113, (2,5.89, "CORR_XZ"):0.116, (2,5.89, "CORR_ZX"):0.109,
+                        (3,1.67, "CORR_XZ"): 0.176, (3,1.67, "CORR_ZX"):0.179, (3,3, "CORR_XZ"):0.169, (3,3, "CORR_ZX"):0.164,
+                        (3,4.26, "CORR_XZ"):0.160, (3,4.26, "CORR_ZX"):0.158, (3,5.89, "CORR_XZ"):0.156, (3,5.89, "CORR_ZX"):0.152,
+                        (4,1.67, "CORR_XZ"): 0.181, (4,1.67, "CORR_ZX"):0.183, (4,3, "CORR_XZ"):0.196, (4,3, "CORR_ZX"):0.197,
+                        (4,4.26, "CORR_XZ"):0.192, (4,4.26, "CORR_ZX"):0.192, (4,5.89, "CORR_XZ"):0.185, (4,5.89, "CORR_ZX"):0.185,
+                        (5,1.67, "CORR_XZ"): 0.178, (5,1.67, "CORR_ZX"):0.176, (5,3, "CORR_XZ"):0.206, (5,3, "CORR_ZX"):0.208,
+                        (5,4.26, "CORR_XZ"):0.211,(5,4.26, "CORR_ZX"):0.212, (5,5.89, "CORR_XZ"):0.205,(5,5.89, "CORR_ZX"):0.207,
+                        (6,1.67, "CORR_XZ"): 0.161, (6,1.67, "CORR_ZX"):0.144, (6,3, "CORR_XZ"): 0.212, (6,3, "CORR_ZX"):0.215,
+                        (6,4.26, "CORR_XZ"): 0.225, (6,4.26, "CORR_ZX"):0.226, (6,5.89, "CORR_XZ"): 0.227, (6,5.89, "CORR_ZX"):0.229
                         }
 
+
+    # for plotting
+    # l = 6
+    # eta = 5.89
+    corr_type = "CORR_XZ"
+    # error_type = corr_type
+    # num_shots = 41666
+    # noise_model = "code_cap"
+    # CD_type = "SC"
     
     # unscaled X and Z mem thresholds. Options are:
     # eta - 0.5, 50, 100, 500, 1000
@@ -867,24 +892,17 @@ if __name__ == "__main__":
                          }
 
 
-    circuit_data = True # whether circuit level or code cap data is desired
-    corr_decoding = False # whether to get data for correlated decoding (eta plot) or circuit level (X/Z mem)
+    circuit_data = False # whether circuit level or code cap data is desired
+    corr_decoding = True # whether to get data for correlated decoding (eta plot) or circuit level (X/Z mem)
 
-    # for plotting
-    # l = 6
-    # eta = 5
-    corr_type = "CORR_ZX"
-    # error_type = "CORR_ZX"
-    # num_shots = 41666
-    # noise_model = "code_cap"
-    # CD_type = "SC"
+    
 
     # simulation
     d_list = [11,13,15,17,19]
     # p_th_init = p_th_init_dict[(l,eta,corr_type)]
     # p_th_init = 0.158
     # p_list = np.linspace(p_th_init-0.03, p_th_init + 0.03, 40)
-    p_list = np.linspace(0.05, 0.5, 40)
+    # p_list = np.linspace(0.05, 0.5, 40)
     
     
     if circuit_data:
@@ -900,7 +918,7 @@ if __name__ == "__main__":
             output_file = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/xz_corr_err_data.csv'
 
     
-    get_data_DCC(circuit_data, corr_decoding, "code_cap", d_list, p_list)
+    get_data_DCC(circuit_data, corr_decoding, "code_cap", d_list, p_list=None, p_th_init_d=p_th_init_dict if corr_decoding else p_th_init_dict_CL)
 
     # run this to get data from the dcc
     # write_data(num_shots, d_list, l, p_list, eta, task_id, corr_type, circuit_data=circuit_data, noise_model="code_cap", cd_type="XZZXonSqu")
