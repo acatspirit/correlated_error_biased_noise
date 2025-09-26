@@ -867,15 +867,15 @@ if __name__ == "__main__":
                          }
 
 
-    circuit_data = False # whether circuit level or code cap data is desired
-    corr_decoding = True # whether to get data for correlated decoding (eta plot) or circuit level (X/Z mem)
+    circuit_data = True # whether circuit level or code cap data is desired
+    corr_decoding = False # whether to get data for correlated decoding (eta plot) or circuit level (X/Z mem)
 
     # for plotting
     # l = 6
     # eta = 5
-    corr_type = "CORR_XZ"
-    # error_type = "X_MEM"
-    # num_shots = 111111
+    corr_type = "CORR_ZX"
+    # error_type = "CORR_ZX"
+    # num_shots = 41666
     # noise_model = "code_cap"
     # CD_type = "SC"
 
@@ -900,7 +900,7 @@ if __name__ == "__main__":
             output_file = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/xz_corr_err_data.csv'
 
     
-    # get_data_DCC(circuit_data, corr_decoding, "code_cap", d_list, p_list)
+    get_data_DCC(circuit_data, corr_decoding, "code_cap", d_list, p_list)
 
     # run this to get data from the dcc
     # write_data(num_shots, d_list, l, p_list, eta, task_id, corr_type, circuit_data=circuit_data, noise_model="code_cap", cd_type="XZZXonSqu")
@@ -995,7 +995,7 @@ if __name__ == "__main__":
     # print(threshold, confidence)
 
     # threshold_plot(df, 0.123, 0.03, 0.75, 5, num_shots, "CORR_XZ", output_file, loglog=True, averaging=True,show_threshold=True)
-    # full_error_plot(df_filtered, eta, l, num_shots, error_type, output_file, loglog=False, averaging=True)
+    # full_error_plot(df, eta, l, num_shots, error_type, output_file, loglog=False, averaging=True)
 
 
 
