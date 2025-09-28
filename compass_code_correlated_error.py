@@ -892,8 +892,8 @@ if __name__ == "__main__":
                          }
 
 
-    circuit_data = False # whether circuit level or code cap data is desired
-    corr_decoding = True # whether to get data for correlated decoding (eta plot) or circuit level (X/Z mem)
+    circuit_data = True # whether circuit level or code cap data is desired
+    corr_decoding = False # whether to get data for correlated decoding (eta plot) or circuit level (X/Z mem)
 
     
 
@@ -918,12 +918,12 @@ if __name__ == "__main__":
             output_file = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/xz_corr_err_data.csv'
 
     
-    get_data_DCC(circuit_data, corr_decoding, "code_cap", d_list, p_list=None, p_th_init_d=p_th_init_dict if corr_decoding else p_th_init_dict_CL)
+    # get_data_DCC(circuit_data, corr_decoding, "code_cap", d_list, p_list=None, p_th_init_d=p_th_init_dict if corr_decoding else p_th_init_dict_CL)
 
     # run this to get data from the dcc
     # write_data(num_shots, d_list, l, p_list, eta, task_id, corr_type, circuit_data=circuit_data, noise_model="code_cap", cd_type="XZZXonSqu")
     # run this once you have data and want to combo it to one csv
-    # concat_csv(folder_path, circuit_data)
+    concat_csv(folder_path, circuit_data)
 
 
 
