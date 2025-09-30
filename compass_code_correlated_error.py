@@ -536,12 +536,17 @@ def full_error_plot(full_df, curr_eta, curr_l, curr_num_shots, corr_type, file, 
 
     # Get unique error types and unique d values
     error_types = filtered_df['error_type'].unique()
-    
 
     d_values = filtered_df['d'].unique()
 
+    if circuit_level:
+        CD_type = filtered_df['CD_type'].unique()
+
     # Create a figure with subplots for each error type
-    fig, axes = plt.subplots(len(error_types)//2, 2, figsize=(15, 5*len(error_types)//2))
+    if len(error_types)%2 == 0:
+        fig, axes = plt.subplots(len(error_types)//2, 2, figsize=(15, 5*len(error_types)//2))
+    else:
+        fig, axes = plt.subplots((len(error_types)//2)+1, 2, figsize=(15, 5*((len(error_types)//2)+1)))
     axes = axes.flatten()
     
 
@@ -571,7 +576,10 @@ def full_error_plot(full_df, curr_eta, curr_l, curr_num_shots, corr_type, file, 
         ax.set_ylabel('num_log_errors', fontsize=20)
         ax.legend()
 
-    fig.suptitle(f'Logical Error Rates for eta = {curr_eta} and l = {curr_l}')
+    if circuit_level:
+        fig.suptitle(f'Logical Error Rates for eta = {curr_eta}, l = {curr_l}, Deformation = {CD_type[0]}')
+    else:
+        fig.suptitle(f'Logical Error Rates for eta = {curr_eta} and l = {curr_l}')
     plt.tight_layout()
     plt.show()
 
@@ -708,7 +716,7 @@ def get_threshold(full_df, pth0, p_range, l, eta, corr_type, num_shots):
 def get_prob_scale(corr_type, eta):
     """ extract the amount to be scaled by given a noise bias and the type of error
     """
-    prob_scale = {'X': 0.5/(1+eta), 'Z': (1+2*eta)/(2*(1+eta)), corr_type: 1, 'TOTAL':1, 'X_MEM':  1, 'Z_MEM': 1}
+    prob_scale = {'X': 0.5/(1+eta), 'Z': (1+2*eta)/(2*(1+eta)), corr_type: 1, 'TOTAL':1, 'TOTAL_MEM':1, 'X_MEM':  1, 'Z_MEM': 1}
     return prob_scale
 
 
@@ -752,9 +760,16 @@ def get_data_DCC(circuit_data, corr_decoding, noise_model, d_list, p_list=None, 
 
 
 
-def get_thresholds_from_data_exactish(num_shots, threshold_d, p_th_init_dict):
+def get_thresholds_from_data_exactish(num_shots, p_th_init_dict):
+    """
+    Given a dictionary of thresholds, get the thresholds from the data files and add them to the dictionary
+    in: num_shots - the number of shots to sample
+        p_th_init_dict - a dictionary of initial guesses for the threshold, only the entries you want to make exactish, with keys (l, eta, corr_type)
+    out: threshold_d - the updated dictionary of thresholds
+    """
     all_thresholds_df = pd.read_csv('/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/all_thresholds_per_eta_elongated.csv')
-    for key in threshold_d.keys():
+    threshold_d = {}
+    for key in p_th_init_dict.keys():
         l, eta, corr_type = key
         print("l,eta,corr_type", l,eta, corr_type)
 
@@ -768,7 +783,7 @@ def get_thresholds_from_data_exactish(num_shots, threshold_d, p_th_init_dict):
         p_th_init = p_th_init_dict[key]
         threshold,std_error = get_threshold(df, p_th_init, 0.03, l, eta, corr_type, num_shots)
         threshold_d[key] = threshold
-        all_thresholds_df = all_thresholds_df.append({'l':l, 'eta':eta, 'error_type':corr_type, 'pth':threshold, 'stderr':std_error}, ignore_index=True)
+        all_thresholds_df = pd.concat([all_thresholds_df,pd.DataFrame({'l':l,'eta':eta, 'error_type':corr_type, 'pth':threshold, 'stderr':std_error}, index=[0])], ignore_index=True)
     
 
     all_thresholds_df.to_csv('/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/all_thresholds_per_eta_elongated.csv', index=False)
@@ -833,13 +848,13 @@ if __name__ == "__main__":
 
 
     # for plotting
-    # l = 6
-    # eta = 5.89
+    l = 5
+    eta = 0.75
     corr_type = "CORR_XZ"
-    # error_type = corr_type
-    # num_shots = 41666
+    error_type = corr_type
+    num_shots = 41666
     # noise_model = "code_cap"
-    # CD_type = "SC"
+    CD_type = "ZXXZonSqu"
     
     # unscaled X and Z mem thresholds. Options are:
     # eta - 0.5, 50, 100, 500, 1000
@@ -892,8 +907,8 @@ if __name__ == "__main__":
                          }
 
 
-    circuit_data = True # whether circuit level or code cap data is desired
-    corr_decoding = False # whether to get data for correlated decoding (eta plot) or circuit level (X/Z mem)
+    circuit_data = False # whether circuit level or code cap data is desired
+    corr_decoding = True # whether to get data for correlated decoding (eta plot) or circuit level (X/Z mem)
 
     
 
@@ -902,7 +917,7 @@ if __name__ == "__main__":
     # p_th_init = p_th_init_dict[(l,eta,corr_type)]
     # p_th_init = 0.158
     # p_list = np.linspace(p_th_init-0.03, p_th_init + 0.03, 40)
-    # p_list = np.linspace(0.05, 0.5, 40)
+    p_list = np.linspace(0.05, 0.25, 40)
     
     
     if circuit_data:
@@ -923,42 +938,39 @@ if __name__ == "__main__":
     # run this to get data from the dcc
     # write_data(num_shots, d_list, l, p_list, eta, task_id, corr_type, circuit_data=circuit_data, noise_model="code_cap", cd_type="XZZXonSqu")
     # run this once you have data and want to combo it to one csv
-    concat_csv(folder_path, circuit_data)
+    # concat_csv(folder_path, circuit_data)
 
 
 
 
 
     # df = pd.read_csv(output_file)
-    # df_filtered = df[(df['l'] == l) & (df['eta'] == eta) & (df['CD_type'] == CD_type)]
+    # df_filtered = df[(df['CD_type'] == CD_type) & (df['l'] == l) & (df['eta'] == eta) & (df['num_shots'] == num_shots)]
     # print(len(df_filtered))
     # df = pd.read_csv('/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/all_thresholds_per_eta_elongated.csv', index_col=False)
     # print(df)
+    
     # eta_threshold_plot(df)
 
-    # threshold_d = {(2,1.5,"CORR_XZ"): 0.152, (2,1.5,"CORR_ZX"):0.130, (2,2.5,"CORR_XZ"):0.131, (2,2.5,"CORR_ZX"):0.118,
-    #                     (2,3.5,"CORR_XZ"): 0.123, (2,3.5,"CORR_ZX"): 0.113, (2,4.5,"CORR_XZ"): 0.118, (2,4.5,"CORR_ZX"): 0.111,
-    #                     (2,6,"CORR_XZ"): 0.114, (2,6,"CORR_ZX"): 0.108, (2,7,"CORR_XZ"): 0.112, (2,7,"CORR_ZX"): 0.107,
-    #                     (3,1.5,"CORR_XZ"): 0.175, (3,1.5,"CORR_ZX"): 0.173, (3,2.5,"CORR_XZ"): 0.174, (3,2.5,"CORR_ZX"): 0.170,
-    #                     (3,3.5,"CORR_XZ"): 0.163, (3,3.5,"CORR_ZX"): 0.160, (3,4.5,"CORR_XZ"): 0.159, (3,4.5,"CORR_ZX"): 0.158,
-    #                     (3,6,"CORR_XZ"): 0.154, (3,6,"CORR_ZX"): 0.152, (3,7,"CORR_XZ"): 0.153, (3,7,"CORR_ZX"): 0.151,
-    #                     (4,1.5,"CORR_XZ"): 0.176, (4,1.5,"CORR_ZX"): 0.177, (4,2.5,"CORR_XZ"): 0.193, (4,2.5,"CORR_ZX"): 0.194,
-    #                     (4,3.5,"CORR_XZ"): 0.194, (4,3.5,"CORR_ZX"): 0.194, (4,4.5,"CORR_XZ"): 0.189, (4,4.5,"CORR_ZX"): 0.189,
-    #                     (4,6,"CORR_XZ"): 0.183, (4,6,"CORR_ZX"): 0.184, (4,7,"CORR_XZ"): 0.181, (4,7,"CORR_ZX"): 0.180,
-    #                     (5,1.5,"CORR_XZ"): 0.169, (5,1.5,"CORR_ZX"): 0.163, (5,2.5,"CORR_XZ"): 0.198, (5,2.5,"CORR_ZX"): 0.201,
-    #                     (5,3.5,"CORR_XZ"): 0.209,(5,3.5,"CORR_ZX"): 0.210, (5,4.5,"CORR_XZ"): 0.209,(5,4.5,"CORR_ZX"): 0.209,
-    #                     (5,6,"CORR_XZ"): 0.203, (5,6,"CORR_ZX"): 0.205, (5,7,"CORR_XZ"): 0.200, (5,7,"CORR_ZX"): 0.202,
-    #                     (6,1.5,"CORR_XZ"): 0.135, (6,1.5,"CORR_ZX"): 0.118, (6,2.5,"CORR_XZ"): 0.20, (6,2.5,"CORR_ZX"): 0.202,
-    #                     (6,3.5,"CORR_XZ"): 0.217, (6,3.5,"CORR_ZX"): 0.224, (6,4.5,"CORR_XZ"): 0.224, (6,4.5,"CORR_ZX"): 0.227,
-    #                     (6,6,"CORR_XZ"): 0.224, (6,6,"CORR_ZX"): 0.227, (6,7,"CORR_XZ"): 0.222, (6,7,"CORR_ZX"): 0.225}
+    # threshold_d = {(2,0.5, "CORR_ZX"):0.157, (2,1, "CORR_ZX"):0.149, (2,5, "CORR_ZX"):0.110,
+    #                   (3,0.5, "CORR_ZX"):0.177, (3,1, "CORR_ZX"):0.178, (3,5, "CORR_ZX"):0.155,
+    #                   (4,0.5, "CORR_ZX"):0.146, (4,1, "CORR_ZX"):0.173, (4,5, "CORR_ZX"):0.187,
+    #                   (5,0.5, "CORR_ZX"):0.120, (5,1, "CORR_ZX"):0.148, (5,5, "CORR_ZX"):0.210,
+    #                   (6,0.5, "CORR_ZX"):0.093, (6,1, "CORR_ZX"):0.109, (6,5, "CORR_ZX"):0.235,
+    #                   (2,0.5, "CORR_XZ"):0.160, (2,1, "CORR_XZ"):0.167, (2,5, "CORR_XZ"):0.120,
+    #                   (3,0.5, "CORR_XZ"):0.128, (3,1, "CORR_XZ"):0.165, (3,5, "CORR_XZ"):0.160,
+    #                   (4,0.5, "CORR_XZ"):0.090, (4,1, "CORR_XZ"):0.145, (4,5, "CORR_XZ"):0.190,
+    #                   (5,0.5, "CORR_XZ"):0.075, (5,1, "CORR_XZ"):0.110, (5,5, "CORR_XZ"):0.210,
+    #                   (6,0.5, "CORR_XZ"):0.065, (6,1, "CORR_XZ"):0.090, (6,5, "CORR_XZ"):0.230
+    #                     }
 
-
+    # get_thresholds_from_data_exactish(30303, threshold_d)
 
 
 
     # df = df[(df['num_shots'] == num_shots) & (df['eta'] == eta)]
 
-    # threshold_plot(df, p_th_init, 0.03, eta, l, num_shots, error_type, output_file, loglog=True, averaging=True, show_threshold=True)
+    # threshold_plot(df, .09, 0.03, eta, l, num_shots, error_type, output_file, loglog=True, averaging=True, show_threshold=True)
 
 
     # # Group by p, d, l and sum the num_log_errors to create 'tot_mem'
@@ -1013,7 +1025,7 @@ if __name__ == "__main__":
     # print(threshold, confidence)
 
     # threshold_plot(df, 0.123, 0.03, 0.75, 5, num_shots, "CORR_XZ", output_file, loglog=True, averaging=True,show_threshold=True)
-    # full_error_plot(df, eta, l, num_shots, error_type, output_file, loglog=False, averaging=True)
+    # full_error_plot(df_filtered, eta, l, num_shots, error_type, output_file, loglog=False, averaging=True, circuit_level=circuit_data)
 
 
 
