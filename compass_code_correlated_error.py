@@ -947,7 +947,7 @@ if __name__ == "__main__":
             output_file = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/xz_corr_err_data.csv'
 
     
-    get_data_DCC(circuit_data, corr_decoding, "code_cap", d_list, p_list=None, p_th_init_d=p_th_init_dict if corr_decoding else p_th_init_dict_CL, pymatch_corr=True)
+    get_data_DCC(circuit_data, corr_decoding, "code_cap", d_list, p_list=p_list, p_th_init_d=None, pymatch_corr=True)
 
     # run this to get data from the dcc
     # write_data(num_shots, d_list, l, p_list, eta, task_id, corr_type, circuit_data=circuit_data, noise_model="code_cap", cd_type="XZZXonSqu")
