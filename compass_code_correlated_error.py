@@ -742,11 +742,11 @@ def get_data_DCC(circuit_data, corr_decoding, noise_model, d_list, p_list=None, 
             p_list = np.linspace(p_th_init - 0.03, p_th_init + 0.03, 40)
         write_data(num_shots, d_list, l, p_list, eta, task_id, corr_type, circuit_data=circuit_data, noise_model=noise_model, cd_type=cd_type, pymatch_corr=pymatch_corr)
     if circuit_data and corr_decoding:
-        l_eta_cd_type_arr = list(itertools.product([2,3,4,5,6],[0.5,1,5,10,100],["SC", "XZZXonSqu", "ZXXZonSqu"]))
+        l_eta_cd_type_arr = list(itertools.product([2,3,4,5,6],[0.5],["SC", "XZZXonSqu", "ZXXZonSqu"]))
         reps = slurm_array_size//len(l_eta_cd_type_arr) # how many times to run file, num_shots each time
         ind = task_id%len(l_eta_cd_type_arr) # get the index of the task_id in the l_eta__corr_type_arr
         l, eta, cd_type = l_eta_cd_type_arr[ind] # get the l and eta from the task_id, pymatching corr should be doing an erasure channel this whole time, see what happens
-        num_shots = int(1e6//reps) # number of shots to sample
+        num_shots = int(1e3//reps) # number of shots to sample
         print("l,eta,cd_type", l,eta, cd_type)
         corr_type = "None"
         if p_th_init_d is not None:
