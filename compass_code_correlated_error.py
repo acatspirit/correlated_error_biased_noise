@@ -369,15 +369,15 @@ def get_data(num_shots, d_list, l, p_list, eta, corr_type, circuit_data, noise_m
 
 
             for i,log_error in enumerate(log_errors_x):
-                curr_row = {"d":d, "num_shots":num_shots, "p":p_list[i], "l": l, "eta":eta, "error_type":"X_MEM" if pymatch_corr else "X_MEM_CORR", "noise_model": noise_model, "CD_type":cd_type, "num_log_errors":log_error/num_shots, "time_stamp":datetime.now()}
+                curr_row = {"d":d, "num_shots":num_shots, "p":p_list[i], "l": l, "eta":eta, "error_type":"X_MEM_PY" if pymatch_corr else "X_MEM", "noise_model": noise_model, "CD_type":cd_type, "num_log_errors":log_error/num_shots, "time_stamp":datetime.now()}
                 data = pd.concat([data, pd.DataFrame([curr_row])], ignore_index=True)
 
             for i,log_error in enumerate(log_errors_z):
-                curr_row = {"d":d, "num_shots":num_shots, "p":p_list[i], "l": l, "eta":eta, "error_type":"Z_MEM" if pymatch_corr else "Z_MEM_CORR", "noise_model": noise_model, "CD_type":cd_type, "num_log_errors":log_error/num_shots, "time_stamp":datetime.now()}
+                curr_row = {"d":d, "num_shots":num_shots, "p":p_list[i], "l": l, "eta":eta, "error_type":"Z_MEM_PY" if pymatch_corr else "Z_MEM", "noise_model": noise_model, "CD_type":cd_type, "num_log_errors":log_error/num_shots, "time_stamp":datetime.now()}
                 data = pd.concat([data, pd.DataFrame([curr_row])], ignore_index=True)
 
             for i,log_error in enumerate(log_errors_total):
-                curr_row = {"d":d, "num_shots":num_shots, "p":p_list[i], "l": l, "eta":eta, "error_type":"TOTAL_MEM" if pymatch_corr else "TOTAL_MEM_CORR", "noise_model": noise_model, "CD_type":cd_type, "num_log_errors":log_error/num_shots, "time_stamp":datetime.now()}
+                curr_row = {"d":d, "num_shots":num_shots, "p":p_list[i], "l": l, "eta":eta, "error_type":"TOTAL_MEM_PY" if pymatch_corr else "TOTAL_MEM", "noise_model": noise_model, "CD_type":cd_type, "num_log_errors":log_error/num_shots, "time_stamp":datetime.now()}
                 data = pd.concat([data, pd.DataFrame([curr_row])], ignore_index=True)
             
             
@@ -947,12 +947,12 @@ if __name__ == "__main__":
             output_file = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/xz_corr_err_data.csv'
 
     
-    get_data_DCC(circuit_data, corr_decoding, "code_cap", d_list, p_list=p_list, p_th_init_d=None, pymatch_corr=True)
+    # get_data_DCC(circuit_data, corr_decoding, "code_cap", d_list, p_list=p_list, p_th_init_d=None, pymatch_corr=True)
 
     # run this to get data from the dcc
     # write_data(num_shots, d_list, l, p_list, eta, task_id, corr_type, circuit_data=circuit_data, noise_model="code_cap", cd_type="XZZXonSqu")
     # run this once you have data and want to combo it to one csv
-    # concat_csv(folder_path, circuit_data)
+    concat_csv(folder_path, circuit_data)
 
 
 
