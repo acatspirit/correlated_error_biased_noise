@@ -717,7 +717,7 @@ def get_threshold(full_df, pth0, p_range, l, eta, corr_type, num_shots):
 def get_prob_scale(corr_type, eta):
     """ extract the amount to be scaled by given a noise bias and the type of error
     """
-    prob_scale = {'X': 0.5/(1+eta), 'Z': (1+2*eta)/(2*(1+eta)), corr_type: 1, 'TOTAL':1, 'TOTAL_MEM':4/3, 'X_MEM':  1, 'Z_MEM': 1} # 4/3 factor of total mem is due to code_cap pauli channel scalling factor in stim
+    prob_scale = {'X': 0.5/(1+eta), 'Z': (1+2*eta)/(2*(1+eta)), corr_type: 1, 'TOTAL':1, 'TOTAL_MEM':4/3, 'X_MEM':  1, 'Z_MEM': 1, 'TOTAL_MEM_PY':4/3, 'X_MEM_PY':1, 'Z_MEM_PY':1} # 4/3 factor of total mem is due to code_cap pauli channel scalling factor in stim
     return prob_scale
 
 
@@ -742,11 +742,11 @@ def get_data_DCC(circuit_data, corr_decoding, noise_model, d_list, p_list=None, 
             p_list = np.linspace(p_th_init - 0.03, p_th_init + 0.03, 40)
         write_data(num_shots, d_list, l, p_list, eta, task_id, corr_type, circuit_data=circuit_data, noise_model=noise_model, cd_type=cd_type, pymatch_corr=pymatch_corr)
     if circuit_data and corr_decoding:
-        l_eta_cd_type_arr = list(itertools.product([2,3,4,5,6],[1,5,10,100],["SC", "XZZXonSqu", "ZXXZonSqu"]))
+        l_eta_cd_type_arr = list(itertools.product([2,3,4,5,6],[0.5],["SC", "XZZXonSqu", "ZXXZonSqu"]))
         reps = slurm_array_size//len(l_eta_cd_type_arr) # how many times to run file, num_shots each time
         ind = task_id%len(l_eta_cd_type_arr) # get the index of the task_id in the l_eta__corr_type_arr
         l, eta, cd_type = l_eta_cd_type_arr[ind] # get the l and eta from the task_id, pymatching corr should be doing an erasure channel this whole time, see what happens
-        num_shots = int(1e3//reps) # number of shots to sample
+        num_shots = int(1e5//reps) # number of shots to sample
         print("l,eta,cd_type", l,eta, cd_type)
         corr_type = "None"
         if p_th_init_d is not None:
@@ -862,13 +862,13 @@ if __name__ == "__main__":
 
 
     # for plotting
-    # l = 5
-    # eta = 0.75
-    corr_type = "CORR_XZ"
-    # error_type = corr_type
-    # num_shots = 41666
-    # # noise_model = "code_cap"
-    # CD_type = "ZXXZonSqu"
+    # l = 2
+    # eta = 1
+    # corr_type = "CORR_XZ"
+    # error_type = "X_MEM_PY"
+    # num_shots = 62
+    # noise_model = "code_cap"
+    # CD_type = "SC"
     
     # unscaled X and Z mem thresholds. Options are:
     # eta - 0.5, 50, 100, 500, 1000
@@ -959,7 +959,8 @@ if __name__ == "__main__":
 
 
     # df = pd.read_csv(output_file)
-    # df_filtered = df[(df['CD_type'] == CD_type) & (df['l'] == l) & (df['eta'] == eta) & (df['num_shots'] == num_shots)]
+    # df_filtered = df[(df['CD_type'] == CD_type) & (df['l'] == l) & (df['eta'] == eta) & (df['num_shots'] == num_shots) & (df['noise_model'] == noise_model)]
+    # print(df_filtered.shape)
     # print(len(df_filtered))
     # df = pd.read_csv('/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/all_thresholds_per_eta_elongated.csv', index_col=False)
     # print(df)
