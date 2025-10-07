@@ -69,6 +69,23 @@ class CorrelatedDecoder:
         errors[1] = np.where((choices == 2) | (choices == 3), 1, 0)  # Z or Y error
         return errors
     
+    def test_error(self, error_x, error_z):
+        
+        M_x = Matching.from_check_matrix(self.H_x)
+        M_z = Matching.from_check_matrix(self.H_z)
+        
+        syndrome_x, syndrome_z = error_x @ self.H_z.T % 2, error_z @ self.H_x.T % 2
+        print(f"syndrome for X errors {syndrome_x}")
+        print(f"syndrome for Z errors {syndrome_z}")
+
+        correction_x = M_z.decode(syndrome_x)
+        correction_z = M_x.decode(syndrome_z)
+
+        print(f"correction for X errors {correction_x}")
+        print(f"correction for Z errors {correction_z}")
+
+        
+    
     #
     #
     # Decoder functions
@@ -112,14 +129,14 @@ class CorrelatedDecoder:
         err_vec_x = np.array([err[0] for err in err_vec])
         err_vec_z = np.array([err[1] for err in err_vec])
         
-        # Syndrome for Z errors and decoding
-        syndrome_z = err_vec_x @ self.H_z.T % 2
-        correction_x = M_z.decode_batch(syndrome_z)
+        # Syndrome for X errors and decoding
+        syndrome_x = err_vec_x @ self.H_z.T % 2
+        correction_x = M_z.decode_batch(syndrome_x)
         num_errors_x = np.sum((correction_x + err_vec_x) @ self.log_z % 2)
         
-        # Syndrome for X errors and decoding
-        syndrome_x = err_vec_z @ self.H_x.T % 2
-        correction_z = M_x.decode_batch(syndrome_x)
+        # Syndrome for Z errors and decoding
+        syndrome_z = err_vec_z @ self.H_x.T % 2
+        correction_z = M_x.decode_batch(syndrome_z)
         num_errors_z = np.sum((correction_z + err_vec_z) @ self.log_x % 2)
 
         
@@ -862,13 +879,13 @@ if __name__ == "__main__":
 
 
     # for plotting
-    # l = 2
-    # eta = 1
-    # corr_type = "CORR_XZ"
-    # error_type = "X_MEM_PY"
-    # num_shots = 62
-    # noise_model = "code_cap"
-    # CD_type = "SC"
+    l = 2
+    eta = 0.5
+    corr_type = "CORR_XZ"
+    error_type = "CORR_XZ"
+    num_shots = 10000
+    noise_model = "code_cap"
+    CD_type = "SC"
     
     # unscaled X and Z mem thresholds. Options are:
     # eta - 0.5, 50, 100, 500, 1000
@@ -921,7 +938,7 @@ if __name__ == "__main__":
                          }
 
 
-    circuit_data = True # whether circuit level or code cap data is desired
+    circuit_data = False # whether circuit level or code cap data is desired
     corr_decoding = True # whether to get data for correlated decoding (eta plot) or circuit level (X/Z mem)
 
     
@@ -947,7 +964,7 @@ if __name__ == "__main__":
             output_file = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/xz_corr_err_data.csv'
 
     
-    get_data_DCC(circuit_data, corr_decoding, "code_cap", d_list, p_list=p_list, p_th_init_d=None, pymatch_corr=True)
+    # get_data_DCC(circuit_data, corr_decoding, "code_cap", d_list, p_list=p_list, p_th_init_d=None, pymatch_corr=True)
 
     # run this to get data from the dcc
     # write_data(num_shots, d_list, l, p_list, eta, task_id, corr_type, circuit_data=circuit_data, noise_model="code_cap", cd_type="XZZXonSqu")
@@ -958,7 +975,7 @@ if __name__ == "__main__":
 
 
 
-    # df = pd.read_csv(output_file)
+    df = pd.read_csv(output_file)
     # df_filtered = df[(df['CD_type'] == CD_type) & (df['l'] == l) & (df['eta'] == eta) & (df['num_shots'] == num_shots) & (df['noise_model'] == noise_model)]
     # print(df_filtered.shape)
     # print(len(df_filtered))
@@ -1038,9 +1055,9 @@ if __name__ == "__main__":
 
     # threshold, confidence = get_threshold(df, p_th_init, p_diff, l, eta, corr_type)
     # print(threshold, confidence)
-
-    # threshold_plot(df, 0.123, 0.03, 0.75, 5, num_shots, "CORR_XZ", output_file, loglog=True, averaging=True,show_threshold=True)
-    # full_error_plot(df_filtered, eta, l, num_shots, error_type, output_file, loglog=False, averaging=True, circuit_level=circuit_data)
+    
+    threshold_plot(df, 0.16, 0.03, 0.5, 2, num_shots, "CORR_XZ", output_file, loglog=True, averaging=True,show_threshold=True)
+    # full_error_plot(df, eta, l, num_shots, error_type, output_file, loglog=False, averaging=True, circuit_level=circuit_data)
 
 
 
