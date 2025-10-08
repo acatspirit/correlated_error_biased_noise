@@ -70,7 +70,7 @@ class CorrelatedDecoder:
         return errors
     
     def test_error(self, error_x, error_z):
-        
+
         M_x = Matching.from_check_matrix(self.H_x)
         M_z = Matching.from_check_matrix(self.H_z)
         
@@ -661,10 +661,11 @@ def eta_threshold_plot(eta_df):
     l_colors = [cmap(val) for val in color_values]
 
     # Create figure and 2-column grid
-    fig, axes = plt.subplots(num_rows, 2, figsize=(12, 2 * num_rows), sharex=True, sharey=True)
+    # fig, axes = plt.subplots(num_rows, 2, figsize=(12, 2 * num_rows), sharex=True, sharey=True)
+    fig, axes = plt.subplots(num_rows, 3, figsize=(18, 2 * num_rows), sharex=True, sharey=True) # for including total
 
     for row_idx, l in enumerate(l_values):
-        for col_idx, error_type in enumerate(['CORR_XZ', 'CORR_ZX']):
+        for col_idx, error_type in enumerate(['CORR_XZ', 'CORR_ZX', 'TOTAL']):
             ax = axes[row_idx, col_idx] if num_rows > 1 else axes[col_idx]
             mask = (eta_df['l'] == l) & (eta_df['error_type'] == error_type)
             df_filtered = eta_df[mask].sort_values(by='eta')
@@ -800,6 +801,32 @@ def get_thresholds_from_data_exactish(num_shots, p_th_init_dict):
     """
     all_thresholds_df = pd.read_csv('/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/all_thresholds_per_eta_elongated.csv')
     threshold_d = {}
+
+    # added some stuff for total thresholds that shouldn't be widely used
+    # p_min_dict = {}
+    # corr_pair = ["CORR_XZ","CORR_ZX"]
+    # for key in p_th_init_dict.keys():
+    #     l, eta, corr_type = key
+    #     alt_corr_type = corr_pair[(corr_pair.index(corr_type) + 1)%2]
+    #     threshold_inits = [p_th_init_dict[key],p_th_init_dict[l,eta,alt_corr_type]]
+    #     p_min_dict[l,eta, corr_type if threshold_inits.index(min(threshold_inits)) == 0 else alt_corr_type] = min(threshold_inits)
+
+    # for key in p_min_dict.keys():
+    #     l, eta, corr_type = key
+    #     print("l,eta, corr_type", l,eta, corr_type)
+
+    #     if corr_type == "CORR_ZX":
+    #         output_file = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/zx_corr_err_data.csv'
+    #     elif corr_type == "CORR_XZ":
+    #         output_file = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/xz_corr_err_data.csv'
+    #     df = pd.read_csv(output_file)
+    #     # threshold_d = {}
+
+    #     p_th_init = p_min_dict[key]
+    #     threshold,std_error = get_threshold(df, p_th_init, 0.03, l, eta, corr_type, num_shots)
+    #     threshold_d[key] = threshold
+    #     all_thresholds_df = pd.concat([all_thresholds_df,pd.DataFrame({'l':l,'eta':eta, 'error_type':"TOTAL", 'pth':threshold, 'stderr':std_error}, index=[0])], ignore_index=True)
+
     for key in p_th_init_dict.keys():
         l, eta, corr_type = key
         print("l,eta,corr_type", l,eta, corr_type)
@@ -881,15 +908,15 @@ if __name__ == "__main__":
     # for plotting
     l = 2
     eta = 0.5
-    corr_type = "CORR_XZ"
-    error_type = "CORR_XZ"
-    num_shots = 10000
+    corr_type = "CORR_ZX"
+    error_type = "CORR_ZX"
+    num_shots = 41666
     noise_model = "code_cap"
     CD_type = "SC"
     
     # unscaled X and Z mem thresholds. Options are:
     # eta - 0.5, 50, 100, 500, 1000
-    # CD_type - XZZXonSqu, ZXXZonSqu, None (for some reason only took XZZX on squares)
+    # CD_type - XZZXonSqu, ZXXZonSqu, SC
     # l - 2, 3, 4, 5, 6
     # d - 11, 13, 15, 17, 19
     # noise model - code cap
@@ -975,28 +1002,28 @@ if __name__ == "__main__":
 
 
 
-    df = pd.read_csv(output_file)
+    # df = pd.read_csv(output_file)
     # df_filtered = df[(df['CD_type'] == CD_type) & (df['l'] == l) & (df['eta'] == eta) & (df['num_shots'] == num_shots) & (df['noise_model'] == noise_model)]
     # print(df_filtered.shape)
     # print(len(df_filtered))
-    # df = pd.read_csv('/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/all_thresholds_per_eta_elongated.csv', index_col=False)
+    df = pd.read_csv('/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/all_thresholds_per_eta_elongated.csv', index_col=False)
     # print(df)
     
-    # eta_threshold_plot(df)
+    eta_threshold_plot(df)
 
-    # threshold_d = {(2,0.5, "CORR_ZX"):0.157, (2,1, "CORR_ZX"):0.149, (2,5, "CORR_ZX"):0.110,
-    #                   (3,0.5, "CORR_ZX"):0.177, (3,1, "CORR_ZX"):0.178, (3,5, "CORR_ZX"):0.155,
-    #                   (4,0.5, "CORR_ZX"):0.146, (4,1, "CORR_ZX"):0.173, (4,5, "CORR_ZX"):0.187,
-    #                   (5,0.5, "CORR_ZX"):0.120, (5,1, "CORR_ZX"):0.148, (5,5, "CORR_ZX"):0.210,
-    #                   (6,0.5, "CORR_ZX"):0.093, (6,1, "CORR_ZX"):0.109, (6,5, "CORR_ZX"):0.235,
-    #                   (2,0.5, "CORR_XZ"):0.160, (2,1, "CORR_XZ"):0.167, (2,5, "CORR_XZ"):0.120,
-    #                   (3,0.5, "CORR_XZ"):0.128, (3,1, "CORR_XZ"):0.165, (3,5, "CORR_XZ"):0.160,
-    #                   (4,0.5, "CORR_XZ"):0.090, (4,1, "CORR_XZ"):0.145, (4,5, "CORR_XZ"):0.190,
-    #                   (5,0.5, "CORR_XZ"):0.075, (5,1, "CORR_XZ"):0.110, (5,5, "CORR_XZ"):0.210,
-    #                   (6,0.5, "CORR_XZ"):0.065, (6,1, "CORR_XZ"):0.090, (6,5, "CORR_XZ"):0.230
+    # threshold_d = {(2,1.67, "CORR_XZ"): 0.127, (2,1.67, "CORR_ZX"):0.148, (2,3, "CORR_XZ"):0.127, (2,3, "CORR_ZX"):0.116,
+    #                     (2,4.26, "CORR_XZ"):0.121, (2,4.26, "CORR_ZX"):0.113, (2,5.89, "CORR_XZ"):0.116, (2,5.89, "CORR_ZX"):0.109,
+    #                     (3,1.67, "CORR_XZ"): 0.176, (3,1.67, "CORR_ZX"):0.179, (3,3, "CORR_XZ"):0.169, (3,3, "CORR_ZX"):0.164,
+    #                     (3,4.26, "CORR_XZ"):0.160, (3,4.26, "CORR_ZX"):0.158, (3,5.89, "CORR_XZ"):0.156, (3,5.89, "CORR_ZX"):0.152,
+    #                     (4,1.67, "CORR_XZ"): 0.181, (4,1.67, "CORR_ZX"):0.183, (4,3, "CORR_XZ"):0.196, (4,3, "CORR_ZX"):0.197,
+    #                     (4,4.26, "CORR_XZ"):0.192, (4,4.26, "CORR_ZX"):0.192, (4,5.89, "CORR_XZ"):0.185, (4,5.89, "CORR_ZX"):0.185,
+    #                     (5,1.67, "CORR_XZ"): 0.178, (5,1.67, "CORR_ZX"):0.176, (5,3, "CORR_XZ"):0.206, (5,3, "CORR_ZX"):0.208,
+    #                     (5,4.26, "CORR_XZ"):0.211,(5,4.26, "CORR_ZX"):0.212, (5,5.89, "CORR_XZ"):0.205,(5,5.89, "CORR_ZX"):0.207,
+    #                     (6,1.67, "CORR_XZ"): 0.161, (6,1.67, "CORR_ZX"):0.144, (6,3, "CORR_XZ"): 0.212, (6,3, "CORR_ZX"):0.215,
+    #                     (6,4.26, "CORR_XZ"): 0.225, (6,4.26, "CORR_ZX"):0.226, (6,5.89, "CORR_XZ"): 0.227, (6,5.89, "CORR_ZX"):0.229
     #                     }
 
-    # get_thresholds_from_data_exactish(30303, threshold_d)
+    # get_thresholds_from_data_exactish(41666, threshold_d)
 
 
 
@@ -1056,7 +1083,7 @@ if __name__ == "__main__":
     # threshold, confidence = get_threshold(df, p_th_init, p_diff, l, eta, corr_type)
     # print(threshold, confidence)
     
-    threshold_plot(df, 0.16, 0.03, 0.5, 2, num_shots, "CORR_XZ", output_file, loglog=True, averaging=True,show_threshold=True)
+    # threshold_plot(df,  0.09, 0.03, 0.75, 5, num_shots, "TOTAL", output_file, loglog=True, averaging=True,show_threshold=True)
     # full_error_plot(df, eta, l, num_shots, error_type, output_file, loglog=False, averaging=True, circuit_level=circuit_data)
 
 
