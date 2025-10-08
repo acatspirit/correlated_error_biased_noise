@@ -313,7 +313,7 @@ class CorrelatedDecoder:
             if noise_model == "code_cap":# change this based on the noise model you want
                 circuit = circuit_obj.make_elongated_circuit_from_parity(0,0,0,p,0,0,CD_type=cd_type)  
             elif noise_model == "phenom":
-                circuit = circuit_obj.make_elongated_circuit_from_parity(p,0,0,p,0,0,CD_type=cd_type)
+                circuit = circuit_obj.make_elongated_circuit_from_parity(0,p,p,0,0,0,CD_type=cd_type) # check the plots that matched pymatching to get error model right, before meas flip and data qubit pauli between rounds
             elif noise_model == "circuit_level":
                 circuit = circuit_obj.make_elongated_circuit_from_parity(p,0,p,0,p,0,CD_type=cd_type)
             else:
@@ -760,7 +760,7 @@ def get_data_DCC(circuit_data, corr_decoding, noise_model, d_list, p_list=None, 
             p_list = np.linspace(p_th_init - 0.03, p_th_init + 0.03, 40)
         write_data(num_shots, d_list, l, p_list, eta, task_id, corr_type, circuit_data=circuit_data, noise_model=noise_model, cd_type=cd_type, pymatch_corr=pymatch_corr)
     if circuit_data and corr_decoding:
-        l_eta_cd_type_arr = list(itertools.product([2,3,4,5,6],[0.5],["SC", "XZZXonSqu", "ZXXZonSqu"]))
+        l_eta_cd_type_arr = list(itertools.product([2,3,4,5,6],[0.75,1,2,3,5,7],["SC"]))
         reps = slurm_array_size//len(l_eta_cd_type_arr) # how many times to run file, num_shots each time
         ind = task_id%len(l_eta_cd_type_arr) # get the index of the task_id in the l_eta__corr_type_arr
         l, eta, cd_type = l_eta_cd_type_arr[ind] # get the l and eta from the task_id, pymatching corr should be doing an erasure channel this whole time, see what happens
@@ -906,13 +906,13 @@ if __name__ == "__main__":
 
 
     # for plotting
-    l = 2
-    eta = 0.5
+    # l = 2
+    # eta = 0.5
     corr_type = "CORR_ZX"
-    error_type = "CORR_ZX"
-    num_shots = 41666
-    noise_model = "code_cap"
-    CD_type = "SC"
+    # error_type = "CORR_ZX"
+    # num_shots = 41666
+    # noise_model = "code_cap"
+    # CD_type = "SC"
     
     # unscaled X and Z mem thresholds. Options are:
     # eta - 0.5, 50, 100, 500, 1000
@@ -962,10 +962,11 @@ if __name__ == "__main__":
                          (6, 100, "X_MEM", "XZZXonSqu", "code_cap"):0.35, (6, 100, "Z_MEM", "XZZXonSqu", "code_cap"):0.133,
                          (6, 500, "X_MEM", "XZZXonSqu", "code_cap"):0.35, (6, 500, "Z_MEM", "XZZXonSqu", "code_cap"):0.13,
                          (6, 1000, "X_MEM", "XZZXonSqu", "code_cap"):0.36, (6, 1000, "Z_MEM", "XZZXonSqu", "code_cap"):0.126,
+                         (2,0.5,"TOTAL_MEM_PY", "XZZXonSqu", "code_cap"):0.00
                          }
 
 
-    circuit_data = False # whether circuit level or code cap data is desired
+    circuit_data = True # whether circuit level or code cap data is desired
     corr_decoding = True # whether to get data for correlated decoding (eta plot) or circuit level (X/Z mem)
 
     
@@ -991,7 +992,7 @@ if __name__ == "__main__":
             output_file = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/xz_corr_err_data.csv'
 
     
-    # get_data_DCC(circuit_data, corr_decoding, "code_cap", d_list, p_list=p_list, p_th_init_d=None, pymatch_corr=True)
+    get_data_DCC(circuit_data, corr_decoding, "code_cap", d_list, p_list=p_list, p_th_init_d=None, pymatch_corr=True)
 
     # run this to get data from the dcc
     # write_data(num_shots, d_list, l, p_list, eta, task_id, corr_type, circuit_data=circuit_data, noise_model="code_cap", cd_type="XZZXonSqu")
@@ -1006,10 +1007,10 @@ if __name__ == "__main__":
     # df_filtered = df[(df['CD_type'] == CD_type) & (df['l'] == l) & (df['eta'] == eta) & (df['num_shots'] == num_shots) & (df['noise_model'] == noise_model)]
     # print(df_filtered.shape)
     # print(len(df_filtered))
-    df = pd.read_csv('/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/all_thresholds_per_eta_elongated.csv', index_col=False)
+    # df = pd.read_csv('/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/all_thresholds_per_eta_elongated.csv', index_col=False)
     # print(df)
     
-    eta_threshold_plot(df)
+    # eta_threshold_plot(df)
 
     # threshold_d = {(2,1.67, "CORR_XZ"): 0.127, (2,1.67, "CORR_ZX"):0.148, (2,3, "CORR_XZ"):0.127, (2,3, "CORR_ZX"):0.116,
     #                     (2,4.26, "CORR_XZ"):0.121, (2,4.26, "CORR_ZX"):0.113, (2,5.89, "CORR_XZ"):0.116, (2,5.89, "CORR_ZX"):0.109,
