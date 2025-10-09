@@ -441,9 +441,14 @@ def write_data(num_shots, d_list, l, p_list, eta, ID, corr_type, circuit_data, n
     # print(f"in write data, ID = {ID}, l = {l}, eta = {eta}, corr_type = {corr_type}, num_shots = {num_shots}, noise_model = {noise_model}, cd_type = {cd_type}")
     data = get_data(num_shots, d_list, l, p_list, eta, corr_type, circuit_data, noise_model=noise_model, cd_type=cd_type, pymatch_corr=pymatch_corr)
     if circuit_data:
-        data_file = f'circuit_data/circuit_level_{ID}.csv'
-        if not os.path.exists('circuit_data/'):
-            os.mkdir('circuit_data')
+        if pymatch_corr:
+            data_file = f'circuit_data/py_corr_{ID}.csv'
+            if not os.path.exists('circuit_data/'):
+                os.mkdir('circuit_data')
+        else:
+            data_file = f'circuit_data/circuit_level_{ID}.csv'
+            if not os.path.exists('circuit_data/'):
+                os.mkdir('circuit_data')
     else:
         data_file = f'corr_err_data/code_cap_{ID}.csv'
         if not os.path.exists('corr_err_data/'):
@@ -762,7 +767,7 @@ def get_data_DCC(circuit_data, corr_decoding, noise_model, d_list, p_list=None, 
             p_list = np.linspace(p_th_init - 0.03, p_th_init + 0.03, 40)
         write_data(num_shots, d_list, l, p_list, eta, task_id, corr_type, circuit_data=circuit_data, noise_model=noise_model, cd_type=cd_type, pymatch_corr=pymatch_corr)
     if circuit_data and corr_decoding:
-        l_eta_cd_type_arr = list(itertools.product([2,3,4,5,6],[0.75,1,2,3,5,7],["SC"]))
+        l_eta_cd_type_arr = list(itertools.product([2,3,4,5,6],[0.75,1,2,3,5,7],["XZZXonSqu", "ZXXZonSqu"]))
         reps = slurm_array_size//len(l_eta_cd_type_arr) # how many times to run file, num_shots each time
         ind = task_id%len(l_eta_cd_type_arr) # get the index of the task_id in the l_eta__corr_type_arr
         l, eta, cd_type = l_eta_cd_type_arr[ind] # get the l and eta from the task_id, pymatching corr should be doing an erasure channel this whole time, see what happens
@@ -909,10 +914,10 @@ if __name__ == "__main__":
 
     # for plotting
     # l = 5
-    # eta = 0.5
-    corr_type = "CORR_ZX"
+    # eta = 0.75
+    corr_type = "TOTAL_MEM_PY"
     # error_type = "TOTAL_MEM_PY"
-    # num_shots = 1515
+    # num_shots = 3030
     # noise_model = "code_cap"
     # CD_type = "SC"
     
@@ -976,7 +981,7 @@ if __name__ == "__main__":
 
 
     circuit_data = True # whether circuit level or code cap data is desired
-    corr_decoding = False # whether to get data for correlated decoding (eta plot) or circuit level (X/Z mem)
+    corr_decoding = True # whether to get data for correlated decoding (eta plot) or circuit level (X/Z mem)
 
     
 
@@ -985,11 +990,12 @@ if __name__ == "__main__":
     # p_th_init = p_th_init_dict[(l,eta,corr_type)]
     # p_th_init = 0.158
     # p_list = np.linspace(p_th_init-0.03, p_th_init + 0.03, 40)
-    p_list = np.linspace(0.005, 0.1, 25)
+    p_list = np.linspace(0.05, 0.4, 40)
     
     
     if circuit_data:
         folder_path = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/circuit_data/'
+
         output_file = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/circuit_data.csv'
     #     elif corr_type == "CORR_XZ":
     #         output_file = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/xz_circuit_data.csv'
@@ -1001,7 +1007,7 @@ if __name__ == "__main__":
             output_file = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/xz_corr_err_data.csv'
 
     
-    get_data_DCC(circuit_data, corr_decoding, "phenom", d_list, p_list=p_list, p_th_init_d=None, pymatch_corr=False)
+    get_data_DCC(circuit_data, corr_decoding, "code_cap", d_list, p_list=p_list, p_th_init_d=None, pymatch_corr=True)
 
     # run this to get data from the dcc
     # write_data(num_shots, d_list, l, p_list, eta, task_id, corr_type, circuit_data=circuit_data, noise_model="code_cap", cd_type="XZZXonSqu")
@@ -1014,7 +1020,7 @@ if __name__ == "__main__":
 
     # df = pd.read_csv(output_file)
     # df_filtered = df[(df['CD_type'] == CD_type) & (df['l'] == l) & (df['eta'] == eta) & (df['num_shots'] == num_shots) & (df['noise_model'] == noise_model) & (df['error_type'] == error_type)]
-    # print(df_filtered)
+    # # print(df_filtered)
     # print(len(df_filtered))
     # df = pd.read_csv('/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/all_thresholds_per_eta_elongated.csv', index_col=False)
     # print(df)
