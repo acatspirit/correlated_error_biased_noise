@@ -313,7 +313,7 @@ class CorrelatedDecoder:
             if noise_model == "code_cap":# change this based on the noise model you want
                 circuit = circuit_obj.make_elongated_circuit_from_parity(0,0,0,p,0,0,CD_type=cd_type)  
             elif noise_model == "phenom":
-                circuit = circuit_obj.make_elongated_circuit_from_parity(0,p,p,0,0,0,CD_type=cd_type) # check the plots that matched pymatching to get error model right, before meas flip and data qubit pauli between rounds
+                circuit = circuit_obj.make_elongated_circuit_from_parity(p,0,0,p,0,0,CD_type=cd_type) # check the plots that matched pymatching to get error model right, before meas flip and data qubit pauli between rounds
             elif noise_model == "circuit_level":
                 circuit = circuit_obj.make_elongated_circuit_from_parity(p,0,p,0,p,0,CD_type=cd_type)
             else:
@@ -410,7 +410,7 @@ def get_data(num_shots, d_list, l, p_list, eta, corr_type, circuit_data, noise_m
     return data
 
 
-def shots_averaging(num_shots, l, eta, err_type, in_df, file):
+def shots_averaging(num_shots, l, eta, err_type, in_df, CD_type, file):
     """For the inputted number of shots, averages those shots over the array length run on computing cluster.  
         in: num_shots - int, the number of monte carlo shots in the original simulation
             arr_len -  int, the number of jobs / averaging interval desired
@@ -421,7 +421,7 @@ def shots_averaging(num_shots, l, eta, err_type, in_df, file):
     """
     if in_df is None:
         in_data = pd.read_csv(file)
-        data = in_data[(in_data['num_shots'] == num_shots) & (in_data['l'] == l) &(in_data['eta'] == eta) & (in_data['error_type'] == err_type)]
+        data = in_data[(in_data['num_shots'] == num_shots) & (in_data['l'] == l) &(in_data['eta'] == eta) & (in_data['error_type'] == err_type) & (in_data['CD_type'] == CD_type)]
     else:
         data = in_df
     data_mean = data.groupby('p', as_index=False)['num_log_errors'].mean()
@@ -542,7 +542,7 @@ def concat_csv(folder_path, circuit_data):
     for file in data_files:
         os.remove(file)
 
-def full_error_plot(full_df, curr_eta, curr_l, curr_num_shots, corr_type, file, loglog=False, averaging=True, circuit_level=False, plot_by_l=False):
+def full_error_plot(full_df, curr_eta, curr_l, curr_num_shots, corr_type, CD_type, file, loglog=False, averaging=True, circuit_level=False, plot_by_l=False):
     """Make a plot of all 4 errors given a df with unedited contents"""
 
     prob_scale = get_prob_scale(corr_type, curr_eta)
@@ -551,6 +551,7 @@ def full_error_plot(full_df, curr_eta, curr_l, curr_num_shots, corr_type, file, 
     # filtered_df = full_df[(full_df['l'] == curr_l) & (full_df['eta'] == curr_eta) & (full_df['num_shots'] == curr_num_shots)] 
                     # & (df['time_stamp'].apply(lambda x: x[0:10]) == datetime.today().date())
     filtered_df = full_df[(full_df['l'] == curr_l) & (full_df['eta'] == curr_eta)]
+    print(filtered_df.shape)
 
     # Get unique error types and unique d values
     error_types = filtered_df['error_type'].unique()
@@ -578,7 +579,8 @@ def full_error_plot(full_df, curr_eta, curr_l, curr_num_shots, corr_type, file, 
         for d in d_values:
             d_df = error_type_df[error_type_df['d'] == d]
             if averaging:
-                d_df_mean = shots_averaging(curr_num_shots, curr_l, curr_eta, error_type, d_df, file)
+                # to check that this is working, figure out how big this DF is
+                d_df_mean = shots_averaging(curr_num_shots, curr_l, curr_eta, error_type, d_df, CD_type, file)
                 if loglog:
                     ax.loglog(d_df_mean['p']*prob_scale[error_type], d_df_mean['num_log_errors'],  label=f'd={d}')
                     error_bars = 10**(-6)*np.ones(len(d_df_mean['num_log_errors']))
@@ -748,7 +750,7 @@ def get_data_DCC(circuit_data, corr_decoding, noise_model, d_list, p_list=None, 
 
 
     if circuit_data and not corr_decoding: # change this to get different data for circuit level plot
-        l_eta_cd_type_arr = list(itertools.product([2,3,4,5,6],[0.5,5,10,50,100],["SC", "XZZXonSqu", "ZXXZonSqu"]))
+        l_eta_cd_type_arr = list(itertools.product([2,4,6],[0.5,1,5,10,25,50,100],["SC", "XZZXonSqu", "ZXXZonSqu"]))
         reps = slurm_array_size//len(l_eta_cd_type_arr) # how many times to run file, num_shots each time
         ind = task_id%len(l_eta_cd_type_arr) # get the index of the task_id in the l_eta__corr_type_arr
         l, eta, cd_type = l_eta_cd_type_arr[ind] # get the l and eta from the task_id
@@ -906,11 +908,11 @@ if __name__ == "__main__":
 
 
     # for plotting
-    # l = 2
+    # l = 5
     # eta = 0.5
     corr_type = "CORR_ZX"
-    # error_type = "CORR_ZX"
-    # num_shots = 41666
+    # error_type = "TOTAL_MEM_PY"
+    # num_shots = 1515
     # noise_model = "code_cap"
     # CD_type = "SC"
     
@@ -962,12 +964,19 @@ if __name__ == "__main__":
                          (6, 100, "X_MEM", "XZZXonSqu", "code_cap"):0.35, (6, 100, "Z_MEM", "XZZXonSqu", "code_cap"):0.133,
                          (6, 500, "X_MEM", "XZZXonSqu", "code_cap"):0.35, (6, 500, "Z_MEM", "XZZXonSqu", "code_cap"):0.13,
                          (6, 1000, "X_MEM", "XZZXonSqu", "code_cap"):0.36, (6, 1000, "Z_MEM", "XZZXonSqu", "code_cap"):0.126,
-                         (2,0.5,"TOTAL_MEM_PY", "XZZXonSqu", "code_cap"):0.00
+                         (2,0.5,"TOTAL_MEM_PY", "XZZXonSqu", "code_cap"):0.00, (2,0.5,"TOTAL_MEM_PY", "ZXXZonSqu", "code_cap"):0.00,
+                         (2,0.5,"TOTAL_MEM_PY", "SC", "code_cap"):0.00, (3,0.5,"TOTAL_MEM_PY", "XZZXonSqu", "code_cap"):0.00, 
+                         (3,0.5,"TOTAL_MEM_PY", "ZXXZonSqu", "code_cap"):0.00, (3,0.5,"TOTAL_MEM_PY", "SC", "code_cap"):0.00,
+                         (4,0.5,"TOTAL_MEM_PY", "XZZXonSqu", "code_cap"):0.00, (4,0.5,"TOTAL_MEM_PY", "ZXXZonSqu", "code_cap"):0.00,
+                         (4,0.5,"TOTAL_MEM_PY", "SC", "code_cap"):0.00, (5,0.5,"TOTAL_MEM_PY", "XZZXonSqu", "code_cap"):0.00, 
+                         (5,0.5,"TOTAL_MEM_PY", "ZXXZonSqu", "code_cap"):0.00, (5,0.5,"TOTAL_MEM_PY", "SC", "code_cap"):0.00,
+                         (6,0.5,"TOTAL_MEM_PY", "XZZXonSqu", "code_cap"):0.00, (6,0.5,"TOTAL_MEM_PY", "ZXXZonSqu", "code_cap"):0.00,
+                         (6,0.5,"TOTAL_MEM_PY", "SC", "code_cap"):0.00
                          }
 
 
     circuit_data = True # whether circuit level or code cap data is desired
-    corr_decoding = True # whether to get data for correlated decoding (eta plot) or circuit level (X/Z mem)
+    corr_decoding = False # whether to get data for correlated decoding (eta plot) or circuit level (X/Z mem)
 
     
 
@@ -992,7 +1001,7 @@ if __name__ == "__main__":
             output_file = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/xz_corr_err_data.csv'
 
     
-    get_data_DCC(circuit_data, corr_decoding, "code_cap", d_list, p_list=p_list, p_th_init_d=None, pymatch_corr=True)
+    get_data_DCC(circuit_data, corr_decoding, "phenom", d_list, p_list=p_list, p_th_init_d=None, pymatch_corr=False)
 
     # run this to get data from the dcc
     # write_data(num_shots, d_list, l, p_list, eta, task_id, corr_type, circuit_data=circuit_data, noise_model="code_cap", cd_type="XZZXonSqu")
@@ -1004,8 +1013,8 @@ if __name__ == "__main__":
 
 
     # df = pd.read_csv(output_file)
-    # df_filtered = df[(df['CD_type'] == CD_type) & (df['l'] == l) & (df['eta'] == eta) & (df['num_shots'] == num_shots) & (df['noise_model'] == noise_model)]
-    # print(df_filtered.shape)
+    # df_filtered = df[(df['CD_type'] == CD_type) & (df['l'] == l) & (df['eta'] == eta) & (df['num_shots'] == num_shots) & (df['noise_model'] == noise_model) & (df['error_type'] == error_type)]
+    # print(df_filtered)
     # print(len(df_filtered))
     # df = pd.read_csv('/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/all_thresholds_per_eta_elongated.csv', index_col=False)
     # print(df)
@@ -1085,7 +1094,7 @@ if __name__ == "__main__":
     # print(threshold, confidence)
     
     # threshold_plot(df,  0.09, 0.03, 0.75, 5, num_shots, "TOTAL", output_file, loglog=True, averaging=True,show_threshold=True)
-    # full_error_plot(df, eta, l, num_shots, error_type, output_file, loglog=False, averaging=True, circuit_level=circuit_data)
+    # full_error_plot(df_filtered, eta, l, num_shots, error_type, CD_type, output_file, loglog=False, averaging=True, circuit_level=circuit_data)
 
 
 
