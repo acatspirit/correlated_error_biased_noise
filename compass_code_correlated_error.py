@@ -985,7 +985,7 @@ if __name__ == "__main__":
     # p_th_init = p_th_init_dict[(l,eta,corr_type)]
     # p_th_init = 0.158
     # p_list = np.linspace(p_th_init-0.03, p_th_init + 0.03, 40)
-    p_list = np.linspace(0.05, 0.4, 40)
+    p_list = np.linspace(0.005, 0.1, 25)
     
     
     if circuit_data:
