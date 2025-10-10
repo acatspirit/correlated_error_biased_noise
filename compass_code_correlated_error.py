@@ -655,12 +655,13 @@ def threshold_plot(full_df, p_th0, p_range, curr_eta, curr_l, curr_num_shots, co
     plt.show()
 
 
-def eta_threshold_plot(eta_df):
+def eta_threshold_plot(eta_df, cd_type):
     """Make a single figure with a 2-column grid of subplots.
     Each row corresponds to a different `l`, with CORR_XZ on left and CORR_ZX on right.
     """
     l_values = sorted(eta_df['l'].unique())
     num_rows = len(l_values)
+    type_list = ['CORR_XZ', 'CORR_ZX', 'TOTAL', 'TOTAL_PY_CORR']
 
     # Set up colors
     cmap = colormaps['Blues_r']
@@ -669,12 +670,12 @@ def eta_threshold_plot(eta_df):
 
     # Create figure and 2-column grid
     # fig, axes = plt.subplots(num_rows, 2, figsize=(12, 2 * num_rows), sharex=True, sharey=True)
-    fig, axes = plt.subplots(num_rows, 3, figsize=(18, 2 * num_rows), sharex=True, sharey=True) # for including total
+    fig, axes = plt.subplots(num_rows, len(type_list), figsize=(24, 2 * num_rows), sharex=True, sharey=True) # for including total
 
     for row_idx, l in enumerate(l_values):
-        for col_idx, error_type in enumerate(['CORR_XZ', 'CORR_ZX', 'TOTAL']):
+        for col_idx, error_type in enumerate(type_list):
             ax = axes[row_idx, col_idx] if num_rows > 1 else axes[col_idx]
-            mask = (eta_df['l'] == l) & (eta_df['error_type'] == error_type)
+            mask = (eta_df['l'] == l) & (eta_df['error_type'] == error_type) & (eta_df['cd_type'] == cd_type)
             df_filtered = eta_df[mask].sort_values(by='eta')
 
             eta_vals = df_filtered['eta'].to_numpy()
@@ -912,14 +913,14 @@ if __name__ == "__main__":
                         }
 
 
-    # for plotting
-    # l = 5
-    # eta = 0.75
+    # # for plotting
+    # l = 6
+    # eta = 0.5
     corr_type = "TOTAL_MEM_PY"
     # error_type = "TOTAL_MEM_PY"
-    # num_shots = 3030
+    # num_shots = 1515
     # noise_model = "code_cap"
-    # CD_type = "SC"
+    # CD_type = "ZXXZonSqu"
     
     # unscaled X and Z mem thresholds. Options are:
     # eta - 0.5, 50, 100, 500, 1000
@@ -981,7 +982,7 @@ if __name__ == "__main__":
 
 
     circuit_data = True # whether circuit level or code cap data is desired
-    corr_decoding = True # whether to get data for correlated decoding (eta plot) or circuit level (X/Z mem)
+    corr_decoding = False # whether to get data for correlated decoding (eta plot) or circuit level (X/Z mem)
 
     
 
@@ -1007,12 +1008,12 @@ if __name__ == "__main__":
             output_file = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/xz_corr_err_data.csv'
 
     
-    get_data_DCC(circuit_data, corr_decoding, "code_cap", d_list, p_list=p_list, p_th_init_d=None, pymatch_corr=True)
+    # get_data_DCC(circuit_data, corr_decoding, "code_cap", d_list, p_list=p_list, p_th_init_d=None, pymatch_corr=True)
 
     # run this to get data from the dcc
     # write_data(num_shots, d_list, l, p_list, eta, task_id, corr_type, circuit_data=circuit_data, noise_model="code_cap", cd_type="XZZXonSqu")
     # run this once you have data and want to combo it to one csv
-    # concat_csv(folder_path, circuit_data)
+    concat_csv(folder_path, circuit_data)
 
 
 
@@ -1020,12 +1021,12 @@ if __name__ == "__main__":
 
     # df = pd.read_csv(output_file)
     # df_filtered = df[(df['CD_type'] == CD_type) & (df['l'] == l) & (df['eta'] == eta) & (df['num_shots'] == num_shots) & (df['noise_model'] == noise_model) & (df['error_type'] == error_type)]
-    # # print(df_filtered)
+    # print(df_filtered)
     # print(len(df_filtered))
     # df = pd.read_csv('/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/all_thresholds_per_eta_elongated.csv', index_col=False)
     # print(df)
     
-    # eta_threshold_plot(df)
+    # eta_threshold_plot(df, "SC")
 
     # threshold_d = {(2,1.67, "CORR_XZ"): 0.127, (2,1.67, "CORR_ZX"):0.148, (2,3, "CORR_XZ"):0.127, (2,3, "CORR_ZX"):0.116,
     #                     (2,4.26, "CORR_XZ"):0.121, (2,4.26, "CORR_ZX"):0.113, (2,5.89, "CORR_XZ"):0.116, (2,5.89, "CORR_ZX"):0.109,
