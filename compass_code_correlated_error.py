@@ -776,7 +776,25 @@ def get_prob_scale(corr_type, eta):
     return prob_scale
 
 
-def get_data_DCC(circuit_data, corr_decoding, noise_model, d_list, p_list=None, p_th_init_d=None, pymatch_corr=False):
+def get_data_DCC(circuit_data, corr_decoding, noise_model, d_list, l_list, eta_list, cd_list, corr_list, total_num_shots, p_list=None, p_th_init_d=None, pymatch_corr=False):
+    """ Function to get the data from the DCC using parallel SLURM arrays. Each array task will get data for a specific (l, eta, corr_type) or (l, eta, cd_type) combo.
+        The total number of shots will be split evenly across the array tasks so that the total number of shots is reached upon averaging. 
+        in: circuit_data - boolean, whether to get data from circuit or vector code cap
+            corr_decoding - boolean, whether to get data from correlated decoding or not
+            noise_model - string, the noise model to use for circuit data, either "code_cap", "phenom", or "circuit_level"
+            d_list - list of distances to run
+            l_list - list of elongations to run
+            eta_list - list of noise biases to run
+            cd_list - list of clifford deformations to run, either "SC", "XZZXonSqu", or "ZXXZonSqu". Not to be used if corr_decoding is True and circuit_data is False.
+            corr_list - list of correlation types to run, either "CORR_XZ" or "CORR_ZX". Only to be used if corr_decoding is True and circuit_data is False.
+            total_num_shots - int, the total number of shots after averaging. Each SLURM array task will run total_num_shots/reps shots.
+            p_list - list of physical error rates to scan over. If None, will be set based on p_th_init_d
+            p_th_init_d - dictionary with keys (l, eta, corr_type) or (l, eta, cd_type) and values the initial guess for the threshold. If None, will use a default value based on eta
+            pymatch_corr - boolean, whether to use pymatching correlated decoder for circuit data
+        out: no output, but will write data to a CSV file for each SLURM array task. Run concat_csv after all tasks are complete to combine the CSV files into output_file.
+    """
+
+
     task_id = int(os.environ['SLURM_ARRAY_TASK_ID']) # will iter over the total slurm array size and points to where you are 
     slurm_array_size = int(os.environ['SLURM_ARRAY_TASK_MAX']) # the size of the slurm array, used to determine how many tasks to run, currently 1000
 
@@ -785,11 +803,11 @@ def get_data_DCC(circuit_data, corr_decoding, noise_model, d_list, p_list=None, 
 
 
     if circuit_data and not corr_decoding: # change this to get different data for circuit level plot
-        l_eta_cd_type_arr = list(itertools.product([2],[0.5,1,5,10,25,50,100],["SC", "XZZXonSqu"]))
+        l_eta_cd_type_arr = list(itertools.product(l_list,eta_list,cd_list))
         reps = slurm_array_size//len(l_eta_cd_type_arr) # how many times to run file, num_shots each time
         ind = task_id%len(l_eta_cd_type_arr) # get the index of the task_id in the l_eta__corr_type_arr
         l, eta, cd_type = l_eta_cd_type_arr[ind] # get the l and eta from the task_id
-        num_shots = int(1e6//reps) # number of shots to sample
+        num_shots = int(total_num_shots//reps) # number of shots to sample
         print("l,eta,cd_type", l,eta, cd_type)
         corr_type = "None"
         if p_th_init_d is not None:
@@ -797,11 +815,11 @@ def get_data_DCC(circuit_data, corr_decoding, noise_model, d_list, p_list=None, 
             p_list = np.linspace(p_th_init - 0.03, p_th_init + 0.03, 40)
         write_data(num_shots, d_list, l, p_list, eta, task_id, corr_type, circuit_data=circuit_data, noise_model=noise_model, cd_type=cd_type, pymatch_corr=pymatch_corr)
     if circuit_data and corr_decoding:
-        l_eta_cd_type_arr = list(itertools.product([2,3,4,5,6],[0.75,1,2,3,5,7],["XZZXonSqu", "ZXXZonSqu"]))
+        l_eta_cd_type_arr = list(itertools.product(l_list,eta_list,cd_list))
         reps = slurm_array_size//len(l_eta_cd_type_arr) # how many times to run file, num_shots each time
         ind = task_id%len(l_eta_cd_type_arr) # get the index of the task_id in the l_eta__corr_type_arr
         l, eta, cd_type = l_eta_cd_type_arr[ind] # get the l and eta from the task_id, pymatching corr should be doing an erasure channel this whole time, see what happens
-        num_shots = int(1e5//reps) # number of shots to sample
+        num_shots = int(total_num_shots//reps) # number of shots to sample
         print("l,eta,cd_type", l,eta, cd_type)
         corr_type = "None"
         if p_th_init_d is not None:
@@ -810,14 +828,14 @@ def get_data_DCC(circuit_data, corr_decoding, noise_model, d_list, p_list=None, 
         write_data(num_shots, d_list, l, p_list, eta, task_id, corr_type, circuit_data=circuit_data, noise_model=noise_model, cd_type=cd_type, pymatch_corr=pymatch_corr)
 
     if corr_decoding and not circuit_data: # change this to get different data for eta plot
-        l_eta_corr_type_arr = list(itertools.product([2,3,4,5,6],[1.67,3,4.26,5.89], ["CORR_XZ", "CORR_ZX"])) # list of tuples (l, eta, corr_type), currently 40
+        l_eta_corr_type_arr = list(itertools.product(l_list, eta_list, corr_list)) # list of tuples (l, eta, corr_type), currently 40
         reps = slurm_array_size//len(l_eta_corr_type_arr) # how many times to run file, num_shots each time
         ind = task_id%len(l_eta_corr_type_arr) # get the index of the task_id in the l_eta__corr_type_arr
         l, eta, corr_type = l_eta_corr_type_arr[ind] # get the l and eta from the task_id
         if p_th_init_d is not None:
             p_th_init = p_th_init_d[(l, eta, corr_type)]
             p_list = np.linspace(p_th_init - 0.03, p_th_init + 0.03, 40)
-        num_shots = int(1e6//reps) # number of shots to sample
+        num_shots = int(total_num_shots//reps) # number of shots to sample
         cd_type = "SC"
         noise_model = "code_cap"
         print("l,eta,corr_type", l,eta, corr_type)
@@ -941,35 +959,6 @@ if __name__ == "__main__":
                         (6,4.26, "CORR_XZ"): 0.225, (6,4.26, "CORR_ZX"):0.226, (6,5.89, "CORR_XZ"): 0.227, (6,5.89, "CORR_ZX"):0.229
                         }
 
-
-    # for plotting
-    # l = 6
-    # eta = 100
-    corr_type = "TOTAL_MEM"
-    error_type = "TOTAL_MEM"
-    # num_shots = 66666
-    noise_model = "phenom"
-    CD_type = "ZXXZonSqu"
-    # corr_type_list = ['CORR_XZ', 'CORR_ZX', 'TOTAL', 'TOTAL_PY_CORR']
-    corr_type_list = ['TOTAL']
-
-    # SC
-    # XZZXonSqu
-    # ZXXZonSqu
-    
-    # unscaled X and Z mem thresholds. Options are:
-    # eta - 0.5, 50, 100, 500, 1000
-    # CD_type - XZZXonSqu, ZXXZonSqu, SC
-    # l - 2, 3, 4, 5, 6
-    # d - 11, 13, 15, 17, 19
-    # noise model - code cap
-    # error types - X_MEM and Z_MEM
-    # num_shots - 111111
-    # in order of l, eta, mem type, cd_type, noise model
-
-  
-
-
     p_th_init_dict_CL = {(2, 0.5, "X_MEM", "XZZXonSqu", "code_cap"):0.11, (2, 0.5, "Z_MEM", "XZZXonSqu", "code_cap"):0.11,
                          (2, 5, "X_MEM", "XZZXonSqu", "code_cap"):0.17, (2, 5, "Z_MEM", "XZZXonSqu", "code_cap"):0.16,
                          (2, 10, "X_MEM", "XZZXonSqu", "code_cap"):0.19, (2, 10, "Z_MEM", "XZZXonSqu", "code_cap"):0.19,
@@ -1014,12 +1003,11 @@ if __name__ == "__main__":
                          (6,0.5,"TOTAL_MEM_PY", "XZZXonSqu", "code_cap"):0.00, (6,0.5,"TOTAL_MEM_PY", "ZXXZonSqu", "code_cap"):0.00,
                          (6,0.5,"TOTAL_MEM_PY", "SC", "code_cap"):0.00
                          }
-
-
-    circuit_data = True # whether circuit level or code cap data is desired
-    corr_decoding = False # whether to get data for correlated decoding (eta plot) or circuit level (X/Z mem)
-
     
+    # parameters
+    circuit_data = True # whether circuit level or code cap data is desired
+    corr_decoding = False # whether to get data for correlated decoding (corrxz or corrzx), or circuit level (X/Z mem or X/Z mem py)
+        
 
     # simulation
     d_list = [11,13,15,17,19]
@@ -1027,8 +1015,23 @@ if __name__ == "__main__":
     # p_th_init = 0.158
     # p_list = np.linspace(p_th_init-0.03, p_th_init + 0.03, 40)
     p_list = np.linspace(0.001, 0.15, 40)
-    
-    
+
+    # for plotting / getting data
+    # l = 6
+    # eta = 100
+    l_list = [2,3,4,5,6]
+    eta_list = [0.5, 1, 5, 10, 50, 100, 500, 1000]
+    cd_list = ["XZZXonSqu", "ZXXZonSqu", "SC"]
+    total_num_shots = 1e6
+    corr_type = "TOTAL_MEM" # which type of correlation to use, depending on the type of decoder
+    error_type = "TOTAL_MEM" # which type of error to plot
+    # num_shots = 66666
+    noise_model = "phenom"
+    CD_type = "ZXXZonSqu"
+    corr_list = ['CORR_XZ', 'CORR_ZX']
+    # corr_type_list = ['CORR_XZ', 'CORR_ZX', 'TOTAL', 'TOTAL_PY_CORR']
+    corr_type_list = ['TOTAL']  
+
     if circuit_data:
         folder_path = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/circuit_data/'
 
@@ -1042,112 +1045,13 @@ if __name__ == "__main__":
         elif corr_type == "CORR_XZ":
             output_file = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/xz_corr_err_data.csv'
 
-    
-    # get_data_DCC(circuit_data, corr_decoding, "phenom", d_list, p_list=p_list, p_th_init_d=None, pymatch_corr=False)
+
 
     # run this to get data from the dcc
-    # write_data(num_shots, d_list, l, p_list, eta, task_id, corr_type, circuit_data=circuit_data, noise_model="code_cap", cd_type="XZZXonSqu")
+    get_data_DCC(circuit_data, corr_decoding, "phenom", d_list, l_list, eta_list, cd_list, p_list=p_list, p_th_init_d=None, pymatch_corr=False)
+
     # run this once you have data and want to combo it to one csv
     # concat_csv(folder_path, circuit_data)
 
 
 
-
-
-    # df = pd.read_csv(output_file)
-    # df_filtered = df[(df['CD_type'] == CD_type) & (df['l'] == l) & (df['eta'] == eta) & (df['num_shots'] == num_shots) & (df['noise_model'] == noise_model) & (df['error_type'] == error_type)]
-    # print(df_filtered)
-    # print(len(df_filtered))
-    df = pd.read_csv('/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/all_thresholds_per_eta_elongated.csv', index_col=False,encoding='utf-8-sig', names=[
-    'l', 'eta', 'error_type', 'pth', 'stderr', 'cd_type', 'noise_model'
-], skiprows=1)
-    # print(df)
-    # print(df.columns.to_list())
-    
-    
-    eta_threshold_plot(df, CD_type, corr_type_list, noise_model)
-
-    # threshold_d = {(2,1.67, "CORR_XZ"): 0.127, (2,1.67, "CORR_ZX"):0.148, (2,3, "CORR_XZ"):0.127, (2,3, "CORR_ZX"):0.116,
-    #                     (2,4.26, "CORR_XZ"):0.121, (2,4.26, "CORR_ZX"):0.113, (2,5.89, "CORR_XZ"):0.116, (2,5.89, "CORR_ZX"):0.109,
-    #                     (3,1.67, "CORR_XZ"): 0.176, (3,1.67, "CORR_ZX"):0.179, (3,3, "CORR_XZ"):0.169, (3,3, "CORR_ZX"):0.164,
-    #                     (3,4.26, "CORR_XZ"):0.160, (3,4.26, "CORR_ZX"):0.158, (3,5.89, "CORR_XZ"):0.156, (3,5.89, "CORR_ZX"):0.152,
-    #                     (4,1.67, "CORR_XZ"): 0.181, (4,1.67, "CORR_ZX"):0.183, (4,3, "CORR_XZ"):0.196, (4,3, "CORR_ZX"):0.197,
-    #                     (4,4.26, "CORR_XZ"):0.192, (4,4.26, "CORR_ZX"):0.192, (4,5.89, "CORR_XZ"):0.185, (4,5.89, "CORR_ZX"):0.185,
-    #                     (5,1.67, "CORR_XZ"): 0.178, (5,1.67, "CORR_ZX"):0.176, (5,3, "CORR_XZ"):0.206, (5,3, "CORR_ZX"):0.208,
-    #                     (5,4.26, "CORR_XZ"):0.211,(5,4.26, "CORR_ZX"):0.212, (5,5.89, "CORR_XZ"):0.205,(5,5.89, "CORR_ZX"):0.207,
-    #                     (6,1.67, "CORR_XZ"): 0.161, (6,1.67, "CORR_ZX"):0.144, (6,3, "CORR_XZ"): 0.212, (6,3, "CORR_ZX"):0.215,
-    #                     (6,4.26, "CORR_XZ"): 0.225, (6,4.26, "CORR_ZX"):0.226, (6,5.89, "CORR_XZ"): 0.227, (6,5.89, "CORR_ZX"):0.229
-    #                     }
-
-    # get_thresholds_from_data_exactish(41666, threshold_d)
-
-
-
-    # df = df[(df['num_shots'] == num_shots) & (df['eta'] == eta)]
-
-    # threshold_plot(df, .09, 0.03, eta, l, num_shots, error_type, output_file, loglog=True, averaging=True, show_threshold=True)
-
-
-    # # Group by p, d, l and sum the num_log_errors to create 'tot_mem'
-    # df_tot = df.groupby(['p', 'd', 'l'], as_index=False)['num_log_errors'].sum()
-
-    # d_list = sorted(df_tot['d'].unique())   # e.g., [7, 9, 11]
-    # l_list = sorted(df_tot['l'].unique())   # e.g., [2, 3, 4]
-
-    # fig, axes = plt.subplots(1, len(d_list), figsize=(15, 4), sharex=True, sharey=True)
-
-    # # Ensure axes is always iterable
-    # if len(d_list) == 1:
-    #     axes = [axes]
-
-    # for col, d in enumerate(d_list):
-    #     ax = axes[col]
-    #     d_df = df_tot[df_tot['d'] == d]
-    #     for l in l_list:
-    #         l_df = d_df[d_df['l'] == l].sort_values(by='p')
-
-    #         # If you're still using a custom averaging function, apply it here:
-    #         l_df_averaged = shots_averaging(num_shots, l, eta, corr_type, l_df, output_file)
-    #         l_df_averaged = l_df_averaged.sort_values(by='p')
-    #         # ax.plot(l_df_averaged['p'], l_df_averaged['num_log_errors'], ...)
-
-    #         ax.plot(l_df_averaged['p'], l_df_averaged['num_log_errors'], label=rf"$n = {d},\ \ell = {l}$", marker='o')
-
-    #     ax.set_title(f"$n = {d}$", fontsize=16)
-    #     ax.set_xlabel(r"$p_i$", fontsize=14)
-    #     if col == 0:
-    #         ax.set_ylabel(r"$p_L$", fontsize=14)
-
-    #     ax.grid(True)
-    #     ax.legend(fontsize=9)
-
-    # fig.suptitle(f'Logical Error Rates ($X_{{mem}} + Z_{{mem}}$) for $\\eta = {eta}$ and num_shots = {num_shots}', fontsize=18)
-    # fig.tight_layout(rect=[0, 0.03, 1, 0.90])
-    # plt.show()
-
-
-
-    # df_larger_p = df[df['p'] > 0.05]
-    # # df['time_stamp'] = pd.to_datetime(df['time_stamp'])
-    # # today = datetime.now().date()
-    # # df_today = df[df['time_stamp'].dt.date != today]
-
-    # # print(df['time_stamp'].dtype)
-    # p_th_init = 0.187
-    # p_diff = 0.03
-
-    # threshold, confidence = get_threshold(df, p_th_init, p_diff, l, eta, corr_type)
-    # print(threshold, confidence)
-    
-    # threshold_plot(df,  0.09, 0.03, 0.75, 5, num_shots, "TOTAL", output_file, loglog=True, averaging=True,show_threshold=True)
-    # full_error_plot(df_filtered, eta, l, num_shots, error_type, CD_type, output_file, loglog=False, averaging=True, circuit_level=circuit_data)
-
-
-
-#################################################################
-# l=2 # eta=0.50 # pzx=0.164 # pthr=0.143 # pz=0.095 # px=0.095 #
-# l=3 # eta=1.67 # pzx=0.163 # pthr=0.174 # pz=0.142 # px=0.065 #
-# l=4 # eta=3.00 # pzx=0.181 # pthr=0.199 # pz=0.174 # px=0.049 #
-# l=5 # eta=4.26 # pzx=0.203 # pthr=0.217 # pz=0.195 # px=0.041 #
-# l=6 # eta=5.89 # pzx=0.259 # pthr=0.221 # pz=0.216 # px=0.033 # from 1000000 shots
-#################################################################
