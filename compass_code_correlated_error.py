@@ -1048,10 +1048,10 @@ if __name__ == "__main__":
 
 
     # run this to get data from the dcc
-    get_data_DCC(circuit_data, corr_decoding, "phenom", d_list, l_list, eta_list, cd_list, p_list=p_list, p_th_init_d=None, pymatch_corr=False)
+    # get_data_DCC(circuit_data, corr_decoding, "phenom", d_list, l_list, eta_list, cd_list, p_list=p_list, p_th_init_d=None, pymatch_corr=False)
 
     # run this once you have data and want to combo it to one csv
-    # concat_csv(folder_path, circuit_data)
+    concat_csv(folder_path, circuit_data)
 
 
 
