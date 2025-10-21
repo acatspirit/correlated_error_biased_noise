@@ -206,46 +206,90 @@ class CorrelatedDecoder:
         return num_errors_x, num_errors_z
     
     
-    def probability_edge_mapping(self, matching):
+    def probability_edge_mapping(self, edge_dict):
         """ Maps the probabilities to the corresponding edge weight in the matching graph. Takes into
             account the 'type' of qubit, whether it is clifford deformed or not.
         """
         return
     
-    def get_cond_prob_edges(self, dem):
-        """ Creates a dictionary mapping the edge index to the joint probability of that edge.
+    def get_joint_prob_dict(self, dem):
+        """ Creates two dictionaries keeping track of the probabilities of hyperedges in the DEM
         """
 
-        probs_dem = {}
+        joint_probabilities = {}
 
         for inst in dem:
             detectors = inst.detectors
             observable = inst.observables
 
             if len(detectors) > 2: # hyperedge
+                joint_probabilities[tuple(detectors)] = inst.probability
+            else:
+                # do I want to set the probability to 0? If a mechanism and a hyperedge both connect to the same detectors, I want to only consider the hyperedge
                 pass
+
         return 
+    
+    def get_conditional_probabilities(self, joint_prob_dict, matchgraph):
+        """ Given a joint probability dictionary, calculates the conditional probabilities for each hyperedge
+        """
+        return
 
 
 
     def decoding_failures_correlated_circuit_level(self, circuit, p, shots):
         """
-        Finds the number of logical errors after decoding from a circuit level noise model.
+        Finds the number of logical errors given a circuit using correlated decoding. Uses pymatching's correlated decoding approach, inspired by
+        papers cited in the README.
+        :param circuit: stim.Circuit object, the circuit to decode
+        :param p: physical error rate
+        :param shots: number of shots to sample
+        :return: number of logical errors
         """
 
-        # get the DEM and decompose the errors
-        dem = circuit.detector_error_model()
+        # 
+        # Get the edge data for correlated decoding
+        #
 
-        # log the "y" detectors / check if the DEM instruction is a hyperedge. If it is, add to the y_detectors list
-        y_detectors = []
-        # for inst in enumerate(dem):
-        #     if 
+        # get the DEM and decompose the errors, get the matching graph
+        dem = circuit.detector_error_model(decompose_errors=True) 
+        matchgraph = Matching.from_detector_error_model(dem, enable_correlations=False)
 
-        # make a matching graph for the DEM
-        # use the weights to update the weight probabilities of the Y error detectors
-        # make another matching graph with the updated weights
-        # decode the syndromes with the new matching graph
-        return 
+        # get the joint probabilities table of the dem hyperedges
+        joint_prob_dict = self.get_joint_prob_dict(dem)
+        
+        # calculate the conditional probabilities based on joint probablities and marginal probabilities 
+        cond_prob_dict = self.get_conditional_probabilities(joint_prob_dict, matchgraph)
+        cond_weights = self.probability_edge_mapping(cond_prob_dict)
+
+        
+        
+        #
+        # Decode the circuit
+        #
+        
+        # first round of decoding
+        # get the syndromes and observable flips
+        sampler = circuit.compile_detector_sampler(seed=42)
+        syndrome, observable_flips = sampler.sample(shots, separate_observables=True)
+        corrections = matchgraph.decode_batch(syndrome, enable_correlations=False)
+
+        updated_weights = matchgraph.weights.copy() # initialize updated weights
+
+        for i in range(shots):
+            # update weights based on conditional probabilities
+            curr_correction = corrections[i] 
+            updated_weights[curr_correction.nonzero()] = cond_weights[curr_correction.nonzero()] # set the old weights to 
+
+            # second round of decoding with updated weights
+            matching_corr = Matching.from_detector_error_model(dem, weights=updated_weights, enable_correlations=False)
+            correction_corr = matching_corr.decode(syndrome[i])
+            corrections[i] = correction_corr
+        
+        # calculate the number of logical errors
+        log_errors_array = np.any(np.array(observable_flips) != np.array(corrections), axis=1)
+
+        return log_errors_array
 
 
     #
@@ -547,7 +591,7 @@ def concat_csv(folder_path, circuit_data):
     for file in data_files:
         os.remove(file)
 
-def full_error_plot(full_df, curr_eta, curr_l, curr_num_shots, corr_type, CD_type, file, loglog=False, averaging=True, circuit_level=False, plot_by_l=False):
+def full_error_plot(full_df, curr_eta, curr_l, curr_num_shots, corr_type, CD_type, py_corr, file, loglog=False, averaging=True, circuit_level=False, plot_by_l=False):
     """Make a plot of all 4 errors given a df with unedited contents"""
 
     prob_scale = get_prob_scale(corr_type, curr_eta)
@@ -555,8 +599,8 @@ def full_error_plot(full_df, curr_eta, curr_l, curr_num_shots, corr_type, CD_typ
     # Filter the DataFrame based on the input parameters
     # filtered_df = full_df[(full_df['l'] == curr_l) & (full_df['eta'] == curr_eta) & (full_df['num_shots'] == curr_num_shots)] 
                     # & (df['time_stamp'].apply(lambda x: x[0:10]) == datetime.today().date())
-    filtered_df = full_df[(full_df['l'] == curr_l) & (full_df['eta'] == curr_eta)]
-    print(filtered_df.shape)
+    
+    filtered_df = full_df[(full_df['l'] == curr_l) & (full_df['eta'] == curr_eta) & (full_df['num_shots'] == curr_num_shots)]
 
     # Get unique error types and unique d values
     error_types = filtered_df['error_type'].unique()
@@ -1004,32 +1048,34 @@ if __name__ == "__main__":
                          (6,0.5,"TOTAL_MEM_PY", "SC", "code_cap"):0.00
                          }
     
-    # parameters
+    #### parameters
+
+
     circuit_data = True # whether circuit level or code cap data is desired
     corr_decoding = False # whether to get data for correlated decoding (corrxz or corrzx), or circuit level (X/Z mem or X/Z mem py)
         
 
     # simulation
-    d_list = [11,13,15,17,19]
+
+    # if getting threshold specific data
     # p_th_init = p_th_init_dict[(l,eta,corr_type)]
     # p_th_init = 0.158
     # p_list = np.linspace(p_th_init-0.03, p_th_init + 0.03, 40)
+
+    # otherwise p_list is range of probabilities
     p_list = np.linspace(0.001, 0.15, 40)
 
-    # for plotting / getting data
-    # l = 6
-    # eta = 100
-    l_list = [2,3,4,5,6]
-    eta_list = [0.5, 1, 5, 10, 50, 100, 500, 1000]
-    cd_list = ["XZZXonSqu", "ZXXZonSqu", "SC"]
-    total_num_shots = 1e6
-    corr_type = "TOTAL_MEM" # which type of correlation to use, depending on the type of decoder
+    l_list = [2,3,4,5,6] # elongation params
+    d_list = [11,13,15,17,19] # code distances
+    eta_list = [0.5, 1, 5, 10, 50, 100, 500, 1000] # noise bias
+    cd_list = ["XZZXonSqu", "ZXXZonSqu", "SC"] # clifford deformation types
+    total_num_shots = 1e6 # number of shots 
+    corr_type = "TOTAL_MEM" # which type of correlation to use, depending on the type of decoder. Choose from ['CORR_XZ', 'CORR_ZX', 'TOTAL', 'TOTAL_MEM', 'TOTAL_PY_CORR']
     error_type = "TOTAL_MEM" # which type of error to plot
     # num_shots = 66666
     noise_model = "phenom"
     CD_type = "ZXXZonSqu"
     corr_list = ['CORR_XZ', 'CORR_ZX']
-    # corr_type_list = ['CORR_XZ', 'CORR_ZX', 'TOTAL', 'TOTAL_PY_CORR']
     corr_type_list = ['TOTAL']  
 
     if circuit_data:
@@ -1051,7 +1097,19 @@ if __name__ == "__main__":
     # get_data_DCC(circuit_data, corr_decoding, "phenom", d_list, l_list, eta_list, cd_list, p_list=p_list, p_th_init_d=None, pymatch_corr=False)
 
     # run this once you have data and want to combo it to one csv
-    concat_csv(folder_path, circuit_data)
+    # concat_csv(folder_path, circuit_data)
+
+
+    # plot the threshold results
+
+    # params to plot
+    eta = 0.5
+    l = 2
+    curr_num_shots = 6250
+
+
+    df = pd.read_csv(output_file)
+    full_error_plot(df,)
 
 
 
