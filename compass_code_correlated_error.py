@@ -34,7 +34,12 @@ class CorrelatedDecoder:
         self.H_x, self.H_z = compass_code.H['X'], compass_code.H['Z'] # parity check matrices from compass code class
         self.log_x, self.log_z = compass_code.logicals['X'], compass_code.logicals['Z'] # logical operators from compass code class
 
-        
+    def bernoulli_prob(old_prob, p):
+        """ Given an old probability and a new error probability, return the updated probability
+            according to the bernoulli formula
+        """
+        new_prob = old_prob*(1-p) + p*(1 - old_prob)
+        return new_prob  
 
 
 
@@ -216,21 +221,32 @@ class CorrelatedDecoder:
         """ Creates two dictionaries keeping track of the probabilities of hyperedges in the DEM
         """
 
-        joint_probabilities = {}
+        
+        joint_probs = np.zeros([dem.num_detectors, dem.num_detectors]) # each entry is the joint probability of two detectors. [E][E] is a marginal probability
 
         for inst in dem:
-            detectors = inst.detectors
-            observable = inst.observables
+            if inst.type == "error":
+                prob_err = inst.args_copy()
+                targets = inst.targets_copy()
 
-            if len(detectors) > 2: # hyperedge
-                joint_probabilities[tuple(detectors)] = inst.probability
-            else:
-                # do I want to set the probability to 0? If a mechanism and a hyperedge both connect to the same detectors, I want to only consider the hyperedge
-                pass
+                # get a list of edges with a certain probability
+                ind_arr = []
+                while len(targets) > 0:
+                    target = targets.pop(0)
+                    if target.is_separator() or len(targets) == 0:
+                        
+                        if len(ind_arr) == 1:
+                            ind_arr = np.repeat(ind_arr, 2)
+                            
+                        new_prob = self.bernoulli_prob(joint_probs[ind_arr], prob_err[0])
+                        joint_probs[ind_arr] = new_prob
+                        ind_arr = []
+                    elif target.is_relative_detector_id():
+                        ind_arr.append(target.val)
 
-        return 
+        return joint_probs 
     
-    def get_conditional_probabilities(self, joint_prob_dict, matchgraph):
+    def get_conditional_probabilities(self, joint_prob_dict):
         """ Given a joint probability dictionary, calculates the conditional probabilities for each hyperedge
         """
         return
@@ -257,6 +273,7 @@ class CorrelatedDecoder:
 
         # get the joint probabilities table of the dem hyperedges
         joint_prob_dict = self.get_joint_prob_dict(dem)
+        # Q - do i need to update this based on the merging / matchgraph? Chat was lying, I think I may need to
         
         # calculate the conditional probabilities based on joint probablities and marginal probabilities 
         cond_prob_dict = self.get_conditional_probabilities(joint_prob_dict, matchgraph)
