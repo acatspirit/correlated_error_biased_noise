@@ -1104,7 +1104,7 @@ if __name__ == "__main__":
     # p_list = np.linspace(p_th_init-0.03, p_th_init + 0.03, 40)
 
     # otherwise p_list is range of probabilities
-    p_list = np.linspace(0.001, 0.15, 40)
+    p_list = np.linspace(0.01, 0.25, 40)
 
     l_list = [2,3,4,5,6] # elongation params
     d_list = [11,13,15,17,19] # code distances
