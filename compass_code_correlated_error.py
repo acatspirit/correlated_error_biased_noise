@@ -608,16 +608,39 @@ def concat_csv(folder_path, circuit_data):
     for file in data_files:
         os.remove(file)
 
-def full_error_plot(full_df, curr_eta, curr_l, curr_num_shots, corr_type, CD_type, py_corr, file, loglog=False, averaging=True, circuit_level=False, plot_by_l=False):
-    """Make a plot of all 4 errors given a df with unedited contents"""
+def full_error_plot(full_df, curr_eta, curr_l, curr_num_shots, noise_model, CD_type, file, py_corr=False, loglog=False, averaging=True, circuit_level=False, plot_by_l=False):
+    """Make a plot of all errors given a df with unedited contents of an entire CSV.
+        :param full_df: pandas DataFrame with unedited contents from CSV
+        :param curr_eta: current noise bias to filter DataFrame
+        :param curr_l: current elongation parameter to filter DataFrame
+        :param curr_num_shots: current number of shots to filter DataFrame
+        :param noise_model: the type of simulation, either "code_cap", "phenom", or "circuit_level"
+        :param CD_type: the type of clifford deformation used, from a list ["SC", "XZZXonSqu", "ZXXZonSqu"]
+        :param py_corr: boolean whether pymatching correlated decoding was used, chooses from last of list ["CORR_XZ", "CORR_ZX", "X_MEM", "Z_MEM", "TOTAL_MEM", "X_MEM_PY", "Z_MEM_PY", "TOTAL_MEM_PY"]
+        :param file: the CSV file path, used for averaging shots if in_df is None
+        :param loglog: boolean whether to use loglog scale for plotting
+        :param averaging: boolean whether to average shots over the number of jobs
+        :param circuit_level: boolean whether the data is from circuit level simulations. Alternative is vector simulation.
+        :param plot_by_l: boolean whether to plot by elongation parameter l instead of error type
 
-    prob_scale = get_prob_scale(corr_type, curr_eta)
+        :return: no return, shows a matplotlib plot
+    """
+
+    # prob_scale = get_prob_scale(corr_type, curr_eta)
 
     # Filter the DataFrame based on the input parameters
     # filtered_df = full_df[(full_df['l'] == curr_l) & (full_df['eta'] == curr_eta) & (full_df['num_shots'] == curr_num_shots)] 
                     # & (df['time_stamp'].apply(lambda x: x[0:10]) == datetime.today().date())
     
-    filtered_df = full_df[(full_df['l'] == curr_l) & (full_df['eta'] == curr_eta) & (full_df['num_shots'] == curr_num_shots)]
+    filtered_df = full_df[(full_df['l'] == curr_l) & (full_df['eta'] == curr_eta) & (full_df['num_shots'] == curr_num_shots) & (full_df['noise_model'] == noise_model)]
+
+    if py_corr: 
+        filtered_df = filtered_df[filtered_df['error_type'].isin(['X_MEM_PY', 'Z_MEM_PY', 'TOTAL_MEM_PY'])]
+    else:
+        if circuit_level:
+            filtered_df = filtered_df[filtered_df['error_type'].isin(['X_MEM', 'Z_MEM', 'TOTAL_MEM'])]
+        else:
+            filtered_df = filtered_df[filtered_df['error_type'].isin(['X', 'Z', 'TOTAL', 'CORR_XZ', 'CORR_ZX'])]
 
     # Get unique error types and unique d values
     error_types = filtered_df['error_type'].unique()
@@ -641,6 +664,7 @@ def full_error_plot(full_df, curr_eta, curr_l, curr_num_shots, corr_type, CD_typ
         ax.tick_params(axis='both', which='major', labelsize=16)  # Change major tick label size
         ax.tick_params(axis='both', which='minor', labelsize=16) 
         error_type_df = filtered_df[filtered_df['error_type'] == error_type]
+        prob_scale = get_prob_scale(error_type, curr_eta)
         # Plot each d value
         for d in d_values:
             d_df = error_type_df[error_type_df['d'] == d]
@@ -650,11 +674,11 @@ def full_error_plot(full_df, curr_eta, curr_l, curr_num_shots, corr_type, CD_typ
                 if loglog:
                     ax.loglog(d_df_mean['p']*prob_scale[error_type], d_df_mean['num_log_errors'],  label=f'd={d}')
                     error_bars = 10**(-6)*np.ones(len(d_df_mean['num_log_errors']))
-                    ax.fill_between(d_df_mean['p']*prob_scale[error_type], d_df_mean['num_log_errors'] - error_bars, d_df_mean['num_log_errors'] + error_bars, alpha=0.2)
+                    ax.fill_between(d_df_mean['p']*prob_scale, d_df_mean['num_log_errors'] - error_bars, d_df_mean['num_log_errors'] + error_bars, alpha=0.2)
                 else:
-                    ax.plot(d_df_mean['p']*prob_scale[error_type], d_df_mean['num_log_errors'],  label=f'd={d}')
+                    ax.plot(d_df_mean['p']*prob_scale, d_df_mean['num_log_errors'],  label=f'd={d}')
             else:
-                ax.scatter(d_df['p']*prob_scale[error_type], d_df['num_log_errors'], s=2, label=f'd={d}')
+                ax.scatter(d_df['p']*prob_scale, d_df['num_log_errors'], s=2, label=f'd={d}')
 
         
         ax.set_title(f'Error Type: {error_type}', fontsize=20)
@@ -833,8 +857,8 @@ def get_threshold(full_df, pth0, p_range, l, eta, corr_type, num_shots):
 def get_prob_scale(corr_type, eta):
     """ extract the amount to be scaled by given a noise bias and the type of error
     """
-    prob_scale = {'X': 0.5/(1+eta), 'Z': (1+2*eta)/(2*(1+eta)), corr_type: 1, 'TOTAL':1, 'TOTAL_MEM':4/3, 'X_MEM':  1, 'Z_MEM': 1, 'TOTAL_MEM_PY':4/3, 'X_MEM_PY':1, 'Z_MEM_PY':1} # 4/3 factor of total mem is due to code_cap pauli channel scalling factor in stim
-    return prob_scale
+    prob_scale = {'X': 0.5/(1+eta), 'Z': (1+2*eta)/(2*(1+eta)), 'CORR_XZ': 1, 'CORR_ZX':1, 'TOTAL':1, 'TOTAL_MEM':4/3, 'X_MEM':  1, 'Z_MEM': 1, 'TOTAL_MEM_PY':4/3, 'X_MEM_PY':1, 'Z_MEM_PY':1} # 4/3 factor of total mem is due to code_cap pauli channel scalling factor in stim
+    return prob_scale[corr_type]
 
 
 def get_data_DCC(circuit_data, corr_decoding, noise_model, d_list, l_list, eta_list, cd_list, corr_list, total_num_shots, p_list=None, p_th_init_d=None, pymatch_corr=False):
@@ -1090,8 +1114,6 @@ if __name__ == "__main__":
     corr_type = "TOTAL_MEM" # which type of correlation to use, depending on the type of decoder. Choose from ['CORR_XZ', 'CORR_ZX', 'TOTAL', 'TOTAL_MEM', 'TOTAL_PY_CORR']
     error_type = "TOTAL_MEM" # which type of error to plot
     # num_shots = 66666
-    noise_model = "phenom"
-    CD_type = "ZXXZonSqu"
     corr_list = ['CORR_XZ', 'CORR_ZX']
     corr_type_list = ['TOTAL']  
 
@@ -1120,13 +1142,17 @@ if __name__ == "__main__":
     # plot the threshold results
 
     # params to plot
-    eta = 0.5
-    l = 2
-    curr_num_shots = 6250
+    eta = 0.75
+    l = 3
+    curr_num_shots = 6250.0
+    noise_model = "code_cap"
+    CD_type = "XZZXonSqu"
+    py_corr = True # whether to use pymatching correlated decoder for circuit data
 
+    #19.0,14084.0,0.1003333333333333,2.0,0.5,X_MEM,0.5053251917069015,2025-10-10 22:42:06.806836,phenom,XZZXonSqu
 
     df = pd.read_csv(output_file)
-    full_error_plot(df,)
+    full_error_plot(df,eta,l,curr_num_shots,noise_model, CD_type, output_file,py_corr, circuit_level=circuit_data)
 
 
 
