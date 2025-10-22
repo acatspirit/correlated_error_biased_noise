@@ -1093,7 +1093,7 @@ if __name__ == "__main__":
 
 
     circuit_data = True # whether circuit level or code cap data is desired
-    corr_decoding = False # whether to get data for correlated decoding (corrxz or corrzx), or circuit level (X/Z mem or X/Z mem py)
+    corr_decoding = True # whether to get data for correlated decoding (corrxz or corrzx), or circuit level (X/Z mem or X/Z mem py)
         
 
     # simulation
@@ -1108,8 +1108,8 @@ if __name__ == "__main__":
 
     l_list = [2,3,4,5,6] # elongation params
     d_list = [11,13,15,17,19] # code distances
-    eta_list = [0.5, 1, 5, 10, 50, 100, 500, 1000] # noise bias
-    cd_list = ["XZZXonSqu", "ZXXZonSqu", "SC"] # clifford deformation types
+    eta_list = [0.5, 0.75, 1,2,3,5,7] # noise bias
+    cd_list = ["XZZXonSqu", "ZXXZonSqu"] # clifford deformation types
     total_num_shots = 1e6 # number of shots 
     corr_type = "TOTAL_MEM" # which type of correlation to use, depending on the type of decoder. Choose from ['CORR_XZ', 'CORR_ZX', 'TOTAL', 'TOTAL_MEM', 'TOTAL_PY_CORR']
     error_type = "TOTAL_MEM" # which type of error to plot
@@ -1133,7 +1133,7 @@ if __name__ == "__main__":
 
 
     # run this to get data from the dcc
-    # get_data_DCC(circuit_data, corr_decoding, "phenom", d_list, l_list, eta_list, cd_list, p_list=p_list, p_th_init_d=None, pymatch_corr=False)
+    get_data_DCC(circuit_data, corr_decoding, "code_cap", d_list, l_list, eta_list, cd_list, p_list=p_list, p_th_init_d=None, pymatch_corr=True)
 
     # run this once you have data and want to combo it to one csv
     # concat_csv(folder_path, circuit_data)
@@ -1142,17 +1142,16 @@ if __name__ == "__main__":
     # plot the threshold results
 
     # params to plot
-    eta = 0.75
-    l = 3
-    curr_num_shots = 6250.0
-    noise_model = "code_cap"
-    CD_type = "XZZXonSqu"
-    py_corr = True # whether to use pymatching correlated decoder for circuit data
+    # eta = 0.5
+    # l = 2
+    # curr_num_shots = 14084.0
+    # noise_model = "phenom"
+    # CD_type = "XZZXonSqu"
+    # py_corr = False # whether to use pymatching correlated decoder for circuit data
 
-    #19.0,14084.0,0.1003333333333333,2.0,0.5,X_MEM,0.5053251917069015,2025-10-10 22:42:06.806836,phenom,XZZXonSqu
 
-    df = pd.read_csv(output_file)
-    full_error_plot(df,eta,l,curr_num_shots,noise_model, CD_type, output_file,py_corr, circuit_level=circuit_data)
+    # df = pd.read_csv(output_file)
+    # full_error_plot(df,eta,l,curr_num_shots,noise_model, CD_type, output_file,py_corr, circuit_level=circuit_data)
 
 
 
