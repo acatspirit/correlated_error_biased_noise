@@ -217,7 +217,7 @@ class CorrelatedDecoder:
         """
         return
     
-    def get_joint_prob_dict(self, dem):
+    def get_joint_prob(self, dem):
         """ Creates two dictionaries keeping track of the probabilities of hyperedges in the DEM
         """
 
@@ -272,7 +272,7 @@ class CorrelatedDecoder:
         matchgraph = Matching.from_detector_error_model(dem, enable_correlations=False)
 
         # get the joint probabilities table of the dem hyperedges
-        joint_prob_dict = self.get_joint_prob_dict(dem)
+        joint_prob_dict = self.get_joint_prob(dem)
         # Q - do i need to update this based on the merging / matchgraph? Chat was lying, I think I may need to
         
         # calculate the conditional probabilities based on joint probablities and marginal probabilities 
