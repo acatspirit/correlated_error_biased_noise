@@ -220,10 +220,10 @@ class CorrelatedDecoder:
     def decompose_dem_instruction(self, inst):
         """ Decomposes a stim DEM instruction into its component detectors and probability. Uses STIM's decompose_errors to determine hyperedge decomposition.
             Decomposed edge is in the form {probability: [detector1, detector2, ...]}. Logical operators are omitted, and single detector errors are merged to a pair if decomposed.
-            We insert boundary edges to odd cardinality hyperedges.
+            We insert boundary edges to odd cardinality hyperedges. Edges are sorted such that boundary edges are always last in the tuple, and the detectors are in ascending order.
 
-            eg. error(p) D0 ^ D1 L0 -> {p: [D0, D1]}
-                error(p) D0 D2 ^ D1 L0 -> {p: [[D0, D2], [D1, BOUNDARY]]}. 
+            eg. error(p) D0 ^ D1 L0 -> {p: [(0, 1)]}
+                error(p) D0 D2 ^ D1 -> {p: [(0, 2), (1, "BOUNDARY")]}. 
 
             :param inst: stim.DEMInstruction object. The instruction to be decomposed.
             :return: decomp_inst: dict. A dictionary with the probability as the key and a list of edges as the value.
@@ -276,10 +276,31 @@ class CorrelatedDecoder:
                 prob_err = decomposed_inst.keys()
                 edges = decomposed_inst[prob_err]
 
-                
+                # update hyperedges in joint probability table
+                if len(edges) > 1:
+                    if [edges[0]][edges[1]] in joint_probs:
+                        p01 = joint_probs[edges[0]][edges[1]]
+                        p10 = joint_probs[edges[1]][edges[0]]
 
+                        new_p01 = self.bernoulli_prob(p01, prob_err)
+                        new_p10 = self.bernoulli_prob(p10, prob_err)
+                    
+                    else:
+                        new_p01 = prob_err
+                        new_p10 = prob_err
+                    
+                    joint_probs[edges[0]][edges[1]] = new_p01
+                    joint_probs[edges[1]][edges[0]] = new_p10
                 
-
+                # update marginal probabilities in joint probability table
+                for edge in edges:
+                    if [edge][edge] in joint_probs:
+                        p = joint_probs[edge][edge]
+                        new_p = self.bernoulli_prob(p, prob_err)
+                    else:
+                        new_p = prob_err
+                    joint_probs[edge][edge] = new_p
+                
         return joint_probs 
     
     def get_conditional_probabilities(self, joint_prob_dict):
