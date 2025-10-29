@@ -34,7 +34,7 @@ class CorrelatedDecoder:
         self.H_x, self.H_z = compass_code.H['X'], compass_code.H['Z'] # parity check matrices from compass code class
         self.log_x, self.log_z = compass_code.logicals['X'], compass_code.logicals['Z'] # logical operators from compass code class
 
-    def bernoulli_prob(old_prob, p):
+    def bernoulli_prob(self, old_prob, p):
         """ Given an old probability and a new error probability, return the updated probability
             according to the bernoulli formula
         """
@@ -217,17 +217,64 @@ class CorrelatedDecoder:
         """
         return
     
+    def decompose_dem_instruction(self, inst):
+        """ Decomposes a stim DEM instruction into its component detectors and probability. Uses STIM's decompose_errors to determine hyperedge decomposition.
+            Decomposed edge is in the form {probability: [detector1, detector2, ...]}. Logical operators are omitted, and single detector errors are merged to a pair if decomposed.
+            We insert boundary edges to odd cardinality hyperedges.
+
+            eg. error(p) D0 ^ D1 L0 -> {p: [D0, D1]}
+                error(p) D0 D2 ^ D1 L0 -> {p: [[D0, D2], [D1, BOUNDARY]]}. 
+
+            :param inst: stim.DEMInstruction object. The instruction to be decomposed.
+            :return: decomp_inst: dict. A dictionary with the probability as the key and a list of edges as the value.
+        """
+        # get the edge probability and detectors for an instruction
+        prob_err = inst.args_copy()[0]
+        targets = np.array(inst.targets_copy())
+        decomp_inst = {prob_err: []}
+
+        
+        seperator_indices = np.where([target.is_separator() for target in targets])[0]
+        split_indices = seperator_indices + 1
+        edges = np.split(targets, split_indices)
+        edges = [[e for e in edge if e.is_relative_detector_id()] for edge in edges]
+        total_num_detectors = sum([len(edge) for edge in edges])
+        if total_num_detectors > 2:
+            for edge in edges:
+                if len(edge) % 2 == 1 and len(edges) > 1:
+                    edge.append("BOUNDARY")
+        
+        # Convert edges to list of tuples
+        if total_num_detectors <= 2:
+            # Flatten and group into one tuple if <= 2 detectors total
+            flattened = [e for edge in edges for e in edge]
+            edges = [tuple(flattened)]
+        else:
+            edges = [tuple(edge) for edge in edges]
+
+        # Store result
+        decomp_inst[prob_err] = edges
+
+        return decomp_inst
+    
     def get_joint_prob(self, dem):
-        """ Creates two dictionaries keeping track of the probabilities of hyperedges in the DEM
+        """ Creates an array of joint probabilities representing edges in the DEM. Each entry [E][F] is the joint probability of edges E and detector F. 
+            The diagonal entries [E][E] are the marginal probabilities of one graphlike error mechanism. The joint probabilities are calculated using the bernoulli formula for combining 
+            probabilities when two detectors share more than one hyperedge.
+
+            :param dem: stim.DetectorErrorModel object. The detector error model of the circuit to be used in decoding.
+            :return: joint_probs: np.ndarray of shape (num_detectors, num_detectors). The joint probability matrix. Each cell is the joint probability of two detectors.
         """
 
         
-        joint_probs = np.zeros([dem.num_detectors, dem.num_detectors]) # each entry is the joint probability of two detectors. [E][E] is a marginal probability
+        joint_probs = np.zeros([dem.num_detectors, dem.num_detectors]) # each entry is the joint probability of two edges. [E][E] is a marginal probability
 
+        # iterate through each edge in the dem, add hyperedges
         for inst in dem:
             if inst.type == "error":
-                prob_err = inst.args_copy()
-                targets = inst.targets_copy()
+                decomposed_inst = self.decompose_dem_instruction(inst)
+                prob_err = decomposed_inst.keys()
+                edges = decomposed_inst[prob_err]
 
                 # get a list of edges with a certain probability
                 ind_arr = []
@@ -632,7 +679,7 @@ def full_error_plot(full_df, curr_eta, curr_l, curr_num_shots, noise_model, CD_t
     # filtered_df = full_df[(full_df['l'] == curr_l) & (full_df['eta'] == curr_eta) & (full_df['num_shots'] == curr_num_shots)] 
                     # & (df['time_stamp'].apply(lambda x: x[0:10]) == datetime.today().date())
     
-    filtered_df = full_df[(full_df['l'] == curr_l) & (full_df['eta'] == curr_eta) & (full_df['num_shots'] == curr_num_shots) & (full_df['noise_model'] == noise_model)]
+    filtered_df = full_df[(full_df['l'] == curr_l) & (full_df['eta'] == curr_eta) & (full_df['num_shots'] == curr_num_shots) & (full_df['noise_model'] == noise_model) & (full_df['CD_type'] == CD_type)]
 
     if py_corr: 
         filtered_df = filtered_df[filtered_df['error_type'].isin(['X_MEM_PY', 'Z_MEM_PY', 'TOTAL_MEM_PY'])]
@@ -647,8 +694,6 @@ def full_error_plot(full_df, curr_eta, curr_l, curr_num_shots, noise_model, CD_t
 
     d_values = filtered_df['d'].unique()
 
-    if circuit_level:
-        CD_type = filtered_df['CD_type'].unique()
 
     # Create a figure with subplots for each error type
     if len(error_types)%2 == 0:
@@ -687,7 +732,7 @@ def full_error_plot(full_df, curr_eta, curr_l, curr_num_shots, noise_model, CD_t
         ax.legend()
 
     if circuit_level:
-        fig.suptitle(f'Logical Error Rates for eta = {curr_eta}, l = {curr_l}, Deformation = {CD_type[0]}')
+        fig.suptitle(f'Logical Error Rates for eta = {curr_eta}, l = {curr_l}, Deformation = {CD_type}')
     else:
         fig.suptitle(f'Logical Error Rates for eta = {curr_eta} and l = {curr_l}')
     plt.tight_layout()
@@ -1133,7 +1178,7 @@ if __name__ == "__main__":
 
 
     # run this to get data from the dcc
-    get_data_DCC(circuit_data, corr_decoding, "code_cap", d_list, l_list, eta_list, cd_list, corr_list, total_num_shots, p_list=p_list, p_th_init_d=None, pymatch_corr=True)
+    # get_data_DCC(circuit_data, corr_decoding, "code_cap", d_list, l_list, eta_list, cd_list, corr_list, total_num_shots, p_list=p_list, p_th_init_d=None, pymatch_corr=True)
 
     # run this once you have data and want to combo it to one csv
     # concat_csv(folder_path, circuit_data)
@@ -1142,16 +1187,16 @@ if __name__ == "__main__":
     # plot the threshold results
 
     # params to plot
-    # eta = 0.5
-    # l = 2
-    # curr_num_shots = 14084.0
-    # noise_model = "phenom"
-    # CD_type = "XZZXonSqu"
-    # py_corr = False # whether to use pymatching correlated decoder for circuit data
+    eta = 5
+    l = 2
+    curr_num_shots = 71428.0
+    noise_model = "code_cap"
+    CD_type = "ZXXZonSqu"
+    py_corr = True # whether to use pymatching correlated decoder for circuit data
 
 
-    # df = pd.read_csv(output_file)
-    # full_error_plot(df,eta,l,curr_num_shots,noise_model, CD_type, output_file,py_corr, circuit_level=circuit_data)
+    df = pd.read_csv(output_file)
+    full_error_plot(df,eta,l,curr_num_shots,noise_model, CD_type, output_file,py_corr=py_corr, circuit_level=circuit_data)
 
 
 
