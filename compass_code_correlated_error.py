@@ -237,7 +237,7 @@ class CorrelatedDecoder:
         seperator_indices = np.where([target.is_separator() for target in targets])[0]
         split_indices = seperator_indices + 1
         edges = np.split(targets, split_indices)
-        edges = [[e for e in edge if e.is_relative_detector_id()] for edge in edges]
+        edges = [[e.val for e in edge if e.is_relative_detector_id()] for edge in edges]
         total_num_detectors = sum([len(edge) for edge in edges])
         if total_num_detectors > 2:
             for edge in edges:
@@ -248,9 +248,9 @@ class CorrelatedDecoder:
         if total_num_detectors <= 2:
             # Flatten and group into one tuple if <= 2 detectors total
             flattened = [e for edge in edges for e in edge]
-            edges = [tuple(flattened)]
+            edges = [tuple(sorted(flattened, key=lambda x: (isinstance(x, str), x)))]
         else:
-            edges = [tuple(edge) for edge in edges]
+            edges = [tuple(sorted(edge, key=lambda x: (isinstance(x,str), x))) for edge in edges]
 
         # Store result
         decomp_inst[prob_err] = edges
@@ -263,11 +263,11 @@ class CorrelatedDecoder:
             probabilities when two detectors share more than one hyperedge.
 
             :param dem: stim.DetectorErrorModel object. The detector error model of the circuit to be used in decoding.
-            :return: joint_probs: np.ndarray of shape (num_detectors, num_detectors). The joint probability matrix. Each cell is the joint probability of two detectors.
+            :return: joint_probs: dictionary {[edge 1][edge 2]: joint probability} The joint probability matrix. Each cell is the joint probability of two detectors.
         """
 
         
-        joint_probs = np.zeros([dem.num_detectors, dem.num_detectors]) # each entry is the joint probability of two edges. [E][E] is a marginal probability
+        joint_probs = {} # each entry is the joint probability of two edges. [E][E] is a marginal probability
 
         # iterate through each edge in the dem, add hyperedges
         for inst in dem:
@@ -276,20 +276,9 @@ class CorrelatedDecoder:
                 prob_err = decomposed_inst.keys()
                 edges = decomposed_inst[prob_err]
 
-                # get a list of edges with a certain probability
-                ind_arr = []
-                while len(targets) > 0:
-                    target = targets.pop(0)
-                    if target.is_separator() or len(targets) == 0:
-                        
-                        if len(ind_arr) == 1:
-                            ind_arr = np.repeat(ind_arr, 2)
-                            
-                        new_prob = self.bernoulli_prob(joint_probs[ind_arr], prob_err[0])
-                        joint_probs[ind_arr] = new_prob
-                        ind_arr = []
-                    elif target.is_relative_detector_id():
-                        ind_arr.append(target.val)
+                
+
+                
 
         return joint_probs 
     
