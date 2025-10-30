@@ -273,7 +273,8 @@ class CorrelatedDecoder:
         for inst in dem:
             if inst.type == "error":
                 decomposed_inst = self.decompose_dem_instruction(inst)
-                prob_err = decomposed_inst.keys()
+                prob_err = list(decomposed_inst.keys())[0]
+                print(prob_err)
                 edges = decomposed_inst[prob_err]
 
                 # update hyperedges in joint probability table
