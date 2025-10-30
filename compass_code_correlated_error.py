@@ -1149,7 +1149,7 @@ if __name__ == "__main__":
 
 
     circuit_data = True # whether circuit level or code cap data is desired
-    corr_decoding = True # whether to get data for correlated decoding (corrxz or corrzx), or circuit level (X/Z mem or X/Z mem py)
+    corr_decoding = False # whether to get data for correlated decoding (corrxz or corrzx), or circuit level (X/Z mem or X/Z mem py)
         
 
     # simulation
@@ -1160,18 +1160,20 @@ if __name__ == "__main__":
     # p_list = np.linspace(p_th_init-0.03, p_th_init + 0.03, 40)
 
     # otherwise p_list is range of probabilities
-    p_list = np.linspace(0.01, 0.25, 40)
+    p_list = np.linspace(0.01, 0.12, 40)
 
-    l_list = [2,3,4,5,6] # elongation params
+    l_list = [2,3,5] # elongation params
     d_list = [11,13,15,17,19] # code distances
-    eta_list = [0.5, 0.75, 1,2,3,5,7] # noise bias
-    cd_list = ["XZZXonSqu", "ZXXZonSqu"] # clifford deformation types
+    eta_list = [0.5, 5, 10, 100] # noise bias
+    cd_list = ["SC", "ZXXZonSqu"] # clifford deformation types
     total_num_shots = 1e6 # number of shots 
     corr_type = "TOTAL_MEM" # which type of correlation to use, depending on the type of decoder. Choose from ['CORR_XZ', 'CORR_ZX', 'TOTAL', 'TOTAL_MEM', 'TOTAL_PY_CORR']
     error_type = "TOTAL_MEM" # which type of error to plot
     # num_shots = 66666
     corr_list = ['CORR_XZ', 'CORR_ZX']
     corr_type_list = ['TOTAL']  
+    noise_model = "phenom"
+    pymatch_corr = False # whether to use pymatching correlated decoder for circuit data
 
     if circuit_data:
         folder_path = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/circuit_data/'
@@ -1189,7 +1191,7 @@ if __name__ == "__main__":
 
 
     # run this to get data from the dcc
-    # get_data_DCC(circuit_data, corr_decoding, "code_cap", d_list, l_list, eta_list, cd_list, corr_list, total_num_shots, p_list=p_list, p_th_init_d=None, pymatch_corr=True)
+    get_data_DCC(circuit_data, corr_decoding, noise_model, d_list, l_list, eta_list, cd_list, corr_list, total_num_shots, p_list=p_list, p_th_init_d=None, pymatch_corr=pymatch_corr)
 
     # run this once you have data and want to combo it to one csv
     # concat_csv(folder_path, circuit_data)
@@ -1198,16 +1200,16 @@ if __name__ == "__main__":
     # plot the threshold results
 
     # params to plot
-    eta = 5
-    l = 2
-    curr_num_shots = 71428.0
-    noise_model = "code_cap"
-    CD_type = "ZXXZonSqu"
-    py_corr = True # whether to use pymatching correlated decoder for circuit data
+    # eta = 5
+    # l = 2
+    # curr_num_shots = 71428.0
+    # noise_model = "code_cap"
+    # CD_type = "ZXXZonSqu"
+    # py_corr = True # whether to use pymatching correlated decoder for circuit data
 
 
-    df = pd.read_csv(output_file)
-    full_error_plot(df,eta,l,curr_num_shots,noise_model, CD_type, output_file,py_corr=py_corr, circuit_level=circuit_data)
+    # df = pd.read_csv(output_file)
+    # full_error_plot(df,eta,l,curr_num_shots,noise_model, CD_type, output_file,py_corr=py_corr, circuit_level=circuit_data)
 
 
 
