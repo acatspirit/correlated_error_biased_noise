@@ -274,40 +274,51 @@ class CorrelatedDecoder:
             if inst.type == "error":
                 decomposed_inst = self.decompose_dem_instruction(inst)
                 prob_err = list(decomposed_inst.keys())[0]
-                print(prob_err)
                 edges = decomposed_inst[prob_err]
 
                 # update hyperedges in joint probability table
                 if len(edges) > 1:
-                    if [edges[0]][edges[1]] in joint_probs:
-                        p01 = joint_probs[edges[0]][edges[1]]
-                        p10 = joint_probs[edges[1]][edges[0]]
+                    a, b = edges[0], edges[1]
+                    p01 = joint_probs.get(a, {}).get(b, 0)
+                    p10 = joint_probs.get(b, {}).get(a, 0)
 
-                        new_p01 = self.bernoulli_prob(p01, prob_err)
-                        new_p10 = self.bernoulli_prob(p10, prob_err)
-                    
-                    else:
-                        new_p01 = prob_err
-                        new_p10 = prob_err
-                    
-                    joint_probs[edges[0]][edges[1]] = new_p01
-                    joint_probs[edges[1]][edges[0]] = new_p10
-                
-                # update marginal probabilities in joint probability table
+                    new_p01 = self.bernoulli_prob(p01, prob_err)
+                    new_p10 = self.bernoulli_prob(p10, prob_err)
+
+                    joint_probs.setdefault(a, {})[b] = new_p01
+                    joint_probs.setdefault(b, {})[a] = new_p10
+
+                # update marginal probabilities
                 for edge in edges:
-                    if [edge][edge] in joint_probs:
-                        p = joint_probs[edge][edge]
-                        new_p = self.bernoulli_prob(p, prob_err)
-                    else:
-                        new_p = prob_err
-                    joint_probs[edge][edge] = new_p
+                    p = joint_probs.get(edge, {}).get(edge, 0)
+                    new_p = self.bernoulli_prob(p, prob_err)
+                    joint_probs.setdefault(edge, {})[edge] = new_p
                 
         return joint_probs 
     
-    def get_conditional_probabilities(self, joint_prob_dict):
+    def get_conditional_prob(self, joint_prob_dict):
         """ Given a joint probability dictionary, calculates the conditional probabilities for each hyperedge
         """
-        return
+
+        cond_prob_dict = {}
+
+        for edge_1 in joint_prob_dict:
+
+            marginal_p = joint_prob_dict.get(edge_1, {}).get(edge_1,0)
+            if marginal_p == 0:
+                continue
+
+            adjacent_edge_dict = joint_prob_dict.get(edge_1, {})
+
+            for edge_2 in adjacent_edge_dict:
+                joint_p = joint_prob_dict.get(edge_1, {}).get(edge_2,0)
+
+                cond_p = min(1/(2*self.eta + 1), joint_p/marginal_p) # how do I do directionality here / I might have to think about it, will this actually work? Dont wanna fully erase edges...?
+
+                cond_prob_dict.setdefault(edge_1, {})[edge_2] = cond_p
+
+
+        return cond_prob_dict
 
 
 
@@ -331,7 +342,6 @@ class CorrelatedDecoder:
 
         # get the joint probabilities table of the dem hyperedges
         joint_prob_dict = self.get_joint_prob(dem)
-        # Q - do i need to update this based on the merging / matchgraph? Chat was lying, I think I may need to
         
         # calculate the conditional probabilities based on joint probablities and marginal probabilities 
         cond_prob_dict = self.get_conditional_probabilities(joint_prob_dict, matchgraph)
@@ -354,7 +364,7 @@ class CorrelatedDecoder:
         for i in range(shots):
             # update weights based on conditional probabilities
             curr_correction = corrections[i] 
-            updated_weights[curr_correction.nonzero()] = cond_weights[curr_correction.nonzero()] # set the old weights to 
+            updated_weights[curr_correction.nonzero()] = cond_weights[curr_correction.nonzero()] # set the old weights to the conditionally updated weights
 
             # second round of decoding with updated weights
             matching_corr = Matching.from_detector_error_model(dem, weights=updated_weights, enable_correlations=False)
@@ -1191,10 +1201,10 @@ if __name__ == "__main__":
 
 
     # run this to get data from the dcc
-    get_data_DCC(circuit_data, corr_decoding, noise_model, d_list, l_list, eta_list, cd_list, corr_list, total_num_shots, p_list=p_list, p_th_init_d=None, pymatch_corr=pymatch_corr)
+    # get_data_DCC(circuit_data, corr_decoding, noise_model, d_list, l_list, eta_list, cd_list, corr_list, total_num_shots, p_list=p_list, p_th_init_d=None, pymatch_corr=pymatch_corr)
 
     # run this once you have data and want to combo it to one csv
-    # concat_csv(folder_path, circuit_data)
+    concat_csv(folder_path, circuit_data)
 
 
     # plot the threshold results
