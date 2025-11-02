@@ -1180,19 +1180,19 @@ if __name__ == "__main__":
     # p_list = np.linspace(p_th_init-0.03, p_th_init + 0.03, 40)
 
     # otherwise p_list is range of probabilities
-    p_list = np.linspace(0.05, 0.4, 40)
+    p_list = np.linspace(0.1, 0.5, 40)
 
-    l_list = [5,6] # elongation params
+    l_list = [2,3,4,5,6] # elongation params
     d_list = [11,13,15,17,19] # code distances
-    eta_list = [0.5, 5, 10, 100] # noise bias
-    cd_list = ["SC", "ZXXZonSqu"] # clifford deformation types
-    total_num_shots = 1e6 # number of shots 
+    eta_list = [0.5,0.75,1,2,3,5,7] # noise bias
+    cd_list = ["XZZXonSqu", "ZXXZonSqu"] # clifford deformation types
+    total_num_shots = 1e5 # number of shots 
     corr_type = "TOTAL_MEM" # which type of correlation to use, depending on the type of decoder. Choose from ['CORR_XZ', 'CORR_ZX', 'TOTAL', 'TOTAL_MEM', 'TOTAL_PY_CORR']
     error_type = "TOTAL_MEM" # which type of error to plot
     # num_shots = 66666
     corr_list = ['CORR_XZ', 'CORR_ZX']
     corr_type_list = ['TOTAL']  
-    noise_model = "phenom"
+    noise_model = "code_cap"
     py_corr = False # whether to use pymatching correlated decoder for circuit data
 
     if circuit_data:
@@ -1230,6 +1230,12 @@ if __name__ == "__main__":
 
     # df = pd.read_csv(output_file)
     # full_error_plot(df,eta,l,curr_num_shots,noise_model, CD_type, output_file,py_corr=py_corr, circuit_level=circuit_data)
+
+
+    # make eta plot
+    # eta_df = pd.read_csv("/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/all_thresholds_per_eta_elongated.csv")
+    # corr_type_list = ['TOTAL', "TOTAL_PY_CORR"]
+    # eta_threshold_plot(eta_df, "XZZXonSqu", corr_type_list, "code_cap")
 
 
 
