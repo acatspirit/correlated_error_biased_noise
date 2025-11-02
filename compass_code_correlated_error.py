@@ -213,11 +213,12 @@ class CorrelatedDecoder:
     
     def probability_edge_mapping(self, edge_dict):
         """ Maps the probabilities to the corresponding edge weight in the matching graph. Takes into
-            account the 'type' of qubit, whether it is clifford deformed or not.
+            account the 'type' of qubit, whether it is clifford deformed or not. CURRENTLY DOES NOT TAKE INTO 
+            ACCOUNT THE TYPE OF QUBIT
         """
         return
     
-    def decompose_dem_instruction(self, inst):
+    def decompose_dem_instruction_stim_auto(self, inst):
         """ Decomposes a stim DEM instruction into its component detectors and probability. Uses STIM's decompose_errors to determine hyperedge decomposition.
             Decomposed edge is in the form {probability: [detector1, detector2, ...]}. Logical operators are omitted, and single detector errors are merged to a pair if decomposed.
             We insert boundary edges to odd cardinality hyperedges. Edges are sorted such that boundary edges are always last in the tuple, and the detectors are in ascending order.
@@ -257,6 +258,47 @@ class CorrelatedDecoder:
 
         return decomp_inst
     
+    def decompose_dem_instruction_pairwise(self, inst):
+        """ Decomposes a stim DEM instruction into its component detectors and probability. Uses pairwise decomposition to determine hyperedge decomposition.
+            Decomposed edge is in the form {probability: [detector1, detector2, ...]}. Logical operators are omitted, and single detector errors are merged to a pair if decomposed.
+            We insert boundary edges to edges with one detector, boundary node value is -1. Edges are sorted such that boundary edges are always last in the tuple, and the detectors are in ascending order.
+            PASS IN DEM with DECOMPOSE_ERRORS=FALSE - talk to ken about this
+
+
+            eg. error(p) D0 D1 L0 -> {p: [(0, 1)]}
+                error(p) D0 -> {p: [(0, -1)]}
+                error(p) D0 D2 D1 -> {p: [(0, 2), (2, 1)]}. 
+                error(p) D0 D2 ^ D3 -> {p: [(0, 2), (2, 3)]}
+
+            :param inst: stim.DEMInstruction object. The instruction to be decomposed.
+            :return: decomp_inst: dict. A dictionary with the probability as the key and a list of edges as the value.
+        """
+        # get the edge probability and detectors for an instruction
+        prob_err = inst.args_copy()[0]
+        targets = np.array(inst.targets_copy())
+        decomp_inst = {prob_err: []}
+
+        # in case the error passed in has a separator
+        seperator_indices = np.where([target.is_separator() for target in targets])[0]
+        detectors = np.delete(targets,seperator_indices)
+        total_num_detectors = len(detectors)
+
+        # iterate through array and make pairwise edge tuples with probability prob_err
+        edges = []
+
+        if total_num_detectors == 1:
+            edges = [(detectors[0].val, -1)] # include a boundary edge
+        
+        else: # pairwise decompose
+            for i in range(total_num_detectors-1):
+                edges.append(tuple(sorted([detectors[i].val, detectors[i+1].val])))
+        
+        # store result
+        decomp_inst[prob_err] = edges
+        return decomp_inst
+
+
+
     def get_joint_prob(self, dem):
         """ Creates an array of joint probabilities representing edges in the DEM. Each entry [E][F] is the joint probability of edges E and detector F. 
             The diagonal entries [E][E] are the marginal probabilities of one graphlike error mechanism. The joint probabilities are calculated using the bernoulli formula for combining 
@@ -272,7 +314,7 @@ class CorrelatedDecoder:
         # iterate through each edge in the dem, add hyperedges
         for inst in dem:
             if inst.type == "error":
-                decomposed_inst = self.decompose_dem_instruction(inst)
+                decomposed_inst = self.decompose_dem_instruction_pairwise(inst)
                 prob_err = list(decomposed_inst.keys())[0]
                 edges = decomposed_inst[prob_err]
 
@@ -330,7 +372,10 @@ class CorrelatedDecoder:
 
         return cond_prob_dict
 
-
+    def edit_dem(self, dem, cond_prob_dict):
+        """ Given a stim DEM, updates the probabilities in error instructions with detectors given by cond_prob_dict
+        """
+        return
 
     def decoding_failures_correlated_circuit_level(self, circuit, p, shots):
         """
@@ -354,7 +399,7 @@ class CorrelatedDecoder:
         joint_prob_dict = self.get_joint_prob(dem)
         
         # calculate the conditional probabilities based on joint probablities and marginal probabilities 
-        cond_prob_dict = self.get_conditional_probabilities(joint_prob_dict, matchgraph)
+        cond_prob_dict = self.get_conditional_prob(joint_prob_dict)
         cond_weights = self.probability_edge_mapping(cond_prob_dict)
 
         
