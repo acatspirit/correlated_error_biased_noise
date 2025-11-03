@@ -14,6 +14,7 @@ import glob
 from scipy.optimize import curve_fit
 import clifford_deformed_cc_circuit as cc_circuit
 import itertools
+import stim
 # from lmfit import Minimizer, Parameters, report_fit
 
 
@@ -214,9 +215,22 @@ class CorrelatedDecoder:
     def probability_edge_mapping(self, edge_dict):
         """ Maps the probabilities to the corresponding edge weight in the matching graph. Takes into
             account the 'type' of qubit, whether it is clifford deformed or not. CURRENTLY DOES NOT TAKE INTO 
-            ACCOUNT THE TYPE OF QUBIT
+            ACCOUNT THE TYPE OF QUBIT - NOT SURE WHAT THIS MEANS / HOW TO ACCOUNT CD
         """
-        return
+        weights_dict = {}
+
+        for edge_1 in edge_dict:
+
+            adjacent_edge_dict = edge_dict.get(edge_1, {})
+
+            # populate weight dictionary 
+            for edge_2 in adjacent_edge_dict:
+
+                p = edge_dict.get(edge_1, {}).get(edge_2,0)
+                weight = np.log((1-p)/p)
+                weights_dict.setdefault(edge_1, {})[edge_2] = weight
+        
+        return weights_dict
     
     def decompose_dem_instruction_stim_auto(self, inst):
         """ Decomposes a stim DEM instruction into its component detectors and probability. Uses STIM's decompose_errors to determine hyperedge decomposition.
@@ -342,7 +356,7 @@ class CorrelatedDecoder:
         """ Given a joint probability dictionary, calculates the conditional probabilities for each hyperedge. The conditional probability is given by 
             P(A|B) = P(A^B)/P(A)
             Where A and B are edges from decomposed hyperedges. The marginal probability is P(A), and the joint probability is P(A^B). The maximum conditional probability is 
-            P_max = 1/(2*eta + 1), derived from the biased pauli channel.
+            P_max = 1/(2*eta + 1), derived from the biased pauli channel. Only hyperedge components are present in final dictionary.
 
             :param joint_prob_dict: the joint probability of decomposed hyperedge between edges A and B
             :return: conditional probability nested dictionary. Of the same form as joint_prob_dict:
@@ -362,20 +376,58 @@ class CorrelatedDecoder:
 
             # populate cond_prob dictionary 
             for edge_2 in adjacent_edge_dict:
+                if edge_1 == edge_2:  # should I exclude the edge I already picked? Pymatching does
+                    continue 
+
                 joint_p = joint_prob_dict.get(edge_1, {}).get(edge_2,0)
 
                 # conditional probability calculation. Min taken because weights cannot be negative, and eta=0.5 represents a full erasure channel
                 cond_p = min(1/(2*self.eta + 1), joint_p/marginal_p) # how do I do directionality here / I might have to think about it, will this actually work? Dont wanna fully erase edges...?
 
                 cond_prob_dict.setdefault(edge_1, {})[edge_2] = cond_p
-
-
         return cond_prob_dict
-
-    def edit_dem(self, dem, cond_prob_dict):
-        """ Given a stim DEM, updates the probabilities in error instructions with detectors given by cond_prob_dict
-        """
+    
+    
+    def get_edges_from_correction(self):
         return
+
+    def edit_dem(self, correction, dem, cond_prob_dict):
+        """ Given a stim DEM, updates the probabilities in error instructions with detectors given by cond_prob_dict based on detectors fired in correction.
+            If a detector edge picked in the correction has a key in cond_prob_dict, it belonged to a hyperedge. The conditional probability then overwrites
+            the original DEM probability for that hyperedge.
+        """
+        # get a list of corrected edges from the first round
+        edges_in_correction = self.get_edges_from_correction(correction, dem)
+
+        # iterate through the dem and fix the probabilities if they're in the cond_prob_dict
+        # Create new DEM with updated probabilities
+        new_dem = stim.DetectorErrorModel()
+
+        for inst in dem:
+            if inst.type == "error":
+                old_prob = inst.args_copy()[0]
+                decomposed_inst = self.decompose_dem_instruction_pairwise(inst)
+                
+                if len(decomposed_inst[old_prob]) > 1: # if the edge is a hyperedge
+                    
+                    for edge_1 in decomposed_inst[old_prob]:
+                        curr_new_prob = 0
+                        for edge_2 in edges_in_correction:
+                            curr_prob = cond_prob_dict.get(edge_2, {}).get(edge_1,0)
+                            new_prob = max(curr_prob, curr_new_prob)
+                        
+                        targets = inst.targets_copy() # change to get targets in edge_1
+                        new_inst = stim.DemInstruction("error", [new_prob], targets) # targets in edge_1 only
+                        new_dem.append(new_inst)
+                    
+                    
+                else:
+                    new_dem.append(inst)
+            else:
+                new_dem.append(inst)  # Preserve non-error instructions like detectors or shifts
+
+
+        return new_dem
 
     def decoding_failures_correlated_circuit_level(self, circuit, p, shots):
         """
@@ -414,15 +466,12 @@ class CorrelatedDecoder:
         syndrome, observable_flips = sampler.sample(shots, separate_observables=True)
         corrections = matchgraph.decode_batch(syndrome, enable_correlations=False)
 
-        updated_weights = matchgraph.weights.copy() # initialize updated weights
-
         for i in range(shots):
             # update weights based on conditional probabilities
-            curr_correction = corrections[i] 
-            updated_weights[curr_correction.nonzero()] = cond_weights[curr_correction.nonzero()] # set the old weights to the conditionally updated weights
+            updated_dem = self.edit_dem(corrections[i], dem, cond_prob_dict)
 
             # second round of decoding with updated weights
-            matching_corr = Matching.from_detector_error_model(dem, weights=updated_weights, enable_correlations=False)
+            matching_corr = Matching.from_detector_error_model(updated_dem, enable_correlations=False)
             correction_corr = matching_corr.decode(syndrome[i])
             corrections[i] = correction_corr
         
