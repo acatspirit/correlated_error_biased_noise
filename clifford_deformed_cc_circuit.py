@@ -493,7 +493,7 @@ class CDCompassCodeCircuit:
     
 
     def make_elongated_circuit_from_parity(self, before_measure_flip, before_measure_pauli_channel, after_clifford_depolarization, before_round_data_pauli_channel,
-                                            between_round_idling_pauli_channel, idling_dephasing, CD_type = "SC"):
+                                            between_round_idling_pauli_channel, idling_dephasing, CD_type = "SC", memory=True):
         """ 
         create a surface code memory experiment circuit from a parity check matrix
         Inputs:
@@ -505,6 +505,7 @@ class CDCompassCodeCircuit:
                 idling_dephasing - (float) the probability of a dephasing error on idling qubits during rounds
                 CD_circuit - (bool) whether to apply clifford deformation to the circuit, ZXXZonSqu is the only option right now 
                 CD_type - (str) the type of clifford deformation to apply, only ZXXZonSqu and XZZXonSq are valid, otherwise None which indicates no clifford deformation
+                memory - (bool) whether or not to run multiple time slices / do a full memory experiment
             Returns: (stim.Circuit) the circuit with noise added
 
             The error model is the biased noise model from the paper: PRA (101)042312, 2020
@@ -645,15 +646,15 @@ class CDCompassCodeCircuit:
 
         loop_circuit.append("TICK") # add a tick to the circuit to mark the end of the t>0 iteration
         
-        # repeat the loop circuit d-1 times - circuit level only
-        circuit.append(stim.CircuitRepeatBlock(repeat_count=num_rounds-1, body=loop_circuit))# end the repeat block
+        if memory:
+            # repeat the loop circuit d-1 times - circuit level only
+            circuit.append(stim.CircuitRepeatBlock(repeat_count=num_rounds-1, body=loop_circuit))# end the repeat block
 
         # reconstruct the stabilizers and measure the data qubits
         # for X mem measure X stabs
         if self.type == "X":
             # measure all the data qubits in the X stabilizers
-
-            # circuit.append("Z_ERROR", full_stab_L, p_meas) # should have a perfect round at the end
+            # circuit.append("Z_ERROR", full_stab_L, p_meas) 
             circuit.append("PAULI_CHANNEL_1", data_q_list, [px_meas, py_meas, pz_meas]) # apply biased depolarizing error on data qubits before measurement
 
             if CD_type != "SC":

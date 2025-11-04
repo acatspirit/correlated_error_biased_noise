@@ -1274,13 +1274,13 @@ if __name__ == "__main__":
     # p_list = np.linspace(p_th_init-0.03, p_th_init + 0.03, 40)
 
     # otherwise p_list is range of probabilities
-    p_list = np.linspace(0.1, 0.5, 40)
+    p_list = np.linspace(0.05, 0.4, 40)
 
     l_list = [2,3,4,5,6] # elongation params
     d_list = [11,13,15,17,19] # code distances
-    eta_list = [0.5,0.75,1,2,3,5,7] # noise bias
+    eta_list = [0.5,5,10,25,50] # noise bias
     cd_list = ["XZZXonSqu", "ZXXZonSqu"] # clifford deformation types
-    total_num_shots = 1e5 # number of shots 
+    total_num_shots = 1e6 # number of shots 
     corr_type = "TOTAL_MEM" # which type of correlation to use, depending on the type of decoder. Choose from ['CORR_XZ', 'CORR_ZX', 'TOTAL', 'TOTAL_MEM', 'TOTAL_PY_CORR']
     error_type = "TOTAL_MEM" # which type of error to plot
     # num_shots = 66666
@@ -1305,7 +1305,7 @@ if __name__ == "__main__":
 
 
     # run this to get data from the dcc
-    get_data_DCC(circuit_data, corr_decoding, noise_model, d_list, l_list, eta_list, cd_list, corr_list, total_num_shots, p_list=p_list, p_th_init_d=None, pymatch_corr=py_corr)
+    # get_data_DCC(circuit_data, corr_decoding, noise_model, d_list, l_list, eta_list, cd_list, corr_list, total_num_shots, p_list=p_list, p_th_init_d=None, pymatch_corr=py_corr)
 
     # run this once you have data and want to combo it to one csv
     # concat_csv(folder_path, circuit_data)
@@ -1313,11 +1313,19 @@ if __name__ == "__main__":
 
     # plot the threshold results
 
+    # eta - 0.5, 10, 25, 50, retake for lower ranges at lower eta 
+    # l - 2-6 
+    # no corr
+    # code cap - only one shot, asymmetric pauli channel (before measuremnets circuit) on data
+    # preparing the circuit wrong with a probability p is how to think of it
+    # write down which one matches
+
+
     # params to plot
-    # eta = 100
-    # l = 2
-    # curr_num_shots = 24390.0
-    # noise_model = "phenom"
+    # eta = 0.5
+    # l = 3
+    # curr_num_shots = 7142.0
+    # noise_model = "code_cap"
     # CD_type = "ZXXZonSqu"
     # py_corr = False # whether to use pymatching correlated decoder for circuit data
 
