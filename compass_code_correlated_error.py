@@ -282,7 +282,7 @@ class CorrelatedDecoder:
             eg. error(p) D0 D1 L0 -> {p: [(0, 1)]}
                 error(p) D0 -> {p: [(0, -1)]}
                 error(p) D0 D2 D1 -> {p: [(0, 2), (2, 1)]}. 
-                error(p) D0 D2 ^ D3 -> {p: [(0, 2), (2, 3)]}
+                error(p) D0 D2 ^ D3 -> {p: [(0, 2), (2, 3)]} this is a choice. If we treated the ^ as already decomposing, we would get [(0,2), (3,-1)]
 
             :param inst: stim.DEMInstruction object. The instruction to be decomposed.
             :return: decomp_inst: dict. A dictionary with the probability as the key and a list of edges as the value.
@@ -301,7 +301,7 @@ class CorrelatedDecoder:
         edges = []
 
         if total_num_detectors == 1:
-            edges = [(detectors[0].val, -1)] # include a boundary edge
+            edges = [(-1, detectors[0].val)] # include a boundary edge
         
         else: # pairwise decompose
             for i in range(total_num_detectors-1):
@@ -387,17 +387,14 @@ class CorrelatedDecoder:
                 cond_prob_dict.setdefault(edge_1, {})[edge_2] = cond_p
         return cond_prob_dict
     
-    
-    def get_edges_from_correction(self):
-        return
 
-    def edit_dem(self, correction, dem, cond_prob_dict):
+    def edit_dem(self, edges_in_correction, dem, cond_prob_dict):
         """ Given a stim DEM, updates the probabilities in error instructions with detectors given by cond_prob_dict based on detectors fired in correction.
             If a detector edge picked in the correction has a key in cond_prob_dict, it belonged to a hyperedge. The conditional probability then overwrites
             the original DEM probability for that hyperedge.
         """
         # get a list of corrected edges from the first round
-        edges_in_correction = self.get_edges_from_correction(correction, dem)
+        edges_in_correction = [tuple(sorted(edge)) for edge in edges_in_correction]
 
         # iterate through the dem and fix the probabilities if they're in the cond_prob_dict
         # Create new DEM with updated probabilities
@@ -410,19 +407,20 @@ class CorrelatedDecoder:
                 
                 if len(decomposed_inst[old_prob]) > 1: # if the edge is a hyperedge
                     
-                    for edge_1 in decomposed_inst[old_prob]:
-                        curr_new_prob = 0
-                        for edge_2 in edges_in_correction:
+                    for edge_1 in decomposed_inst[old_prob]: # break each hyperedge into sub-edges with their conditional prob
+                        print(old_prob, edge_1)
+                        new_prob = old_prob
+                        for edge_2 in edges_in_correction: # check which conditional probability is highest out of hyperedges
                             curr_prob = cond_prob_dict.get(edge_2, {}).get(edge_1,0)
-                            new_prob = max(curr_prob, curr_new_prob)
+                            new_prob = max(curr_prob, new_prob)
                         
-                        targets = inst.targets_copy() # change to get targets in edge_1
+                        targets = [stim.target_relative_detector_id(node) for node in edge_1] # will I have a problem with value -1?
                         new_inst = stim.DemInstruction("error", [new_prob], targets) # targets in edge_1 only
                         new_dem.append(new_inst)
                     
                     
-                else:
-                    new_dem.append(inst)
+                else: # if the edge is not a hyperedge, leave it be
+                    new_dem.append(inst) 
             else:
                 new_dem.append(inst)  # Preserve non-error instructions like detectors or shifts
 
@@ -452,7 +450,6 @@ class CorrelatedDecoder:
         
         # calculate the conditional probabilities based on joint probablities and marginal probabilities 
         cond_prob_dict = self.get_conditional_prob(joint_prob_dict)
-        cond_weights = self.probability_edge_mapping(cond_prob_dict)
 
         
         
@@ -464,16 +461,19 @@ class CorrelatedDecoder:
         # get the syndromes and observable flips
         sampler = circuit.compile_detector_sampler(seed=42)
         syndrome, observable_flips = sampler.sample(shots, separate_observables=True)
-        corrections = matchgraph.decode_batch(syndrome, enable_correlations=False)
 
+        # from eva
+        # change the logicals so that there is an observable for each qubit, change back to the code cap case to check whether the real logical flipped
+
+        corrections = np.zeros(shots, 2) # largest fault id is 1, len of correction = 2
         for i in range(shots):
+            edges_in_correction = matchgraph.decode_to_edges_array(syndrome[i])
             # update weights based on conditional probabilities
-            updated_dem = self.edit_dem(corrections[i], dem, cond_prob_dict)
+            updated_dem = self.edit_dem(edges_in_correction, dem, cond_prob_dict)
 
             # second round of decoding with updated weights
             matching_corr = Matching.from_detector_error_model(updated_dem, enable_correlations=False)
-            correction_corr = matching_corr.decode(syndrome[i])
-            corrections[i] = correction_corr
+            corrections[i] = matching_corr.decode(syndrome[i])
         
         # calculate the number of logical errors
         log_errors_array = np.any(np.array(observable_flips) != np.array(corrections), axis=1)
@@ -1280,7 +1280,7 @@ if __name__ == "__main__":
     d_list = [11,13,15,17,19] # code distances
     eta_list = [0.5,5,10,25,50] # noise bias
     cd_list = ["XZZXonSqu", "ZXXZonSqu"] # clifford deformation types
-    total_num_shots = 1e6 # number of shots 
+    total_num_shots = 5e5 # number of shots 
     corr_type = "TOTAL_MEM" # which type of correlation to use, depending on the type of decoder. Choose from ['CORR_XZ', 'CORR_ZX', 'TOTAL', 'TOTAL_MEM', 'TOTAL_PY_CORR']
     error_type = "TOTAL_MEM" # which type of error to plot
     # num_shots = 66666
@@ -1322,11 +1322,11 @@ if __name__ == "__main__":
 
 
     # params to plot
-    # eta = 0.5
-    # l = 3
+    # eta = 7
+    # l = 6
     # curr_num_shots = 7142.0
     # noise_model = "code_cap"
-    # CD_type = "ZXXZonSqu"
+    # CD_type = "XZZXonSqu"
     # py_corr = False # whether to use pymatching correlated decoder for circuit data
 
 
