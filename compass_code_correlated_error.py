@@ -528,23 +528,31 @@ class CorrelatedDecoder:
                 num_errors_array[shot] = 1
         return num_errors_array
 
-    def get_num_log_errors_DEM(self, circuit, num_shots, enable_pymatch_corr):
+    def get_num_log_errors_DEM(self, circuit, num_shots, enable_corr, enable_pymatch_corr):
         """
         Get the number of logical errors from the detector error model
         :param circuit: stim.Circuit object
         :param num_shots: number of shots to sample
+        :param enable_corr: boolean whether to use house-made correlated decoder
         :param enable_pymatch_corr: boolean whether to use pymatching correlated decoder
         :return: number of logical errors
         """
-        dem = circuit.detector_error_model(decompose_errors=enable_pymatch_corr)
-        matchgraph = Matching.from_detector_error_model(dem,enable_correlations=enable_pymatch_corr)
-        sampler = circuit.compile_detector_sampler(seed=42)
-        syndrome, observable_flips = sampler.sample(num_shots, separate_observables=True)
-        predictions = matchgraph.decode_batch(syndrome, enable_correlations=enable_pymatch_corr)
-        log_errors_array = np.any(np.array(observable_flips) != np.array(predictions), axis=1)
+        if enable_corr:
+            # house-made circuit level correlated decoder
+            log_errors_array = self.decoding_failures_correlated_circuit_level(circuit, num_shots)
+
+        
+        else: # no correlated decoding or pymatching correlated decoding
+            dem = circuit.detector_error_model(decompose_errors=enable_pymatch_corr)
+            matchgraph = Matching.from_detector_error_model(dem,enable_correlations=enable_pymatch_corr)
+            sampler = circuit.compile_detector_sampler(seed=42)
+            syndrome, observable_flips = sampler.sample(num_shots, separate_observables=True)
+            predictions = matchgraph.decode_batch(syndrome, enable_correlations=enable_pymatch_corr)
+            log_errors_array = np.any(np.array(observable_flips) != np.array(predictions), axis=1)
+        
         return log_errors_array
 
-    def get_log_error_circuit_level(self, p_list, meas_type, num_shots, noise_model="code_cap", cd_type="SC", pymatch_corr = False):
+    def get_log_error_circuit_level(self, p_list, meas_type, num_shots, noise_model="code_cap", cd_type="SC", corr_decoding= False, pymatch_corr = False):
         """
         Get the logical error rate for a list of physical error rates of gates at the circuit level
         :param p_list: list of p values
@@ -572,7 +580,7 @@ class CorrelatedDecoder:
             else:
                 raise ValueError("Invalid noise model. Choose either 'code_cap', 'phenom', or 'circuit_level'.")
             
-            log_errors_array = self.get_num_log_errors_DEM(circuit, num_shots, pymatch_corr)
+            log_errors_array = self.get_num_log_errors_DEM(circuit, num_shots, corr_decoding, pymatch_corr)
             log_error_L.append(log_errors_array)
 
         return log_error_L
@@ -601,7 +609,7 @@ class CorrelatedDecoder:
 #
 ############################################
 
-def get_data(num_shots, d_list, l, p_list, eta, corr_type, circuit_data, noise_model="code_cap", cd_type="SC", pymatch_corr=False):
+def get_data(num_shots, d_list, l, p_list, eta, corr_type, circuit_data, noise_model="code_cap", cd_type="SC", corr_decoding=False, pymatch_corr=False):
     """ Generate logical error rates for x,z, correlatex z, and total errors
         via MC sim in decoding_failures_correlated and add it to a shared pandas df
         
@@ -630,8 +638,8 @@ def get_data(num_shots, d_list, l, p_list, eta, corr_type, circuit_data, noise_m
                 # circuit_z = cc_circuit.CDCompassCodeCircuit(d, l, eta, [0.003, 0.001, p], "Z")
     
             decoder = CorrelatedDecoder(eta, d, l, corr_type)
-            log_errors_z_array = decoder.get_log_error_circuit_level(p_list, "Z", num_shots, noise_model, cd_type, pymatch_corr) # get the Z logical errors from Z memory experiment, X errors
-            log_errors_x_array = decoder.get_log_error_circuit_level(p_list, "X", num_shots, noise_model, cd_type, pymatch_corr) # get the X logical errors from X memory experiment, Z errors
+            log_errors_z_array = decoder.get_log_error_circuit_level(p_list, "Z", num_shots, noise_model, cd_type, corr_decoding, pymatch_corr) # get the Z logical errors from Z memory experiment, X errors
+            log_errors_x_array = decoder.get_log_error_circuit_level(p_list, "X", num_shots, noise_model, cd_type, corr_decoding, pymatch_corr) # get the X logical errors from X memory experiment, Z errors
             log_errors_z = np.sum(log_errors_z_array, axis=1) 
             log_errors_x = np.sum(log_errors_x_array, axis=1)        
             log_errors_total = np.sum(np.logical_xor(log_errors_x_array, log_errors_z_array), axis=1)
@@ -639,15 +647,32 @@ def get_data(num_shots, d_list, l, p_list, eta, corr_type, circuit_data, noise_m
 
 
             for i,log_error in enumerate(log_errors_x):
-                curr_row = {"d":d, "num_shots":num_shots, "p":p_list[i], "l": l, "eta":eta, "error_type":"X_MEM_PY" if pymatch_corr else "X_MEM", "noise_model": noise_model, "CD_type":cd_type, "num_log_errors":log_error/num_shots, "time_stamp":datetime.now()}
+                if pymatch_corr:
+                    curr_row = {"d":d, "num_shots":num_shots, "p":p_list[i], "l": l, "eta":eta, "error_type":"X_MEM_PY", "noise_model": noise_model, "CD_type":cd_type, "num_log_errors":log_error/num_shots, "time_stamp":datetime.now()}
+                elif corr_decoding:
+                    curr_row = {"d":d, "num_shots":num_shots, "p":p_list[i], "l": l, "eta":eta, "error_type":"X_MEM_CORR", "noise_model": noise_model, "CD_type":cd_type, "num_log_errors":log_error/num_shots, "time_stamp":datetime.now()}
+                else:
+                    curr_row = {"d":d, "num_shots":num_shots, "p":p_list[i], "l": l, "eta":eta, "error_type":"X_MEM", "noise_model": noise_model, "CD_type":cd_type, "num_log_errors":log_error/num_shots, "time_stamp":datetime.now()}
+                
                 data = pd.concat([data, pd.DataFrame([curr_row])], ignore_index=True)
 
             for i,log_error in enumerate(log_errors_z):
-                curr_row = {"d":d, "num_shots":num_shots, "p":p_list[i], "l": l, "eta":eta, "error_type":"Z_MEM_PY" if pymatch_corr else "Z_MEM", "noise_model": noise_model, "CD_type":cd_type, "num_log_errors":log_error/num_shots, "time_stamp":datetime.now()}
+                if pymatch_corr:
+                    curr_row = {"d":d, "num_shots":num_shots, "p":p_list[i], "l": l, "eta":eta, "error_type":"Z_MEM_PY", "noise_model": noise_model, "CD_type":cd_type, "num_log_errors":log_error/num_shots, "time_stamp":datetime.now()}
+                elif corr_decoding:
+                    curr_row = {"d":d, "num_shots":num_shots, "p":p_list[i], "l": l, "eta":eta, "error_type":"Z_MEM_CORR", "noise_model": noise_model, "CD_type":cd_type, "num_log_errors":log_error/num_shots, "time_stamp":datetime.now()}
+                else:
+                    curr_row = {"d":d, "num_shots":num_shots, "p":p_list[i], "l": l, "eta":eta, "error_type":"Z_MEM", "noise_model": noise_model, "CD_type":cd_type, "num_log_errors":log_error/num_shots, "time_stamp":datetime.now()}
                 data = pd.concat([data, pd.DataFrame([curr_row])], ignore_index=True)
 
             for i,log_error in enumerate(log_errors_total):
-                curr_row = {"d":d, "num_shots":num_shots, "p":p_list[i], "l": l, "eta":eta, "error_type":"TOTAL_MEM_PY" if pymatch_corr else "TOTAL_MEM", "noise_model": noise_model, "CD_type":cd_type, "num_log_errors":log_error/num_shots, "time_stamp":datetime.now()}
+                if pymatch_corr:
+                    curr_row = {"d":d, "num_shots":num_shots, "p":p_list[i], "l": l, "eta":eta, "error_type":"TOTAL_MEM_PY", "noise_model": noise_model, "CD_type":cd_type, "num_log_errors":log_error/num_shots, "time_stamp":datetime.now()}
+                elif corr_decoding:
+                    curr_row = {"d":d, "num_shots":num_shots, "p":p_list[i], "l": l, "eta":eta, "error_type":"TOTAL_MEM_CORR", "noise_model": noise_model, "CD_type":cd_type, "num_log_errors":log_error/num_shots, "time_stamp":datetime.now()}
+                else:
+                    curr_row = {"d":d, "num_shots":num_shots, "p":p_list[i], "l": l, "eta":eta, "error_type":"TOTAL_MEM", "noise_model": noise_model, "CD_type":cd_type, "num_log_errors":log_error/num_shots, "time_stamp":datetime.now()}
+                
                 data = pd.concat([data, pd.DataFrame([curr_row])], ignore_index=True)
             
             
@@ -682,7 +707,7 @@ def shots_averaging(num_shots, l, eta, err_type, in_df, CD_type, file):
 
 
 
-def write_data(num_shots, d_list, l, p_list, eta, ID, corr_type, circuit_data, noise_model="code_cap", cd_type="SC", pymatch_corr=False):
+def write_data(num_shots, d_list, l, p_list, eta, ID, corr_type, circuit_data, noise_model="code_cap", cd_type="SC", corr_decoding=False, pymatch_corr=False):
     """ Writes data from pandas df to a csv file, for use with SLURM arrays. Generates data for each slurm output on a CSV
         in: num_shots - the number of MC iterations
             l - the integer repition of the compass code
@@ -692,7 +717,7 @@ def write_data(num_shots, d_list, l, p_list, eta, ID, corr_type, circuit_data, n
             ID - SLURM input task_ID number, corresponds to which array element we run
     """
     # print(f"in write data, ID = {ID}, l = {l}, eta = {eta}, corr_type = {corr_type}, num_shots = {num_shots}, noise_model = {noise_model}, cd_type = {cd_type}")
-    data = get_data(num_shots, d_list, l, p_list, eta, corr_type, circuit_data, noise_model=noise_model, cd_type=cd_type, pymatch_corr=pymatch_corr)
+    data = get_data(num_shots, d_list, l, p_list, eta, corr_type, circuit_data, noise_model=noise_model, cd_type=cd_type, corr_decoding=corr_decoding, pymatch_corr=pymatch_corr)
     if circuit_data:
         if pymatch_corr:
             data_file = f'circuit_data/py_corr_{ID}.csv'
@@ -800,7 +825,7 @@ def concat_csv(folder_path, circuit_data):
     for file in data_files:
         os.remove(file)
 
-def full_error_plot(full_df, curr_eta, curr_l, curr_num_shots, noise_model, CD_type, file, py_corr=False, loglog=False, averaging=True, circuit_level=False, plot_by_l=False):
+def full_error_plot(full_df, curr_eta, curr_l, curr_num_shots, noise_model, CD_type, file, corr_decoding=False, py_corr=False, loglog=False, averaging=True, circuit_level=False, plot_by_l=False):
     """Make a plot of all errors given a df with unedited contents of an entire CSV.
         :param full_df: pandas DataFrame with unedited contents from CSV
         :param curr_eta: current noise bias to filter DataFrame
@@ -828,6 +853,8 @@ def full_error_plot(full_df, curr_eta, curr_l, curr_num_shots, noise_model, CD_t
 
     if py_corr: 
         filtered_df = filtered_df[filtered_df['error_type'].isin(['X_MEM_PY', 'Z_MEM_PY', 'TOTAL_MEM_PY'])]
+    elif corr_decoding:
+        filtered_df = filtered_df[filtered_df['error_type'].isin(['X_MEM_CORR', 'Z_MEM_CORR', 'TOTAL_MEM_CORR'])]
     else:
         if circuit_level:
             filtered_df = filtered_df[filtered_df['error_type'].isin(['X_MEM', 'Z_MEM', 'TOTAL_MEM'])]
@@ -883,13 +910,22 @@ def full_error_plot(full_df, curr_eta, curr_l, curr_num_shots, noise_model, CD_t
     plt.tight_layout()
     plt.show()
 
-def threshold_plot(full_df, p_th0, p_range, curr_eta, curr_l, curr_num_shots, corr_type, file, loglog=False, averaging=True, show_threshold=True):
+def threshold_plot(full_df, p_th0, p_range, curr_eta, curr_l, curr_num_shots, corr_type, file, circuit_level=False, py_corr = False, corr_decoding=False, loglog=False, averaging=True, show_threshold=True):
     """Make a plot of all 4 errors given a df with unedited contents"""
 
     prob_scale = get_prob_scale(corr_type, curr_eta)
 
     # Filter the DataFrame based on the input parameters
-    filtered_df = full_df[(full_df['p'] > p_th0 - p_range)&(full_df['p'] < p_th0 + p_range)&(full_df['error_type'] == corr_type)&(full_df['l'] == curr_l) & (full_df['eta'] == curr_eta) & (full_df['num_shots'] == curr_num_shots)]
+    filtered_df = full_df[(full_df['p'] > p_th0 - p_range)&(full_df['p'] < p_th0 + p_range)&(full_df['l'] == curr_l) & (full_df['eta'] == curr_eta) & (full_df['num_shots'] == curr_num_shots)]
+    if py_corr: 
+        filtered_df = filtered_df[filtered_df['error_type'].isin(['X_MEM_PY', 'Z_MEM_PY', 'TOTAL_MEM_PY'])]
+    elif corr_decoding:
+        filtered_df = filtered_df[filtered_df['error_type'].isin(['X_MEM_CORR', 'Z_MEM_CORR', 'TOTAL_MEM_CORR'])]
+    else:
+        if circuit_level:
+            filtered_df = filtered_df[filtered_df['error_type'].isin(['X_MEM', 'Z_MEM', 'TOTAL_MEM'])]
+        else:
+            filtered_df = filtered_df[filtered_df['error_type'].isin(['X', 'Z', 'TOTAL', 'CORR_XZ', 'CORR_ZX'])]
     
 
     d_values = filtered_df['d'].unique()
@@ -1088,8 +1124,8 @@ def get_data_DCC(circuit_data, corr_decoding, noise_model, d_list, l_list, eta_l
         if p_th_init_d is not None:
             p_th_init = p_th_init_d[(l, eta, cd_type)]
             p_list = np.linspace(p_th_init - 0.03, p_th_init + 0.03, 40)
-        write_data(num_shots, d_list, l, p_list, eta, task_id, corr_type, circuit_data=circuit_data, noise_model=noise_model, cd_type=cd_type, pymatch_corr=pymatch_corr)
-    if circuit_data and corr_decoding:
+        write_data(num_shots, d_list, l, p_list, eta, task_id, corr_type, circuit_data=circuit_data, noise_model=noise_model, cd_type=cd_type, corr_decoding=corr_decoding, pymatch_corr=pymatch_corr)
+    if circuit_data and (pymatch_corr or corr_decoding):
         l_eta_cd_type_arr = list(itertools.product(l_list,eta_list,cd_list))
         reps = slurm_array_size//len(l_eta_cd_type_arr) # how many times to run file, num_shots each time
         ind = task_id%len(l_eta_cd_type_arr) # get the index of the task_id in the l_eta__corr_type_arr
@@ -1100,7 +1136,8 @@ def get_data_DCC(circuit_data, corr_decoding, noise_model, d_list, l_list, eta_l
         if p_th_init_d is not None:
             p_th_init = p_th_init_d[(l, eta, cd_type)]
             p_list = np.linspace(p_th_init - 0.03, p_th_init + 0.03, 40)
-        write_data(num_shots, d_list, l, p_list, eta, task_id, corr_type, circuit_data=circuit_data, noise_model=noise_model, cd_type=cd_type, pymatch_corr=pymatch_corr)
+        write_data(num_shots, d_list, l, p_list, eta, task_id, corr_type, circuit_data=circuit_data, noise_model=noise_model, cd_type=cd_type, corr_decoding=corr_decoding, pymatch_corr=pymatch_corr)
+    
 
     if corr_decoding and not circuit_data: # change this to get different data for eta plot
         l_eta_corr_type_arr = list(itertools.product(l_list, eta_list, corr_list)) # list of tuples (l, eta, corr_type), currently 40
@@ -1114,7 +1151,7 @@ def get_data_DCC(circuit_data, corr_decoding, noise_model, d_list, l_list, eta_l
         cd_type = "SC"
         noise_model = "code_cap"
         print("l,eta,corr_type", l,eta, corr_type)
-        write_data(num_shots, d_list, l, p_list, eta, task_id, corr_type, circuit_data=circuit_data, noise_model=noise_model, cd_type=cd_type,  pymatch_corr=pymatch_corr)
+        write_data(num_shots, d_list, l, p_list, eta, task_id, corr_type, circuit_data=circuit_data, noise_model=noise_model, cd_type=cd_type,  corr_decoding=corr_decoding, pymatch_corr=pymatch_corr)
     
     print("reps", reps)
     print("ind", ind)
