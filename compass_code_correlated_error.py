@@ -212,6 +212,11 @@ class CorrelatedDecoder:
         return num_errors_x, num_errors_z
     
     
+    #
+    # Circuit level correlated decoding functions
+    #
+
+
     def probability_edge_mapping(self, edge_dict):
         """ Maps the probabilities to the corresponding edge weight in the matching graph. Takes into
             account the 'type' of qubit, whether it is clifford deformed or not. CURRENTLY DOES NOT TAKE INTO 
@@ -282,7 +287,7 @@ class CorrelatedDecoder:
             eg. error(p) D0 D1 L0 -> {p: p, detectors: [(0, 1)], observables: [0]}
                 error(p) D0 -> {p: p, detectors: [(0, -1)], observables: []} single detector error gets boundary edge
                 error(p) D0 D2 D1 -> {p:p, detectors: [(0, 2), (2, 1)], observables: []}. 
-                error(p) D0 D2 ^ D3 -> {p:p, detectors: [(0, 2), (2, 3)], observables:[]} this is a choice. If we treated the ^ as already decomposing, we would get [(0,2), (3,-1)]
+                error(p) D0 D2 ^ D3 -> {p:p, detectors: [(0, 2), (2, 3)], observables:[]} We choose to ignore ^. If we treated the ^ as already decomposing, we would get [(0,2), (3,-1)]
                 error(p) D0 D2 D3 L0 -> {p:p, detectors: [(0, 2), (2, 3)], observables:[0]}. 
 
             :param inst: stim.DEMInstruction object. The instruction to be decomposed.
@@ -442,7 +447,7 @@ class CorrelatedDecoder:
 
         return new_dem
 
-    def decoding_failures_correlated_circuit_level(self, circuit, p, shots):
+    def decoding_failures_correlated_circuit_level(self, circuit, shots):
         """
         Finds the number of logical errors given a circuit using correlated decoding. Uses pymatching's correlated decoding approach, inspired by
         papers cited in the README.
