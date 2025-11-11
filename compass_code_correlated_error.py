@@ -279,36 +279,45 @@ class CorrelatedDecoder:
             PASS IN DEM with DECOMPOSE_ERRORS=FALSE - talk to ken about this
 
 
-            eg. error(p) D0 D1 L0 -> {p: [(0, 1)]}
-                error(p) D0 -> {p: [(0, -1)]}
-                error(p) D0 D2 D1 -> {p: [(0, 2), (2, 1)]}. 
-                error(p) D0 D2 ^ D3 -> {p: [(0, 2), (2, 3)]} this is a choice. If we treated the ^ as already decomposing, we would get [(0,2), (3,-1)]
+            eg. error(p) D0 D1 L0 -> {p: p, detectors: [(0, 1)], observables: [0]}
+                error(p) D0 -> {p: p, detectors: [(0, -1)], observables: []} single detector error gets boundary edge
+                error(p) D0 D2 D1 -> {p:p, detectors: [(0, 2), (2, 1)], observables: []}. 
+                error(p) D0 D2 ^ D3 -> {p:p, detectors: [(0, 2), (2, 3)], observables:[]} this is a choice. If we treated the ^ as already decomposing, we would get [(0,2), (3,-1)]
+                error(p) D0 D2 D3 L0 -> {p:p, detectors: [(0, 2), (2, 3)], observables:[0]}. 
 
             :param inst: stim.DEMInstruction object. The instruction to be decomposed.
             :return: decomp_inst: dict. A dictionary with the probability as the key and a list of edges as the value.
         """
         # get the edge probability and detectors for an instruction
-        prob_err = inst.args_copy()[0]
-        targets = np.array(inst.targets_copy())
-        decomp_inst = {prob_err: []}
+        targets = list(inst.targets_copy())
+        decomp_inst = {"p": inst.args_copy()[0], "detectors": [], "observables": []}
 
-        # in case the error passed in has a separator
-        seperator_indices = np.where([target.is_separator() for target in targets])[0]
-        detectors = np.delete(targets,seperator_indices)
-        total_num_detectors = len(detectors)
+        # separate detectors, logical observables, and separators
+        for t in targets:
+            if t.is_separator():
+                continue
+            elif t.is_logical_observable_id():
+                # logical observable: L#
+                decomp_inst["observables"].append(t.val)
+            elif t.is_relative_detector_id():
+                # detector: D#
+                decomp_inst["detectors"].append(t.val)
+        
+        total_num_detectors = len(decomp_inst["detectors"])
 
         # iterate through array and make pairwise edge tuples with probability prob_err
+        detectors = decomp_inst["detectors"]
         edges = []
 
         if total_num_detectors == 1:
-            edges = [(-1, detectors[0].val)] # include a boundary edge
+            edges = [(-1, detectors[0])] # include a boundary edge
         
         else: # pairwise decompose
             for i in range(total_num_detectors-1):
-                edges.append(tuple(sorted([detectors[i].val, detectors[i+1].val])))
+                edges.append(tuple(sorted([detectors[i], detectors[i+1]])))
         
         # store result
-        decomp_inst[prob_err] = edges
+        decomp_inst["detectors"] = edges
         return decomp_inst
 
 
@@ -329,8 +338,8 @@ class CorrelatedDecoder:
         for inst in dem:
             if inst.type == "error":
                 decomposed_inst = self.decompose_dem_instruction_pairwise(inst)
-                prob_err = list(decomposed_inst.keys())[0]
-                edges = decomposed_inst[prob_err]
+                prob_err = decomposed_inst["p"]
+                edges = decomposed_inst["detectors"]
 
                 # update hyperedges in joint probability table
                 if len(edges) > 1:
@@ -391,10 +400,13 @@ class CorrelatedDecoder:
     def edit_dem(self, edges_in_correction, dem, cond_prob_dict):
         """ Given a stim DEM, updates the probabilities in error instructions with detectors given by cond_prob_dict based on detectors fired in correction.
             If a detector edge picked in the correction has a key in cond_prob_dict, it belonged to a hyperedge. The conditional probability then overwrites
-            the original DEM probability for that hyperedge.
+            the original DEM probability for that hyperedge. Logical observables are distributed across new error instructions as in the original instruction.
         """
         # get a list of corrected edges from the first round
         edges_in_correction = [tuple(sorted(edge)) for edge in edges_in_correction]
+
+        # check to make sure edges aren't used twice, leave only the max error probability for each or bernoulli xor?
+        # do I need to make sure error mechanisms aren't repeated? - make it a set?
 
         # iterate through the dem and fix the probabilities if they're in the cond_prob_dict
         # Create new DEM with updated probabilities
@@ -405,16 +417,19 @@ class CorrelatedDecoder:
                 old_prob = inst.args_copy()[0]
                 decomposed_inst = self.decompose_dem_instruction_pairwise(inst)
                 
-                if len(decomposed_inst[old_prob]) > 1: # if the edge is a hyperedge
+                if len(decomposed_inst["detectors"]) > 1: # if the edge is a hyperedge
                     
-                    for edge_1 in decomposed_inst[old_prob]: # break each hyperedge into sub-edges with their conditional prob
-                        print(old_prob, edge_1)
+                    for edge_1 in decomposed_inst["detectors"]: # break each hyperedge into sub-edges with their conditional prob
                         new_prob = old_prob
                         for edge_2 in edges_in_correction: # check which conditional probability is highest out of hyperedges
                             curr_prob = cond_prob_dict.get(edge_2, {}).get(edge_1,0)
                             new_prob = max(curr_prob, new_prob)
                         
                         targets = [stim.target_relative_detector_id(node) for node in edge_1] # will I have a problem with value -1?
+
+                        if len(decomposed_inst["observables"]) > 0:
+                            targets += [stim.target_logical_observable_id(l) for l in decomposed_inst["observables"]]
+                        
                         new_inst = stim.DemInstruction("error", [new_prob], targets) # targets in edge_1 only
                         new_dem.append(new_inst)
                     
