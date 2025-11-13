@@ -300,7 +300,56 @@ l,eta,error_type,pth,stderr,cd_type,noise_model
 5,7,TOTAL,0.262,0,ZXXZonSqu,code_cap
 6,5,TOTAL,0.214,0,ZXXZonSqu,code_cap
 6,7,TOTAL,0.262,0,ZXXZonSqu,code_cap
-
+2,0.5, TOTAL,0.149, 0, XZZXonSqu, code_cap  
+2, 5, TOTAL, 0.225, 0, XZZXonSqu, code_cap
+2, 10, TOTAL, 0.256, 0, XZZXonSqu, code_cap
+2,25, TOTAL, 0.311, 0, XZZXonSqu, code_cap
+2, 50, TOTAL, 0.338, 0, XZZXonSqu, code_cap
+3,0.5, TOTAL,0.117, 0, XZZXonSqu, code_cap  
+3, 5, TOTAL, 0.146, 0, XZZXonSqu, code_cap
+3, 10, TOTAL, 0.165, 0, XZZXonSqu, code_cap
+3,25, TOTAL, 0.189, 0, XZZXonSqu, code_cap
+3, 50, TOTAL, 0.204, 0, XZZXonSqu, code_cap
+4,0.5, TOTAL,0.909, 0, XZZXonSqu, code_cap  
+4, 5, TOTAL, 0.139, 0, XZZXonSqu, code_cap
+4, 10, TOTAL, 0.158, 0, XZZXonSqu, code_cap
+4,25, TOTAL, 0.187, 0, XZZXonSqu, code_cap
+4, 50, TOTAL, 0.203, 0, XZZXonSqu, code_cap
+5,0.5, TOTAL,0.077, 0, XZZXonSqu, code_cap  
+5, 5, TOTAL, 0.129, 0, XZZXonSqu, code_cap
+5, 10, TOTAL, 0.154, 0, XZZXonSqu, code_cap
+5,25, TOTAL, 0.182, 0, XZZXonSqu, code_cap
+5, 50, TOTAL, 0.202, 0, XZZXonSqu, code_cap
+6,0.5, TOTAL,0.061, 0, XZZXonSqu, code_cap  
+6, 5, TOTAL, 0.128, 0, XZZXonSqu, code_cap
+6, 10, TOTAL, 0.157, 0, XZZXonSqu, code_cap
+6,25, TOTAL, 0.181, 0, XZZXonSqu, code_cap
+6, 50, TOTAL, 0.203, 0, XZZXonSqu, code_cap
+2,0.5, TOTAL,0.152, 0, ZXXZonSqu, code_cap  
+2, 5, TOTAL, 0.225, 0, ZXXZonSqu, code_cap
+2, 10, TOTAL, 0.256, 0, ZXXZonSqu, code_cap
+2,25, TOTAL, 0.311, 0, ZXXZonSqu, code_cap
+2, 50, TOTAL, 0.338, 0, ZXXZonSqu, code_cap
+3,0.5, TOTAL,0.118, 0, ZXXZonSqu, code_cap  
+3, 5, TOTAL, 0.229, 0, ZXXZonSqu, code_cap
+3, 10, TOTAL, 0.285, 0, ZXXZonSqu, code_cap
+3,25, TOTAL, 0.325, 0, ZXXZonSqu, code_cap
+3, 50, TOTAL, 0.358, 0, ZXXZonSqu, code_cap
+4,0.5, TOTAL,0.905, 0, ZXXZonSqu, code_cap  
+4, 5, TOTAL, 0.222, 0, ZXXZonSqu, code_cap
+4, 10, TOTAL, 0.304, 0, ZXXZonSqu, code_cap
+4,25, TOTAL, 0.354, 0, ZXXZonSqu, code_cap
+4, 50, TOTAL, 0.376, 0, ZXXZonSqu, code_cap
+5,0.5, TOTAL,0.078, 0, ZXXZonSqu, code_cap  
+5, 5, TOTAL, 0.221, 0, ZXXZonSqu, code_cap
+5, 10, TOTAL, 0.297, 0, ZXXZonSqu, code_cap
+5,25, TOTAL, 0.348, 0, ZXXZonSqu, code_cap
+5, 50, TOTAL, 0.346, 0, ZXXZonSqu, code_cap
+6,0.5, TOTAL,0.066, 0, ZXXZonSqu, code_cap  
+6, 5, TOTAL, 0.205, 0, ZXXZonSqu, code_cap
+6, 10, TOTAL, 0.314, 0, ZXXZonSqu, code_cap
+6,25, TOTAL, 0.324, 0, ZXXZonSqu, code_cap
+6, 50, TOTAL, 0.347, 0, ZXXZonSqu, code_cap
 
 
 

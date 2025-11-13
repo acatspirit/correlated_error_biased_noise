@@ -572,7 +572,7 @@ class CorrelatedDecoder:
             # make the circuit
             circuit_obj = cc_circuit.CDCompassCodeCircuit(self.d, self.l, self.eta, meas_type) # change list of ps dependent on model
             if noise_model == "code_cap":# change this based on the noise model you want
-                circuit = circuit_obj.make_elongated_circuit_from_parity(0,0,0,p,0,0,CD_type=cd_type)  
+                circuit = circuit_obj.make_elongated_circuit_from_parity(0,0,0,p,0,0,CD_type=cd_type, memory=False)  
             elif noise_model == "phenom":
                 circuit = circuit_obj.make_elongated_circuit_from_parity(p,0,0,p,0,0,CD_type=cd_type) # check the plots that matched pymatching to get error model right, before meas flip and data qubit pauli between rounds
             elif noise_model == "circuit_level":
@@ -580,7 +580,7 @@ class CorrelatedDecoder:
             else:
                 raise ValueError("Invalid noise model. Choose either 'code_cap', 'phenom', or 'circuit_level'.")
             
-            log_errors_array = self.get_num_log_errors_DEM(circuit, num_shots, corr_decoding, pymatch_corr)
+            log_errors_array = self.get_num_log_errors_DEM(circuit, num_shots, corr_decoding, corr_decoding, pymatch_corr)
             log_error_L.append(log_errors_array)
 
         return log_error_L
@@ -1338,7 +1338,7 @@ if __name__ == "__main__":
     eta_list = [0.5,5,10,25,50] # noise bias
     cd_list = ["XZZXonSqu", "ZXXZonSqu"] # clifford deformation types
     total_num_shots = 5e5 # number of shots 
-    corr_type = "TOTAL_MEM" # which type of correlation to use, depending on the type of decoder. Choose from ['CORR_XZ', 'CORR_ZX', 'TOTAL', 'TOTAL_MEM', 'TOTAL_PY_CORR']
+    corr_type = "TOTAL_MEM" # which type of correlation to use, depending on the type of decoder. Choose from ['CORR_XZ', 'CORR_ZX', 'TOTAL', 'TOTAL_MEM', 'TOTAL_PY_CORR', 'TOTAL_MEM_CORR']
     error_type = "TOTAL_MEM" # which type of error to plot
     # num_shots = 66666
     corr_list = ['CORR_XZ', 'CORR_ZX']
@@ -1362,7 +1362,7 @@ if __name__ == "__main__":
 
 
     # run this to get data from the dcc
-    # get_data_DCC(circuit_data, corr_decoding, noise_model, d_list, l_list, eta_list, cd_list, corr_list, total_num_shots, p_list=p_list, p_th_init_d=None, pymatch_corr=py_corr)
+    get_data_DCC(circuit_data, corr_decoding, noise_model, d_list, l_list, eta_list, cd_list, corr_list, total_num_shots, p_list=p_list, p_th_init_d=None, pymatch_corr=py_corr)
 
     # run this once you have data and want to combo it to one csv
     # concat_csv(folder_path, circuit_data)
@@ -1379,16 +1379,16 @@ if __name__ == "__main__":
 
 
     # params to plot
-    # eta = 7
+    # eta = 50
     # l = 6
-    # curr_num_shots = 7142.0
+    # curr_num_shots = 52631.0
     # noise_model = "code_cap"
-    # CD_type = "XZZXonSqu"
+    # CD_type = "ZXXZonSqu"
     # py_corr = False # whether to use pymatching correlated decoder for circuit data
 
 
     # df = pd.read_csv(output_file)
-    # full_error_plot(df,eta,l,curr_num_shots,noise_model, CD_type, output_file,py_corr=py_corr, circuit_level=circuit_data)
+    # full_error_plot(df,eta,l,curr_num_shots,noise_model, CD_type, output_file,corr_decoding=corr_decoding, py_corr=py_corr, circuit_level=circuit_data)
 
 
     # make eta plot
