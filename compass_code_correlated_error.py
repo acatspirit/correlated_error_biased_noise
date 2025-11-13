@@ -580,7 +580,7 @@ class CorrelatedDecoder:
             else:
                 raise ValueError("Invalid noise model. Choose either 'code_cap', 'phenom', or 'circuit_level'.")
             
-            log_errors_array = self.get_num_log_errors_DEM(circuit, num_shots, corr_decoding, corr_decoding, pymatch_corr)
+            log_errors_array = self.get_num_log_errors_DEM(circuit, num_shots, corr_decoding, pymatch_corr)
             log_error_L.append(log_errors_array)
 
         return log_error_L
