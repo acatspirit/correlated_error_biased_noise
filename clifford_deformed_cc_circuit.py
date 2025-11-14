@@ -590,8 +590,9 @@ class CDCompassCodeCircuit:
             circuit.append("PAULI_CHANNEL_1", data_q_list, [px_data, py_data, pz_data])
             circuit.append("Z_ERROR", [anc for anc in range(num_ancillas)], p_i) # idling error on the ancillas
             
-
-        # start the for loop to repeat for d rounds
+        #
+        # start the for loop to repeat for d rounds - memory experiment round 1
+        #
 
         # Round 0 - t=0 measurements
         circuit.append("TICK")
@@ -619,6 +620,10 @@ class CDCompassCodeCircuit:
                 circuit.append("DETECTOR", stim.target_rec(-num_ancillas + len(stab_d_x) + i ))
         
         circuit.append("TICK") # add a tick to the circuit to mark the end of the t=0 measurements
+
+        #
+        # start the for loop to repeat for d rounds - memory experiment rounds 2-d
+        #
         
         loop_circuit = stim.Circuit() # create a loop circuit to repeat the following for d-1 rounds
         # All other d rounds - t>0 measurements
@@ -649,6 +654,12 @@ class CDCompassCodeCircuit:
         if memory:
             # repeat the loop circuit d-1 times - circuit level only
             circuit.append(stim.CircuitRepeatBlock(repeat_count=num_rounds-1, body=loop_circuit))# end the repeat block
+
+
+        #
+        # Stabilizer measurement reconstruction
+        #
+
 
         # reconstruct the stabilizers and measure the data qubits
         # for X mem measure X stabs
