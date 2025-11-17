@@ -485,7 +485,7 @@ class CorrelatedDecoder:
         # from eva
         # change the logicals so that there is an observable for each qubit, change back to the code cap case to check whether the real logical flipped
 
-        corrections = np.zeros(shots, 2) # largest fault id is 1, len of correction = 2
+        corrections = np.zeros((shots, 2)) # largest fault id is 1, len of correction = 2
         for i in range(shots):
             edges_in_correction = matchgraph.decode_to_edges_array(syndrome[i])
             # update weights based on conditional probabilities
@@ -1336,7 +1336,7 @@ if __name__ == "__main__":
     l_list = [2,3,4,5,6] # elongation params
     d_list = [11,13,15,17,19] # code distances
     eta_list = [0.5,5,10,25,50] # noise bias
-    cd_list = ["XZZXonSqu", "ZXXZonSqu"] # clifford deformation types
+    cd_list = ["SC","XZZXonSqu", "ZXXZonSqu"] # clifford deformation types
     total_num_shots = 1e4 # number of shots 
     corr_type = "TOTAL_MEM" # which type of correlation to use, depending on the type of decoder. Choose from ['CORR_XZ', 'CORR_ZX', 'TOTAL', 'TOTAL_MEM', 'TOTAL_PY_CORR', 'TOTAL_MEM_CORR']
     error_type = "TOTAL_MEM" # which type of error to plot
