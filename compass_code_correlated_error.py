@@ -1083,7 +1083,7 @@ def get_threshold(full_df, pth0, p_range, l, eta, corr_type, num_shots):
 def get_prob_scale(corr_type, eta):
     """ extract the amount to be scaled by given a noise bias and the type of error
     """
-    prob_scale = {'X': 0.5/(1+eta), 'Z': (1+2*eta)/(2*(1+eta)), 'CORR_XZ': 1, 'CORR_ZX':1, 'TOTAL':1, 'TOTAL_MEM':1, 'X_MEM':  1, 'Z_MEM': 1, 'TOTAL_MEM_PY':1, 'X_MEM_PY':1, 'Z_MEM_PY':1} # TOTAL_MEM 4/3 factor of total mem is due to code_cap pauli channel scalling factor in stim, remove this?
+    prob_scale = {'X': 0.5/(1+eta), 'Z': (1+2*eta)/(2*(1+eta)), 'CORR_XZ': 1, 'CORR_ZX':1, 'TOTAL':1, 'TOTAL_MEM':1, 'X_MEM':  1, 'Z_MEM': 1, 'TOTAL_MEM_PY':1, 'X_MEM_PY':1, 'Z_MEM_PY':1,'TOTAL_MEM_CORR':1, 'X_MEM_CORR':1, 'Z_MEM_CORR':1} # TOTAL_MEM 4/3 factor of total mem is due to code_cap pauli channel scalling factor in stim, remove this?
     return prob_scale[corr_type]
 
 
@@ -1337,12 +1337,12 @@ if __name__ == "__main__":
     d_list = [11,13,15,17,19] # code distances
     eta_list = [0.5,5,10,25,50] # noise bias
     cd_list = ["SC","XZZXonSqu", "ZXXZonSqu"] # clifford deformation types
-    total_num_shots = 1e4 # number of shots 
-    corr_type = "TOTAL_MEM" # which type of correlation to use, depending on the type of decoder. Choose from ['CORR_XZ', 'CORR_ZX', 'TOTAL', 'TOTAL_MEM', 'TOTAL_PY_CORR', 'TOTAL_MEM_CORR']
-    error_type = "TOTAL_MEM" # which type of error to plot
+    total_num_shots = 1e6 # number of shots 
+    corr_type = "TOTAL_MEM_CORR" # which type of correlation to use, depending on the type of decoder. Choose from ['CORR_XZ', 'CORR_ZX', 'TOTAL', 'TOTAL_MEM', 'TOTAL_PY_CORR', 'TOTAL_MEM_CORR']
+    error_type = "TOTAL_MEM_CORR" # which type of error to plot
     # num_shots = 66666
     corr_list = ['CORR_XZ', 'CORR_ZX']
-    corr_type_list = ['TOTAL']  
+    corr_type_list = ['TOTAL_MEM_CORR']  
     noise_model = "code_cap"
     py_corr = False # whether to use pymatching correlated decoder for circuit data
 
@@ -1381,7 +1381,7 @@ if __name__ == "__main__":
     # params to plot
     # eta = 50
     # l = 6
-    # curr_num_shots = 26315.0
+    # curr_num_shots = 769.0
     # noise_model = "code_cap"
     # CD_type = "XZZXonSqu"
     # py_corr = False # whether to use pymatching correlated decoder for circuit data
