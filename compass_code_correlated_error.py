@@ -515,7 +515,8 @@ class CorrelatedDecoder:
         :return: logical errors array. Sum of array is the number of logical errors
         """
         matching = Matching.from_stim_circuit(circuit)
-        sampler = circuit.compile_detector_sampler(seed=42)
+        seed = np.random.randint(0, 2**32 - 1)
+        sampler = circuit.compile_detector_sampler(seed=seed)
         detection_events, observable_flips = sampler.sample(num_shots, separate_observables=True)
         predictions = matching.decode_batch(detection_events)
         
@@ -545,9 +546,10 @@ class CorrelatedDecoder:
         else: # no correlated decoding or pymatching correlated decoding
             dem = circuit.detector_error_model(decompose_errors=enable_pymatch_corr)
             matchgraph = Matching.from_detector_error_model(dem,enable_correlations=enable_pymatch_corr)
-            sampler = circuit.compile_detector_sampler(seed=42)
-            syndrome, observable_flips = sampler.sample(num_shots, separate_observables=True)
-            predictions = matchgraph.decode_batch(syndrome, enable_correlations=enable_pymatch_corr)
+            seed = np.random.randint(0, 2**32 - 1)
+            sampler = circuit.compile_detector_sampler(seed=seed) # double check that this randomness is doing the right thing, every shot should be random and compare
+            syndrome, observable_flips = sampler.sample(num_shots, separate_observables=True) # do i need to set a seed here?
+            predictions = matchgraph.decode_batch(syndrome, enable_correlations=enable_pymatch_corr) # had a weird recent error, should have thrown an error earlier when I passed in enable correlations
             log_errors_array = np.any(np.array(observable_flips) != np.array(predictions), axis=1)
         
         return log_errors_array
@@ -640,9 +642,9 @@ def get_data(num_shots, d_list, l, p_list, eta, corr_type, circuit_data, noise_m
             decoder = CorrelatedDecoder(eta, d, l, corr_type)
             log_errors_z_array = decoder.get_log_error_circuit_level(p_list, "Z", num_shots, noise_model, cd_type, corr_decoding, pymatch_corr) # get the Z logical errors from Z memory experiment, X errors
             log_errors_x_array = decoder.get_log_error_circuit_level(p_list, "X", num_shots, noise_model, cd_type, corr_decoding, pymatch_corr) # get the X logical errors from X memory experiment, Z errors
-            log_errors_z = np.sum(log_errors_z_array, axis=1) 
+            log_errors_z = np.sum(log_errors_z_array, axis=1) # double counting fs fs
             log_errors_x = np.sum(log_errors_x_array, axis=1)        
-            log_errors_total = np.sum(np.logical_xor(log_errors_x_array, log_errors_z_array), axis=1)
+            log_errors_total = np.sum(np.logical_or(log_errors_x_array, log_errors_z_array), axis=1)
 
 
 
@@ -1320,7 +1322,7 @@ if __name__ == "__main__":
 
 
     circuit_data = True # whether circuit level or code cap data is desired
-    corr_decoding = True # whether to get data for correlated decoding (corrxz or corrzx), or circuit level (X/Z mem or X/Z mem py)
+    corr_decoding = False # whether to get data for correlated decoding (corrxz or corrzx), or circuit level (X/Z mem or X/Z mem py)
         
 
     # simulation
@@ -1362,7 +1364,7 @@ if __name__ == "__main__":
 
 
     # run this to get data from the dcc
-    get_data_DCC(circuit_data, corr_decoding, noise_model, d_list, l_list, eta_list, cd_list, corr_list, total_num_shots, p_list=p_list, p_th_init_d=None, pymatch_corr=py_corr)
+    # get_data_DCC(circuit_data, corr_decoding, noise_model, d_list, l_list, eta_list, cd_list, corr_list, total_num_shots, p_list=p_list, p_th_init_d=None, pymatch_corr=py_corr)
 
     # run this once you have data and want to combo it to one csv
     # concat_csv(folder_path, circuit_data)
@@ -1379,16 +1381,18 @@ if __name__ == "__main__":
 
 
     # params to plot
-    # eta = 50
-    # l = 6
-    # curr_num_shots = 769.0
-    # noise_model = "code_cap"
-    # CD_type = "XZZXonSqu"
-    # py_corr = False # whether to use pymatching correlated decoder for circuit data
+    eta = 10
+    l = 2
+    curr_num_shots = 26315.0
+    noise_model = "code_cap"
+    CD_type = "ZXXZonSqu"
+    py_corr = False # whether to use pymatching correlated decoder for circuit data
+    # why tf wobble - am i combining old data ... general behavior seems right but overall data wobble
+        # see if the seed is the same everywhere
 
 
-    # df = pd.read_csv(output_file)
-    # full_error_plot(df,eta,l,curr_num_shots,noise_model, CD_type, output_file,corr_decoding=corr_decoding, py_corr=py_corr, circuit_level=circuit_data)
+    df = pd.read_csv(output_file)
+    full_error_plot(df,eta,l,curr_num_shots,noise_model, CD_type, output_file,corr_decoding=corr_decoding, py_corr=py_corr, circuit_level=circuit_data)
 
 
     # make eta plot
