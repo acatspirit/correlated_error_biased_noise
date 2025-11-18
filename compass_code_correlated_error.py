@@ -576,7 +576,7 @@ class CorrelatedDecoder:
             if noise_model == "code_cap":# change this based on the noise model you want
                 circuit = circuit_obj.make_elongated_circuit_from_parity(0,0,0,p,0,0,CD_type=cd_type, memory=False)  
             elif noise_model == "phenom":
-                circuit = circuit_obj.make_elongated_circuit_from_parity(p,0,0,p,0,0,CD_type=cd_type) # check the plots that matched pymatching to get error model right, before meas flip and data qubit pauli between rounds
+                circuit = circuit_obj.make_elongated_circuit_from_parity(p,0,0,p,0,0,CD_type=cd_type, phenom_meas=True) # check the plots that matched pymatching to get error model right, before meas flip and data qubit pauli between rounds
             elif noise_model == "circuit_level":
                 circuit = circuit_obj.make_elongated_circuit_from_parity(p,0,p,0,p,0,CD_type=cd_type)
             else:

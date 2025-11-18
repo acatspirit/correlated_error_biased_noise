@@ -493,7 +493,7 @@ class CDCompassCodeCircuit:
     
 
     def make_elongated_circuit_from_parity(self, before_measure_flip, before_measure_pauli_channel, after_clifford_depolarization, before_round_data_pauli_channel,
-                                            between_round_idling_pauli_channel, idling_dephasing, CD_type = "SC", memory=True):
+                                            between_round_idling_pauli_channel, idling_dephasing, phenom_meas=False, CD_type = "SC", memory=True):
         """ 
         create a surface code memory experiment circuit from a parity check matrix
         Inputs:
@@ -503,6 +503,7 @@ class CDCompassCodeCircuit:
                 before_round_data_pauli_channel - (float) the probability of error in a biased depolarizing error channel before each round, biased towards Z
                 between_round_idling_pauli_channel - (float) the probability of a biased pauli channel on all qubits between rounds, biased towards Z
                 idling_dephasing - (float) the probability of a dephasing error on idling qubits during rounds
+                phenom_meas - (bool) whether to use phenomenological measurement errors (True) or circuit-level measurement errors (False). Phenom meas errors are (p_meas_x + p_meas_z)*stabilizer weight/ 4
                 CD_circuit - (bool) whether to apply clifford deformation to the circuit, ZXXZonSqu is the only option right now 
                 CD_type - (str) the type of clifford deformation to apply, only ZXXZonSqu and XZZXonSq are valid, otherwise None which indicates no clifford deformation
                 memory - (bool) whether or not to run multiple time slices / do a full memory experiment
@@ -522,6 +523,7 @@ class CDCompassCodeCircuit:
         p_i_round = between_round_idling_pauli_channel # idling error on all qubits between the measurement rounds
         p_i = idling_dephasing # idling error on all qubits during rounds
 
+
         num_rounds = self.d
 
         px_data = 0.5*p_data_dep/(1+self.eta) # biased depolarizing error on data qubits before round
@@ -531,6 +533,8 @@ class CDCompassCodeCircuit:
         px_meas = 0.5*p_data_meas/(1+self.eta) # biased depolarizing error on data qubits before measurement
         pz_meas = p_data_meas*(self.eta/(1+self.eta)) # biased depolarizing error on data qubits before measurement
         py_meas = px_meas
+
+        p_phenom_meas = (0.5*p_meas/(1+self.eta) + p_meas*(self.eta/(1+self.eta)))/4
         
 
         # make the circuit
@@ -603,9 +607,15 @@ class CDCompassCodeCircuit:
         
         # add the measurement error to the ancillas before the measurements, phenom model scale with the size of the stabilizer
         for anc in range(len(stab_d_x)):
-            circuit.append("X_ERROR", anc, p_meas*len(stab_d_x[anc]))
+            if phenom_meas:
+                circuit.append("X_ERROR", anc, min(p_phenom_meas*len(stab_d_x[anc]),1))
+            else:
+                circuit.append("X_ERROR", anc, min(1,p_meas*len(stab_d_x[anc])))
         for anc in range(len(stab_d_z)):
-            circuit.append("X_ERROR", anc + len(stab_d_x), p_meas*len(stab_d_z[anc])) 
+            if phenom_meas:
+                circuit.append("X_ERROR", anc + len(stab_d_x), min(1,p_phenom_meas*len(stab_d_z[anc]))) 
+            else:
+                circuit.append("X_ERROR", anc + len(stab_d_x), min(1,p_meas*len(stab_d_z[anc]))) 
         
     
         circuit.append("MR", full_stab_L) # measure the ancillas at t=0
@@ -639,9 +649,15 @@ class CDCompassCodeCircuit:
         
         # add the error to the ancillas before the ancilla measurement, phenom model
         for anc in range(len(stab_d_x)):
-            circuit.append("X_ERROR", anc, p_meas*len(stab_d_x[anc]))
+            if phenom_meas:
+                loop_circuit.append("X_ERROR", anc, min(p_phenom_meas*len(stab_d_x[anc]),1))
+            else:
+                loop_circuit.append("X_ERROR", anc, min(p_meas*len(stab_d_x[anc])))
         for anc in range(len(stab_d_z)):
-            circuit.append("X_ERROR", anc + len(stab_d_x), p_meas*len(stab_d_z[anc])) 
+            if phenom_meas:
+                loop_circuit.append("X_ERROR", anc + len(stab_d_x), min(p_phenom_meas*len(stab_d_z[anc]),1)) 
+            else:
+                loop_circuit.append("X_ERROR", anc + len(stab_d_x), min(p_meas*len(stab_d_z[anc]),1)) 
 
         loop_circuit.append("MR", full_stab_L) # measure the ancillas at t>0
 
