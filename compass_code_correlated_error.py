@@ -479,7 +479,8 @@ class CorrelatedDecoder:
         
         # first round of decoding
         # get the syndromes and observable flips
-        sampler = circuit.compile_detector_sampler(seed=42)
+        seed = np.random.randint(0, 2**32 - 1)
+        sampler = circuit.compile_detector_sampler(seed=seed)
         syndrome, observable_flips = sampler.sample(shots, separate_observables=True)
 
         # from eva
