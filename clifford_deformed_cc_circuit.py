@@ -652,7 +652,7 @@ class CDCompassCodeCircuit:
             if phenom_meas:
                 loop_circuit.append("X_ERROR", anc, min(p_phenom_meas*len(stab_d_x[anc]),1))
             else:
-                loop_circuit.append("X_ERROR", anc, min(p_meas*len(stab_d_x[anc])))
+                loop_circuit.append("X_ERROR", anc, min(1,p_meas*len(stab_d_x[anc])))
         for anc in range(len(stab_d_z)):
             if phenom_meas:
                 loop_circuit.append("X_ERROR", anc + len(stab_d_x), min(p_phenom_meas*len(stab_d_z[anc]),1)) 
