@@ -396,8 +396,8 @@ class CorrelatedDecoder:
                 joint_p = joint_prob_dict.get(edge_1, {}).get(edge_2,0)
 
                 # conditional probability calculation. Min taken because weights cannot be negative, and eta=0.5 represents a full erasure channel
-                cond_p = min(1/(2*self.eta + 1), joint_p/marginal_p) # how do I do directionality here / I might have to think about it, will this actually work? Dont wanna fully erase edges...?
-
+                # cond_p = min(1/(2*self.eta + 1), joint_p/marginal_p) # how do I do directionality here / I might have to think about it, will this actually work? Dont wanna fully erase edges...?
+                cond_p = min(0.5, joint_p/marginal_p) # temporary for testing w pycorr decoder
                 cond_prob_dict.setdefault(edge_1, {})[edge_2] = cond_p
         return cond_prob_dict
     
@@ -1323,7 +1323,7 @@ if __name__ == "__main__":
 
 
     circuit_data = True # whether circuit level or code cap data is desired
-    corr_decoding = False # whether to get data for correlated decoding (corrxz or corrzx), or circuit level (X/Z mem or X/Z mem py)
+    corr_decoding = True # whether to get data for correlated decoding (corrxz or corrzx), or circuit level (X/Z mem or X/Z mem py)
         
 
     # simulation
@@ -1336,7 +1336,7 @@ if __name__ == "__main__":
     # otherwise p_list is range of probabilities
     p_list = np.linspace(0.05, 0.4, 40)
 
-    l_list = [2,3,4,5,6] # elongation params
+    l_list = [2,4,6] # elongation params
     d_list = [11,13,15,17,19] # code distances
     eta_list = [0.5,5,10,25,50] # noise bias
     cd_list = ["SC","XZZXonSqu", "ZXXZonSqu"] # clifford deformation types
@@ -1365,7 +1365,7 @@ if __name__ == "__main__":
 
 
     # run this to get data from the dcc
-    # get_data_DCC(circuit_data, corr_decoding, noise_model, d_list, l_list, eta_list, cd_list, corr_list, total_num_shots, p_list=p_list, p_th_init_d=None, pymatch_corr=py_corr)
+    get_data_DCC(circuit_data, corr_decoding, noise_model, d_list, l_list, eta_list, cd_list, corr_list, total_num_shots, p_list=p_list, p_th_init_d=None, pymatch_corr=py_corr)
 
     # run this once you have data and want to combo it to one csv
     # concat_csv(folder_path, circuit_data)
@@ -1382,18 +1382,18 @@ if __name__ == "__main__":
 
 
     # params to plot
-    eta = 10
-    l = 2
-    curr_num_shots = 26315.0
-    noise_model = "code_cap"
-    CD_type = "ZXXZonSqu"
-    py_corr = False # whether to use pymatching correlated decoder for circuit data
-    # why tf wobble - am i combining old data ... general behavior seems right but overall data wobble
-        # see if the seed is the same everywhere
+    # eta = 10
+    # l = 2
+    # curr_num_shots = 26315.0
+    # noise_model = "code_cap"
+    # CD_type = "ZXXZonSqu"
+    # py_corr = False # whether to use pymatching correlated decoder for circuit data
+    # # why tf wobble - am i combining old data ... general behavior seems right but overall data wobble
+    #     # see if the seed is the same everywhere
 
 
-    df = pd.read_csv(output_file)
-    full_error_plot(df,eta,l,curr_num_shots,noise_model, CD_type, output_file,corr_decoding=corr_decoding, py_corr=py_corr, circuit_level=circuit_data)
+    # df = pd.read_csv(output_file)
+    # full_error_plot(df,eta,l,curr_num_shots,noise_model, CD_type, output_file,corr_decoding=corr_decoding, py_corr=py_corr, circuit_level=circuit_data)
 
 
     # make eta plot
