@@ -1116,7 +1116,7 @@ def get_data_DCC(circuit_data, corr_decoding, noise_model, d_list, l_list, eta_l
     print(f"SLURM Array Size: {slurm_array_size}")
 
 
-    if circuit_data and not corr_decoding: # change this to get different data for circuit level plot
+    if circuit_data and not (corr_decoding and pymatch_corr): # change this to get different data for circuit level plot
         l_eta_cd_type_arr = list(itertools.product(l_list,eta_list,cd_list))
         reps = slurm_array_size//len(l_eta_cd_type_arr) # how many times to run file, num_shots each time
         ind = task_id%len(l_eta_cd_type_arr) # get the index of the task_id in the l_eta__corr_type_arr
@@ -1323,7 +1323,7 @@ if __name__ == "__main__":
 
 
     circuit_data = True # whether circuit level or code cap data is desired
-    corr_decoding = True # whether to get data for correlated decoding (corrxz or corrzx), or circuit level (X/Z mem or X/Z mem py)
+    corr_decoding = False # whether to get data for correlated decoding (corrxz or corrzx), or circuit level (X/Z mem or X/Z mem py)
         
 
     # simulation
@@ -1347,7 +1347,7 @@ if __name__ == "__main__":
     corr_list = ['CORR_XZ', 'CORR_ZX']
     corr_type_list = ['TOTAL_MEM_CORR']  
     noise_model = "code_cap"
-    py_corr = False # whether to use pymatching correlated decoder for circuit data
+    py_corr = True # whether to use pymatching correlated decoder for circuit data
 
     if circuit_data:
         folder_path = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/circuit_data/'
@@ -1382,9 +1382,9 @@ if __name__ == "__main__":
 
 
     # params to plot
-    # eta = 10
+    # eta = 0.5
     # l = 2
-    # curr_num_shots = 26315.0
+    # curr_num_shots = 4545.0
     # noise_model = "code_cap"
     # CD_type = "ZXXZonSqu"
     # py_corr = False # whether to use pymatching correlated decoder for circuit data
