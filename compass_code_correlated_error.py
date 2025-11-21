@@ -490,7 +490,7 @@ class CorrelatedDecoder:
         for i in range(shots):
             edges_in_correction = matchgraph.decode_to_edges_array(syndrome[i])
             # update weights based on conditional probabilities
-            updated_dem = self.edit_dem(edges_in_correction, dem, cond_prob_dict)
+            updated_dem = self.edit_dem(edges_in_correction, dem, cond_prob_dict) # is this DEM updated correctly? make sure that it is getting the right edges
 
             # second round of decoding with updated weights
             matching_corr = Matching.from_detector_error_model(updated_dem, enable_correlations=False)
@@ -1347,7 +1347,7 @@ if __name__ == "__main__":
     corr_list = ['CORR_XZ', 'CORR_ZX']
     corr_type_list = ['TOTAL_MEM_CORR']  
     noise_model = "code_cap"
-    py_corr = True # whether to use pymatching correlated decoder for circuit data
+    py_corr = False # whether to use pymatching correlated decoder for circuit data
 
     if circuit_data:
         folder_path = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/circuit_data/'
@@ -1383,11 +1383,11 @@ if __name__ == "__main__":
 
     # params to plot
     # eta = 0.5
-    # l = 2
+    # l = 4
     # curr_num_shots = 4545.0
     # noise_model = "code_cap"
-    # CD_type = "ZXXZonSqu"
-    # py_corr = False # whether to use pymatching correlated decoder for circuit data
+    # CD_type = "SC"
+    # py_corr = True # whether to use pymatching correlated decoder for circuit data
     # # why tf wobble - am i combining old data ... general behavior seems right but overall data wobble
     #     # see if the seed is the same everywhere
 
