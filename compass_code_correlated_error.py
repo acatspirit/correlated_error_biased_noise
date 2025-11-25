@@ -1323,7 +1323,7 @@ if __name__ == "__main__":
 
 
     circuit_data = True # whether circuit level or code cap data is desired
-    corr_decoding = False # whether to get data for correlated decoding (corrxz or corrzx), or circuit level (X/Z mem or X/Z mem py)
+    corr_decoding = True # whether to get data for correlated decoding (corrxz or corrzx), or circuit level (X/Z mem or X/Z mem py)
         
 
     # simulation
@@ -1334,7 +1334,7 @@ if __name__ == "__main__":
     # p_list = np.linspace(p_th_init-0.03, p_th_init + 0.03, 40)
 
     # otherwise p_list is range of probabilities
-    p_list = np.linspace(0.05, 0.4, 40)
+    p_list = np.linspace(0.0005, 0.01, 40)
 
     l_list = [2,4,6] # elongation params
     d_list = [11,13,15,17,19] # code distances
@@ -1383,13 +1383,13 @@ if __name__ == "__main__":
 
     # params to plot
     # eta = 0.5
-    # l = 4
+    # l = 6
     # curr_num_shots = 4545.0
     # noise_model = "code_cap"
-    # CD_type = "SC"
+    # CD_type = "ZXXZonSqu"
     # py_corr = True # whether to use pymatching correlated decoder for circuit data
-    # # why tf wobble - am i combining old data ... general behavior seems right but overall data wobble
-    #     # see if the seed is the same everywhere
+    # # # why tf wobble - am i combining old data ... general behavior seems right but overall data wobble
+    # #     # see if the seed is the same everywhere
 
 
     # df = pd.read_csv(output_file)

@@ -620,7 +620,7 @@ class CDCompassCodeCircuit:
     
         circuit.append("MR", full_stab_L) # measure the ancillas at t=0
 
-
+        # if memory:
         # initialize the t=0 detectors for the X or Z stabilizers
         if self.type == "X": # the Z stabilizers will be indeterministic at t=0
             for i in range(len(stab_d_x)):
