@@ -1347,7 +1347,7 @@ if __name__ == "__main__":
     corr_list = ['CORR_XZ', 'CORR_ZX']
     corr_type_list = ['TOTAL_MEM_CORR']  
     noise_model = "phenom"
-    py_corr = False # whether to use pymatching correlated decoder for circuit data
+    py_corr = True # whether to use pymatching correlated decoder for circuit data
 
     if circuit_data:
         folder_path = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/circuit_data/'
