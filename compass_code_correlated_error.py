@@ -1338,7 +1338,7 @@ if __name__ == "__main__":
 
     l_list = [2,4,6] # elongation params
     d_list = [11,13,15,17,19] # code distances
-    eta_list = [0.5,5,10,25,50] # noise bias
+    eta_list = [0.5,10,25] # noise bias , removed 5,50 for my corr 
     cd_list = ["SC","XZZXonSqu", "ZXXZonSqu"] # clifford deformation types
     total_num_shots = 1e5 # number of shots 
     corr_type = "TOTAL_MEM_CORR" # which type of correlation to use, depending on the type of decoder. Choose from ['CORR_XZ', 'CORR_ZX', 'TOTAL', 'TOTAL_MEM', 'TOTAL_PY_CORR', 'TOTAL_MEM_CORR']
