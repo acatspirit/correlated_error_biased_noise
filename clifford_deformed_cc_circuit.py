@@ -869,14 +869,14 @@ class CDCompassCodeCircuit:
 
 
 
-p_list = np.linspace(0,0.5, 30)
-d_dict = {5:[], 7:[], 9:[], 11:[]}
-num_shots = 100000
-l = 2
-type_d = {0:"X", 1:"Z"}
-type=type_d[0]
-eta = 1.67
-prob_scale = {'X': 0.5/(1+eta), 'Z': (1+2*eta)/(2*(1+eta)), 'CORR_XZ': 1, 'TOTAL':1}
+# p_list = np.linspace(0,0.5, 30)
+# d_dict = {5:[], 7:[], 9:[], 11:[]}
+# num_shots = 100000
+# l = 2
+# type_d = {0:"X", 1:"Z"}
+# type=type_d[0]
+# eta = 1.67
+# prob_scale = {'X': 0.5/(1+eta), 'Z': (1+2*eta)/(2*(1+eta)), 'CORR_XZ': 1, 'TOTAL':1}
 
 
 
