@@ -559,7 +559,7 @@ class CorrelatedDecoder:
         """
         Get the logical error rate for a list of physical error rates of gates at the circuit level
         :param p_list: list of p values
-        :param meas_type: type of memory experiment(X or Z), stabilizers measured
+        :param meas_type: type of stabilizers measured in memory experiment. Meas type X indicates ZL detection for Z errors
         :param num_shots: number of shots to sample
         :param noise_model: the noise model to use, either "code_cap", "phenom", or "circuit_level". Code cap has a biased depolarizing channel on data 
             qubits at the beginning of rounds. Phenominological model has a biased depolarizing channel on data qubits at the beginning of rounds and bit-flip noise on 
@@ -1323,7 +1323,7 @@ if __name__ == "__main__":
 
 
     circuit_data = True # whether circuit level or code cap data is desired
-    corr_decoding = True # whether to get data for correlated decoding (corrxz or corrzx), or circuit level (X/Z mem or X/Z mem py)
+    corr_decoding = False # whether to get data for correlated decoding (corrxz or corrzx), or circuit level (X/Z mem or X/Z mem py)
         
 
     # simulation
@@ -1334,13 +1334,13 @@ if __name__ == "__main__":
     # p_list = np.linspace(p_th_init-0.03, p_th_init + 0.03, 40)
 
     # otherwise p_list is range of probabilities
-    p_list = np.linspace(0.002, 0.05, 40)
+    p_list = np.linspace(0.002, 0.1, 40)
 
     l_list = [2,4,6] # elongation params
     d_list = [11,13,15,17,19] # code distances
-    eta_list = [0.5,10,25] # noise bias , removed 5,50 for my corr 
+    eta_list = [0.5,5,10,25,50] # noise bias , removed 5,50 for my corr 
     cd_list = ["SC","XZZXonSqu", "ZXXZonSqu"] # clifford deformation types
-    total_num_shots = 1e5 # number of shots 
+    total_num_shots = 1e6 # number of shots 
     corr_type = "TOTAL_MEM_CORR" # which type of correlation to use, depending on the type of decoder. Choose from ['CORR_XZ', 'CORR_ZX', 'TOTAL', 'TOTAL_MEM', 'TOTAL_PY_CORR', 'TOTAL_MEM_CORR']
     error_type = "TOTAL_MEM_CORR" # which type of error to plot
     # num_shots = 66666
@@ -1365,7 +1365,7 @@ if __name__ == "__main__":
 
 
     # run this to get data from the dcc
-    get_data_DCC(circuit_data, corr_decoding, noise_model, d_list, l_list, eta_list, cd_list, corr_list, total_num_shots, p_list=p_list, p_th_init_d=None, pymatch_corr=py_corr)
+    # get_data_DCC(circuit_data, corr_decoding, noise_model, d_list, l_list, eta_list, cd_list, corr_list, total_num_shots, p_list=p_list, p_th_init_d=None, pymatch_corr=py_corr)
 
     # run this once you have data and want to combo it to one csv
     # concat_csv(folder_path, circuit_data)
@@ -1383,13 +1383,12 @@ if __name__ == "__main__":
 
     # params to plot
     # eta = 0.5
-    # l = 6
-    # curr_num_shots = 4545.0
-    # noise_model = "code_cap"
+    # l = 2
+    # curr_num_shots = 2702.0
+    # noise_model = "phenom"
     # CD_type = "ZXXZonSqu"
-    # py_corr = True # whether to use pymatching correlated decoder for circuit data
-    # # # why tf wobble - am i combining old data ... general behavior seems right but overall data wobble
-    # #     # see if the seed is the same everywhere
+    # py_corr = False # whether to use pymatching correlated decoder for circuit data
+    # corr_decoding = True # whether to get data for correlated decoding using my decoder
 
 
     # df = pd.read_csv(output_file)

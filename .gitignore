@@ -7,6 +7,7 @@ zx_corr_err_data.csv
 zx_circuit_data.csv
 xz_circuit_data.csv
 circuit_data.csv
+circuit_data_pre_dec2025.csv
 
 
 __pycache__/
