@@ -400,7 +400,8 @@ class CorrelatedDecoder:
                 cond_p = min(0.5, joint_p/marginal_p) # temporary for testing w pycorr decoder
                 cond_prob_dict.setdefault(edge_1, {})[edge_2] = cond_p
         return cond_prob_dict
-    
+
+        
 
     def edit_dem(self, edges_in_correction, dem, cond_prob_dict):
         """ Given a stim DEM, updates the probabilities in error instructions with detectors given by cond_prob_dict based on detectors fired in correction.
@@ -409,9 +410,6 @@ class CorrelatedDecoder:
         """
         # get a list of corrected edges from the first round
         edges_in_correction = [tuple(sorted(edge)) for edge in edges_in_correction]
-
-        # check to make sure edges aren't used twice, leave only the max error probability for each or bernoulli xor?
-        # do I need to make sure error mechanisms aren't repeated? - make it a set?
 
         # iterate through the dem and fix the probabilities if they're in the cond_prob_dict
         # Create new DEM with updated probabilities
@@ -447,6 +445,31 @@ class CorrelatedDecoder:
 
         return new_dem
 
+    def compute_edge_weights_from_conditional_probs(self, correction_edges, match_graph, cond_prob_dict):
+        weights = {}
+        all_edges = match_graph.edges()
+
+        edges_in_correction = [tuple(sorted(edge)) for edge in correction_edges]
+        for u,v,data in all_edges:
+            e2 = tuple(sorted([-1 if x is None else x for x in (u, v)]))
+            p = max((cond_prob_dict.get(e1, {}).get(e2, 0) for e1 in edges_in_correction), default=0)
+            if p > 0:
+                weight = np.log((1-p)/p) 
+            else:
+                weight = data['weight']
+            weights[(u, v)] = weight
+
+        return weights
+
+    def build_matching_from_weights(self, weights_dict):
+        match = Matching()
+        for (u, v), weight in weights_dict.items():
+            if None in (u, v):
+                match.add_boundary_edge(u if u is not None else v, weight=weight)
+            else:
+                match.add_edge(u, v, weight=weight)
+        return match
+
     def decoding_failures_correlated_circuit_level(self, circuit, shots):
         """
         Finds the number of logical errors given a circuit using correlated decoding. Uses pymatching's correlated decoding approach, inspired by
@@ -471,6 +494,10 @@ class CorrelatedDecoder:
         # calculate the conditional probabilities based on joint probablities and marginal probabilities 
         cond_prob_dict = self.get_conditional_prob(joint_prob_dict)
 
+        # instead of performing the first round of error correction and going based on this, create a MWPM graph based on hyperedges in joint_prob_dict
+
+        # new_dem = edit_dem() 
+
         
         
         #
@@ -490,11 +517,14 @@ class CorrelatedDecoder:
         for i in range(shots):
             edges_in_correction = matchgraph.decode_to_edges_array(syndrome[i])
             # update weights based on conditional probabilities
-            updated_dem = self.edit_dem(edges_in_correction, dem, cond_prob_dict) # is this DEM updated correctly? make sure that it is getting the right edges
+            # updated_dem = self.edit_dem(edges_in_correction, dem, cond_prob_dict) # is this DEM updated correctly? make sure that it is getting the right edges
 
             # second round of decoding with updated weights
-            matching_corr = Matching.from_detector_error_model(updated_dem, enable_correlations=False)
-            corrections[i] = matching_corr.decode(syndrome[i])
+            # matching_corr = Matching.from_detector_error_model(updated_dem, enable_correlations=False)
+            updated_weights = self.compute_edge_weights_from_conditional_probs(edges_in_correction, matchgraph, cond_prob_dict)
+            matching_corr = self.build_matching_from_weights(updated_weights)
+            fired = np.flatnonzero(syndrome[i])  # indices where the syndrome bit is 1
+            corrections[i] = matching_corr.decode(fired.tolist())
         
         # calculate the number of logical errors
         log_errors_array = np.any(np.array(observable_flips) != np.array(corrections), axis=1)
@@ -1365,7 +1395,7 @@ if __name__ == "__main__":
 
 
     # run this to get data from the dcc
-    get_data_DCC(circuit_data, corr_decoding, noise_model, d_list, l_list, eta_list, cd_list, corr_list, total_num_shots, p_list=p_list, p_th_init_d=None, pymatch_corr=py_corr)
+    # get_data_DCC(circuit_data, corr_decoding, noise_model, d_list, l_list, eta_list, cd_list, corr_list, total_num_shots, p_list=p_list, p_th_init_d=None, pymatch_corr=py_corr)
 
     # run this once you have data and want to combo it to one csv
     # concat_csv(folder_path, circuit_data)
@@ -1382,13 +1412,13 @@ if __name__ == "__main__":
 
 
     # params to plot
-    # eta = 0.5
-    # l = 2
-    # curr_num_shots = 2702.0
+    # eta = 50
+    # l = 6
+    # curr_num_shots = 4545.0
     # noise_model = "phenom"
     # CD_type = "ZXXZonSqu"
     # py_corr = False # whether to use pymatching correlated decoder for circuit data
-    # corr_decoding = True # whether to get data for correlated decoding using my decoder
+    # corr_decoding = False # whether to get data for correlated decoding using my decoder
 
 
     # df = pd.read_csv(output_file)
