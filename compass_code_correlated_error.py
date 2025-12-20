@@ -446,7 +446,11 @@ class CorrelatedDecoder:
         return new_dem
 
     def compute_edge_weights_from_conditional_probs(self, correction_edges, match_graph, cond_prob_dict):
+        # do i need to keep track of fault ids? probably
+        # why are there fewer nodes in the corr matchgraph? 
+
         weights = {}
+        fault_ids = {}
         all_edges = match_graph.edges()
 
         edges_in_correction = [tuple(sorted(edge)) for edge in correction_edges]
@@ -458,16 +462,36 @@ class CorrelatedDecoder:
             else:
                 weight = data['weight']
             weights[(u, v)] = weight
+            fault_ids[(u, v)] = data['fault_ids']
 
-        return weights
+        return weights, fault_ids
 
-    def build_matching_from_weights(self, weights_dict):
+    def build_matching_from_weights(self, weights_dict, fault_ids_dict, original_num_nodes):
         match = Matching()
+
         for (u, v), weight in weights_dict.items():
+            fault_id = fault_ids_dict.get((u, v), None)
             if None in (u, v):
-                match.add_boundary_edge(u if u is not None else v, weight=weight)
+                match.add_boundary_edge(u if u is not None else v, weight=weight, fault_ids=fault_id)
             else:
-                match.add_edge(u, v, weight=weight)
+                match.add_edge(u, v, weight=weight, fault_ids=fault_id)
+        
+        # Now detect which nodes were never added via any edge
+        used_nodes = set()
+        for (u, v) in weights_dict.keys():
+            if u is not None:
+                used_nodes.add(u)
+            if v is not None:
+                used_nodes.add(v)
+
+        # Fill in unused detector nodes (not involved in any edge)
+        all_nodes = set(range(original_num_nodes))
+        missing_nodes = all_nodes - used_nodes
+
+        for node in missing_nodes:
+            # Use an extremely high weight to ensure these edges are not used
+            match.add_boundary_edge(node, weight=1e6)
+        
         return match
 
     def decoding_failures_correlated_circuit_level(self, circuit, shots):
@@ -516,13 +540,15 @@ class CorrelatedDecoder:
         corrections = np.zeros((shots, 2)) # largest fault id is 1, len of correction = 2
         for i in range(shots):
             edges_in_correction = matchgraph.decode_to_edges_array(syndrome[i])
+
+            
             # update weights based on conditional probabilities
             # updated_dem = self.edit_dem(edges_in_correction, dem, cond_prob_dict) # is this DEM updated correctly? make sure that it is getting the right edges
 
             # second round of decoding with updated weights
             # matching_corr = Matching.from_detector_error_model(updated_dem, enable_correlations=False)
-            updated_weights = self.compute_edge_weights_from_conditional_probs(edges_in_correction, matchgraph, cond_prob_dict)
-            matching_corr = self.build_matching_from_weights(updated_weights)
+            updated_weights, fault_ids_dict = self.compute_edge_weights_from_conditional_probs(edges_in_correction, matchgraph, cond_prob_dict)
+            matching_corr = self.build_matching_from_weights(updated_weights, fault_ids_dict, matchgraph.num_nodes)
             corrections[i] = matching_corr.decode(syndrome[i])
         
         # calculate the number of logical errors
@@ -1394,7 +1420,7 @@ if __name__ == "__main__":
 
 
     # run this to get data from the dcc
-    get_data_DCC(circuit_data, corr_decoding, noise_model, d_list, l_list, eta_list, cd_list, corr_list, total_num_shots, p_list=p_list, p_th_init_d=None, pymatch_corr=py_corr)
+    # get_data_DCC(circuit_data, corr_decoding, noise_model, d_list, l_list, eta_list, cd_list, corr_list, total_num_shots, p_list=p_list, p_th_init_d=None, pymatch_corr=py_corr)
 
     # run this once you have data and want to combo it to one csv
     # concat_csv(folder_path, circuit_data)
