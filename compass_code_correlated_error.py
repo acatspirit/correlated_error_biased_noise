@@ -324,6 +324,54 @@ class CorrelatedDecoder:
         # store result
         decomp_inst["detectors"] = edges
         return decomp_inst
+    
+    def decompose_dem_instruction_star(self, inst):
+        """ Decomposes a stim DEM instruction into its component detectors and probability. Uses pairwise decomposition to determine hyperedge decomposition.
+            Decomposed edge is in the form {probability: [detector1, detector2, ...]}. Logical operators are omitted, and single detector errors are merged to a pair if decomposed.
+            We insert boundary edges to edges with one detector, boundary node value is -1. Edges are sorted such that boundary edges are always last in the tuple, and the detectors are in ascending order.
+            PASS IN DEM with DECOMPOSE_ERRORS=FALSE - talk to ken about this
+
+
+            eg. error(p) D0 D1 L0 -> {p: p, detectors: [(0, 1)], observables: [0]}
+                error(p) D0 -> {p: p, detectors: [(0, -1)], observables: []} single detector error gets boundary edge
+                error(p) D0 D2 D1 -> {p:p, detectors: [(0, 2), (2, 1)], observables: []}. 
+                error(p) D0 D2 ^ D3 -> {p:p, detectors: [(0, 2), (2, 3)], observables:[]} We choose to ignore ^. If we treated the ^ as already decomposing, we would get [(0,2), (3,-1)]
+                error(p) D0 D2 D3 L0 -> {p:p, detectors: [(0, 2), (2, 3)], observables:[0]}. 
+
+            :param inst: stim.DEMInstruction object. The instruction to be decomposed.
+            :return: decomp_inst: dict. A dictionary with the probability as the key and a list of edges as the value.
+        """
+        # get the edge probability and detectors for an instruction
+        targets = list(inst.targets_copy())
+        decomp_inst = {"p": inst.args_copy()[0], "detectors": [], "observables": []}
+
+        # separate detectors, logical observables, and separators
+        for t in targets:
+            if t.is_separator():
+                continue
+            elif t.is_logical_observable_id():
+                # logical observable: L#
+                decomp_inst["observables"].append(t.val)
+            elif t.is_relative_detector_id():
+                # detector: D#
+                decomp_inst["detectors"].append(t.val)
+        
+        total_num_detectors = len(decomp_inst["detectors"])
+
+        # iterate through array and make pairwise edge tuples with probability prob_err
+        detectors = decomp_inst["detectors"]
+        edges = []
+
+        if total_num_detectors == 1:
+            edges = [(-1, detectors[0])] # include a boundary edge
+        
+        else: # pairwise decompose
+            for i in range(total_num_detectors-1):
+                edges.append(tuple(sorted([detectors[i], detectors[i+1]])))
+        
+        # store result
+        decomp_inst["detectors"] = edges
+        return decomp_inst
 
 
 
@@ -509,7 +557,7 @@ class CorrelatedDecoder:
         #
 
         # get the DEM and decompose the errors, get the matching graph
-        dem = circuit.detector_error_model(decompose_errors=True) 
+        dem = circuit.detector_error_model(decompose_errors=False) 
         matchgraph = Matching.from_detector_error_model(dem, enable_correlations=False)
 
         # get the joint probabilities table of the dem hyperedges
@@ -1394,7 +1442,7 @@ if __name__ == "__main__":
     l_list = [2,4,6] # elongation params
     d_list = [11,13,15,17,19] # code distances
     eta_list = [0.5,5,10,25,50] # noise bias , removed 5,50 for my corr 
-    cd_list = ["SC","XZZXonSqu", "ZXXZonSqu"] # clifford deformation types
+    cd_list = ["SC", "ZXXZonSqu"] # clifford deformation types
     total_num_shots = 1e6 # number of shots 
     corr_type = "TOTAL_MEM_CORR" # which type of correlation to use, depending on the type of decoder. Choose from ['CORR_XZ', 'CORR_ZX', 'TOTAL', 'TOTAL_MEM', 'TOTAL_PY_CORR', 'TOTAL_MEM_CORR']
     error_type = "TOTAL_MEM_CORR" # which type of error to plot
@@ -1437,17 +1485,17 @@ if __name__ == "__main__":
 
 
     # params to plot
-    # eta = 50
-    # l = 6
-    # curr_num_shots = 4545.0
-    # noise_model = "phenom"
-    # CD_type = "ZXXZonSqu"
-    # py_corr = False # whether to use pymatching correlated decoder for circuit data
-    # corr_decoding = False # whether to get data for correlated decoding using my decoder
+    eta = 50
+    l = 6
+    curr_num_shots = 45454.0
+    noise_model = "phenom"
+    CD_type = "ZXXZonSqu"
+    py_corr = True # whether to use pymatching correlated decoder for circuit data
+    corr_decoding = False # whether to get data for correlated decoding using my decoder
 
 
-    # df = pd.read_csv(output_file)
-    # full_error_plot(df,eta,l,curr_num_shots,noise_model, CD_type, output_file,corr_decoding=corr_decoding, py_corr=py_corr, circuit_level=circuit_data)
+    df = pd.read_csv(output_file)
+    full_error_plot(df,eta,l,curr_num_shots,noise_model, CD_type, output_file,corr_decoding=corr_decoding, py_corr=py_corr, circuit_level=circuit_data)
 
 
     # make eta plot
