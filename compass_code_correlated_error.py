@@ -326,7 +326,7 @@ class CorrelatedDecoder:
         return decomp_inst
     
     def decompose_dem_instruction_star(self, inst):
-        """ Decomposes a stim DEM instruction into its component detectors and probability. Uses pairwise decomposition to determine hyperedge decomposition.
+        """ Decomposes a stim DEM instruction into its component detectors and probability. Uses star decomposition to determine hyperedge decomposition.
             Decomposed edge is in the form {probability: [detector1, detector2, ...]}. Logical operators are omitted, and single detector errors are merged to a pair if decomposed.
             We insert boundary edges to edges with one detector, boundary node value is -1. Edges are sorted such that boundary edges are always last in the tuple, and the detectors are in ascending order.
             PASS IN DEM with DECOMPOSE_ERRORS=FALSE - talk to ken about this
@@ -334,9 +334,9 @@ class CorrelatedDecoder:
 
             eg. error(p) D0 D1 L0 -> {p: p, detectors: [(0, 1)], observables: [0]}
                 error(p) D0 -> {p: p, detectors: [(0, -1)], observables: []} single detector error gets boundary edge
-                error(p) D0 D2 D1 -> {p:p, detectors: [(0, 2), (2, 1)], observables: []}. 
+                error(p) D0 D2 D1 -> {p:p, detectors: [(0, 2), (0, 1)], observables: []}. 
                 error(p) D0 D2 ^ D3 -> {p:p, detectors: [(0, 2), (2, 3)], observables:[]} We choose to ignore ^. If we treated the ^ as already decomposing, we would get [(0,2), (3,-1)]
-                error(p) D0 D2 D3 L0 -> {p:p, detectors: [(0, 2), (2, 3)], observables:[0]}. 
+                error(p) D0 D2 D3 L0 -> {p:p, detectors: [(0, 2), (0, 3)], observables:[0]}. 
 
             :param inst: stim.DEMInstruction object. The instruction to be decomposed.
             :return: decomp_inst: dict. A dictionary with the probability as the key and a list of edges as the value.
@@ -365,9 +365,10 @@ class CorrelatedDecoder:
         if total_num_detectors == 1:
             edges = [(-1, detectors[0])] # include a boundary edge
         
-        else: # pairwise decompose
+        else: # star decompose
+            center_node = detectors[0]
             for i in range(total_num_detectors-1):
-                edges.append(tuple(sorted([detectors[i], detectors[i+1]])))
+                edges.append(tuple(sorted([center_node, detectors[i+1]])))
         
         # store result
         decomp_inst["detectors"] = edges
@@ -556,7 +557,7 @@ class CorrelatedDecoder:
         # Get the edge data for correlated decoding
         #
 
-        # get the DEM and decompose the errors, get the matching graph
+        # get the DEM get the matching graph
         dem = circuit.detector_error_model(decompose_errors=False) 
         matchgraph = Matching.from_detector_error_model(dem, enable_correlations=False)
 
