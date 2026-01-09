@@ -277,6 +277,62 @@ class CorrelatedDecoder:
 
         return decomp_inst
     
+    def decompose_dem_instruction_stim(self, inst):
+        """ Decomposes a stim DEM instruction into its component detectors and probability. Uses pairwise decomposition to determine hyperedge decomposition.
+            Decomposed edge is in the form {p:p, detectors:[(edge1), (edge1), ... ], observables:[included logical observable]}.
+            We insert boundary edges to edges with one detector, boundary node value is -1. 
+            Edges are sorted such that boundary edges are always last in the tuple, and the detectors are in ascending order.          
+
+
+            eg. error(p) D0 D1 L0 -> {p: p, detectors: [(0, 1)], observables: [0]}
+                error(p) D0 -> {p: p, detectors: [(-1, 0)], observables: []} single detector error gets boundary edge
+                error(p) D0 D2 D1 -> {p:p, detectors: [(0, 2), (2, 1)], observables: []}. 
+                error(p) D0 D2 ^ D3 -> {p:p, detectors: [(0, 2), (-1, 3)], observables:[]} Treat ^ as the choice for decomposition
+                error(p) D0 D2 D3 L0 -> {p:p, detectors: [(0, 2), (2, 3)], observables:[0]}. 
+
+            :param inst: stim.DEMInstruction object. The instruction to be decomposed.
+            :return: decomp_inst: dict. A dictionary recording the probability of the error for that DEM instruction, the edges included in the
+            decomposition, and the logical observables included.
+        """
+        # get the edge probability and detectors for an instruction
+        targets = list(inst.targets_copy())
+        decomp_inst = {"p": inst.args_copy()[0], "detectors": [], "observables": []}
+        split_inds = []
+        # separate detectors, logical observables, and separators
+        for t in targets:
+            if t.is_separator():
+                split_inds.append(len(decomp_inst["detectors"]))
+            elif t.is_logical_observable_id():
+                # logical observable: L#
+                decomp_inst["observables"].append(t.val)
+            elif t.is_relative_detector_id():
+                # detector: D#
+                decomp_inst["detectors"].append(t.val)
+        
+        total_num_detectors = len(decomp_inst["detectors"])
+
+        # iterate through array and make pairwise edge tuples with probability prob_err
+        detectors = decomp_inst["detectors"]
+        edges = []
+
+        if total_num_detectors == 1:
+            edges = [(-1, detectors[0])] # include a boundary edge
+        
+        else: # decompose based on split indices
+            edges_split = np.split(np.array(detectors), split_inds)
+            for edge in edges_split:
+                if len(edge) == 1:
+                    edges.append((-1, edge[0])) # boundary edge
+                else:
+                    edge_tuple = tuple(sorted(edge))
+                    edges.append(edge_tuple)
+        
+        # store result
+        decomp_inst["detectors"] = edges
+        return decomp_inst
+
+
+
     def decompose_dem_instruction_pairwise(self, inst):
         """ Decomposes a stim DEM instruction into its component detectors and probability. Uses pairwise decomposition to determine hyperedge decomposition.
             Decomposed edge is in the form {probability: [detector1, detector2, ...]}. Logical operators are omitted, and single detector errors are merged to a pair if decomposed.
@@ -285,13 +341,14 @@ class CorrelatedDecoder:
 
 
             eg. error(p) D0 D1 L0 -> {p: p, detectors: [(0, 1)], observables: [0]}
-                error(p) D0 -> {p: p, detectors: [(0, -1)], observables: []} single detector error gets boundary edge
+                error(p) D0 -> {p: p, detectors: [(-1, 0)], observables: []} single detector error gets boundary edge
                 error(p) D0 D2 D1 -> {p:p, detectors: [(0, 2), (2, 1)], observables: []}. 
                 error(p) D0 D2 ^ D3 -> {p:p, detectors: [(0, 2), (2, 3)], observables:[]} We choose to ignore ^. If we treated the ^ as already decomposing, we would get [(0,2), (3,-1)]
                 error(p) D0 D2 D3 L0 -> {p:p, detectors: [(0, 2), (2, 3)], observables:[0]}. 
 
             :param inst: stim.DEMInstruction object. The instruction to be decomposed.
-            :return: decomp_inst: dict. A dictionary with the probability as the key and a list of edges as the value.
+            :return: decomp_inst: dict. A dictionary recording the probability of the error for that DEM instruction, the edges included in the
+            decomposition, and the logical observables included.
         """
         # get the edge probability and detectors for an instruction
         targets = list(inst.targets_copy())
@@ -339,7 +396,8 @@ class CorrelatedDecoder:
                 error(p) D0 D2 D3 L0 -> {p:p, detectors: [(0, 2), (0, 3)], observables:[0]}. 
 
             :param inst: stim.DEMInstruction object. The instruction to be decomposed.
-            :return: decomp_inst: dict. A dictionary with the probability as the key and a list of edges as the value.
+            :return: decomp_inst: dict. A dictionary recording the probability of the error for that DEM instruction, the edges included in the
+            decomposition, and the logical observables included.
         """
         # get the edge probability and detectors for an instruction
         targets = list(inst.targets_copy())
@@ -391,7 +449,7 @@ class CorrelatedDecoder:
         # iterate through each edge in the dem, add hyperedges
         for inst in dem:
             if inst.type == "error":
-                decomposed_inst = self.decompose_dem_instruction_pairwise(inst)
+                decomposed_inst = self.decompose_dem_instruction_stim(inst) # used to be pairwise
                 prob_err = decomposed_inst["p"]
                 edges = decomposed_inst["detectors"]
 
@@ -558,7 +616,7 @@ class CorrelatedDecoder:
         #
 
         # get the DEM get the matching graph
-        dem = circuit.detector_error_model(decompose_errors=False) 
+        dem = circuit.detector_error_model(decompose_errors=True) 
         matchgraph = Matching.from_detector_error_model(dem, enable_correlations=False)
 
         # get the joint probabilities table of the dem hyperedges
@@ -1487,7 +1545,7 @@ if __name__ == "__main__":
 
     # params to plot
     eta = 50
-    l = 6
+    l = 4
     curr_num_shots = 45454.0
     noise_model = "phenom"
     CD_type = "ZXXZonSqu"
