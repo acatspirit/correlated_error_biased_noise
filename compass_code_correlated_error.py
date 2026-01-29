@@ -566,6 +566,7 @@ class CorrelatedDecoder:
             p = max((cond_prob_dict.get(e1, {}).get(e2, 0) for e1 in edges_in_correction), default=0)
             if p > 0:
                 weight = np.log((1-p)/p) 
+                # print(f"updating edge {(u,v)} with conditional probability {p} and weight {weight}, from weight {data['weight']}")
             else:
                 weight = data['weight']
             weights[(u, v)] = weight
@@ -640,13 +641,16 @@ class CorrelatedDecoder:
         seed = np.random.randint(0, 2**32 - 1)
         sampler = circuit.compile_detector_sampler(seed=seed)
         syndrome, observable_flips = sampler.sample(shots, separate_observables=True)
+        # print("syndrome inside function:", syndrome )
 
         # from eva
         # change the logicals so that there is an observable for each qubit, change back to the code cap case to check whether the real logical flipped
 
         corrections = np.zeros((shots, 2)) # largest fault id is 1, len of correction = 2
         for i in range(shots):
+            # print(syndrome[i])
             edges_in_correction = matchgraph.decode_to_edges_array(syndrome[i])
+            # print("edges in correction inside function from mycorr", edges_in_correction)
 
             
             # update weights based on conditional probabilities
@@ -656,11 +660,12 @@ class CorrelatedDecoder:
             # matching_corr = Matching.from_detector_error_model(updated_dem, enable_correlations=False)
             updated_weights, fault_ids_dict = self.compute_edge_weights_from_conditional_probs(edges_in_correction, matchgraph, cond_prob_dict)
             matching_corr = self.build_matching_from_weights(updated_weights, fault_ids_dict, matchgraph.num_nodes)
-            corrections[i] = matching_corr.decode(syndrome[i])
+            # print("updated edges inside function from mycorr", matching_corr.edges())
+            corrections[i] = matching_corr.decode(syndrome[i]) #usual code
+
         
         # calculate the number of logical errors
-        log_errors_array = np.any(np.array(observable_flips) != np.array(corrections), axis=1)
-
+        log_errors_array = np.any(np.array(observable_flips) != np.array(corrections), axis=1) # usual code
         return log_errors_array
 
 
