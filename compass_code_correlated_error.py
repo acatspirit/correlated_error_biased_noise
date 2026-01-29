@@ -278,58 +278,74 @@ class CorrelatedDecoder:
         return decomp_inst
     
     def decompose_dem_instruction_stim(self, inst):
-        """ Decomposes a stim DEM instruction into its component detectors and probability. Uses pairwise decomposition to determine hyperedge decomposition.
-            Decomposed edge is in the form {p:p, detectors:[(edge1), (edge1), ... ], observables:[included logical observable]}.
-            We insert boundary edges to edges with one detector, boundary node value is -1. 
-            Edges are sorted such that boundary edges are always last in the tuple, and the detectors are in ascending order.          
-
-
-            eg. error(p) D0 D1 L0 -> {p: p, detectors: [(0, 1)], observables: [0]}
-                error(p) D0 -> {p: p, detectors: [(-1, 0)], observables: []} single detector error gets boundary edge
-                error(p) D0 D2 D1 -> {p:p, detectors: [(0, 2), (2, 1)], observables: []}. 
-                error(p) D0 D2 ^ D3 -> {p:p, detectors: [(0, 2), (-1, 3)], observables:[]} Treat ^ as the choice for decomposition
-                error(p) D0 D2 D3 L0 -> {p:p, detectors: [(0, 2), (2, 3)], observables:[0]}. 
-
-            :param inst: stim.DEMInstruction object. The instruction to be decomposed.
-            :return: decomp_inst: dict. A dictionary recording the probability of the error for that DEM instruction, the edges included in the
-            decomposition, and the logical observables included.
         """
-        # get the edge probability and detectors for an instruction
+        Decomposes a stim DEM instruction into pairwise detector edges and assigns observables
+        to the edges based on which sub-block (separated by `^`) the observable appeared in. Use
+        stim DEM instruction decomposition from decompose_errros=True to choose hyperedge 
+        decomposition
+
+        Example:
+            error(p) D0 D1^D2 L0 -> {p:p, detectors: [(0, -1), (2, -1)], observables: [None, 0]}
+            error(p) D0 D1 L0^D2 -> {p:p, detectors: [(0, 1), (-1, 2)], observables: [0, None]}
+            error(p) D0 D2 ^ D3 -> {p:p, detectors: [(0, 2), (-1, 3)], observables:[None, None]}
+            error(p) D0 -> {p: p, detectors: [(-1, 0)], observables: [None]} 
+
+        Returns:
+            {
+                'p': float,
+                'detectors': List[Tuple[int, int]],
+                'observables': List[Optional[int]],
+            }
+        """
         targets = list(inst.targets_copy())
-        decomp_inst = {"p": inst.args_copy()[0], "detectors": [], "observables": []}
-        split_inds = []
-        # separate detectors, logical observables, and separators
+        p = inst.args_copy()[0]
+
+        blocks = []  # Each block is a list of targets between separators (^)
+        current_block = []
+
         for t in targets:
             if t.is_separator():
-                split_inds.append(len(decomp_inst["detectors"]))
-            elif t.is_logical_observable_id():
-                # logical observable: L#
-                decomp_inst["observables"].append(t.val)
-            elif t.is_relative_detector_id():
-                # detector: D#
-                decomp_inst["detectors"].append(t.val)
-        
-        total_num_detectors = len(decomp_inst["detectors"])
+                if current_block:
+                    blocks.append(current_block)
+                    current_block = []
+            else:
+                current_block.append(t)
 
-        # iterate through array and make pairwise edge tuples with probability prob_err
-        detectors = decomp_inst["detectors"]
-        edges = []
+        if current_block:
+            blocks.append(current_block)
 
-        if total_num_detectors == 1:
-            edges = [(-1, detectors[0])] # include a boundary edge
-        
-        else: # decompose based on split indices
-            edges_split = np.split(np.array(detectors), split_inds)
-            for edge in edges_split:
-                if len(edge) == 1:
-                    edges.append((-1, edge[0])) # boundary edge
-                else:
-                    edge_tuple = tuple(sorted(edge))
-                    edges.append(edge_tuple)
-        
-        # store result
-        decomp_inst["detectors"] = edges
-        return decomp_inst
+        detector_edges = []
+        edge_observables = []
+
+        for block in blocks:
+            dets = []
+            obs = []
+
+            for t in block:
+                if t.is_relative_detector_id():
+                    dets.append(t.val)
+                elif t.is_logical_observable_id():
+                    obs.append(t.val)
+
+            # Handle detectors → edges
+            if len(dets) == 0:
+                continue  # no detector => no edge
+            elif len(dets) == 1:
+                edge = (-1, dets[0])  # boundary edge
+                detector_edges.append(edge)
+                edge_observables.append(obs[0] if obs else None)
+            else:
+                # Decompose pairwise through chain
+                for i in range(len(dets) - 1):
+                    edge = tuple(sorted((dets[i], dets[i+1])))
+                    detector_edges.append(edge)
+                    edge_observables.append(obs[0] if obs else None)
+
+        return {
+            "p": p,
+            "detectors": detector_edges,
+            "observables": edge_observables
+        }
 
 
 
