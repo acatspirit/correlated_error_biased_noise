@@ -461,6 +461,7 @@ class CorrelatedDecoder:
 
         
         joint_probs = {} # each entry is the joint probability of two edges. [E][E] is a marginal probability
+        fault_ids = {} # each entry is the fault id for that edge
 
         # iterate through each edge in the dem, add hyperedges
         for inst in dem:
@@ -468,6 +469,7 @@ class CorrelatedDecoder:
                 decomposed_inst = self.decompose_dem_instruction_stim(inst) # used to be pairwise
                 prob_err = decomposed_inst["p"]
                 edges = decomposed_inst["detectors"]
+                observables = decomposed_inst["observables"]
 
                 # update hyperedges in joint probability table
                 if len(edges) > 1:
@@ -482,12 +484,16 @@ class CorrelatedDecoder:
                     joint_probs.setdefault(b, {})[a] = new_p10
 
                 # update marginal probabilities
-                for edge in edges:
+                for i,edge in enumerate(edges):
                     p = joint_probs.get(edge, {}).get(edge, 0)
                     new_p = self.bernoulli_prob(p, prob_err)
                     joint_probs.setdefault(edge, {})[edge] = new_p
+                    
+                    # assign fault ids
+                    obs = observables[i]
+                    fault_ids[edge] = fault_ids.get(edge) or obs
                 
-        return joint_probs 
+        return joint_probs, fault_ids 
     
     def get_conditional_prob(self, joint_prob_dict):
         """ Given a joint probability dictionary, calculates the conditional probabilities for each hyperedge. The conditional probability is given by 
@@ -570,7 +576,6 @@ class CorrelatedDecoder:
 
     def compute_edge_weights_from_conditional_probs(self, correction_edges, match_graph, cond_prob_dict):
         # do i need to keep track of fault ids? probably
-        # why are there fewer nodes in the corr matchgraph? 
 
         weights = {}
         fault_ids = {}
@@ -637,7 +642,7 @@ class CorrelatedDecoder:
         matchgraph = Matching.from_detector_error_model(dem, enable_correlations=False)
 
         # get the joint probabilities table of the dem hyperedges
-        joint_prob_dict = self.get_joint_prob(dem)
+        joint_prob_dict, fault_ids = self.get_joint_prob(dem)
         
         # calculate the conditional probabilities based on joint probablities and marginal probabilities 
         cond_prob_dict = self.get_conditional_prob(joint_prob_dict)
