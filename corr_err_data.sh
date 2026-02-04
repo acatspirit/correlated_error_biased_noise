@@ -8,6 +8,6 @@
 #SBATCH --mail-user=am1155@duke.edu       # It will send you an email when the job is finishe$
 #SBATCH --mem=1G                # Memory, keep it as 10G
 #SBATCH --time=48:00:00            # Time limit hrs:min:sec
-#SBATCH --job-name=code_cap_thresholds_batch.out                # How is your output is called, you n$
+#SBATCH --job-name=circuit_thresholds_batch.out                # How is your output is called, you n$
 
 python3 compass_code_correlated_error.py 
