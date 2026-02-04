@@ -517,7 +517,7 @@ class CDCompassCodeCircuit:
             Z memory - measuring X stabs first time is random, don't add detectors to these, just the second round
         """
         p_gate = after_clifford_depolarization # gate error on two-qubit gates
-        p_meas = before_measure_flip # measurement bit/phase flip error, phenom
+        p_meas = before_measure_flip # measurement bit/phase flip error before measurements unweighted
         p_data_meas = before_measure_pauli_channel # apply biased depolarizing error on DATA qubits before measurement
         p_data_dep = before_round_data_pauli_channel # apply biased depolarizing error on data qubits before each round
         p_i_round = between_round_idling_pauli_channel # idling error on all qubits between the measurement rounds
@@ -534,7 +534,7 @@ class CDCompassCodeCircuit:
         pz_meas = p_data_meas*(self.eta/(1+self.eta)) # biased depolarizing error on data qubits before measurement
         py_meas = px_meas
 
-        p_phenom_meas = (0.5*p_meas/(1+self.eta) + p_meas*(self.eta/(1+self.eta)))/4
+        p_phenom_meas = (0.5*p_meas/(1+self.eta) + p_meas*(self.eta/(1+self.eta)))/4 # reweight by stabilizer weight preparation with phenom circuit
         
 
         # make the circuit
@@ -610,12 +610,12 @@ class CDCompassCodeCircuit:
             if phenom_meas:
                 circuit.append("X_ERROR", anc, min(p_phenom_meas*len(stab_d_x[anc]),1))
             else:
-                circuit.append("X_ERROR", anc, min(1,p_meas*len(stab_d_x[anc])))
+                circuit.append("X_ERROR", anc, p_meas)
         for anc in range(len(stab_d_z)):
             if phenom_meas:
                 circuit.append("X_ERROR", anc + len(stab_d_x), min(1,p_phenom_meas*len(stab_d_z[anc]))) 
             else:
-                circuit.append("X_ERROR", anc + len(stab_d_x), min(1,p_meas*len(stab_d_z[anc]))) 
+                circuit.append("X_ERROR", anc + len(stab_d_x), p_meas) 
         
     
         circuit.append("MR", full_stab_L) # measure the ancillas at t=0
@@ -652,12 +652,12 @@ class CDCompassCodeCircuit:
             if phenom_meas:
                 loop_circuit.append("X_ERROR", anc, min(p_phenom_meas*len(stab_d_x[anc]),1))
             else:
-                loop_circuit.append("X_ERROR", anc, min(1,p_meas*len(stab_d_x[anc])))
+                loop_circuit.append("X_ERROR", anc, p_meas)
         for anc in range(len(stab_d_z)):
             if phenom_meas:
                 loop_circuit.append("X_ERROR", anc + len(stab_d_x), min(p_phenom_meas*len(stab_d_z[anc]),1)) 
             else:
-                loop_circuit.append("X_ERROR", anc + len(stab_d_x), min(p_meas*len(stab_d_z[anc]),1)) 
+                loop_circuit.append("X_ERROR", anc + len(stab_d_x), p_meas) 
 
         loop_circuit.append("MR", full_stab_L) # measure the ancillas at t>0
 
