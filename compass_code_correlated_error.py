@@ -1367,8 +1367,8 @@ def get_data_DCC(circuit_data, corr_decoding, noise_model, d_list, l_list, eta_l
         print("l,eta,cd_type", l,eta, cd_type)
         corr_type = "None"
         if p_th_init_d is not None:
-            p_th_init = p_th_init_d[(l, eta, cd_type, noise_model)]
-            p_list = np.linspace(p_th_init - 0.03, p_th_init + 0.03, 40)
+            p_th_init = p_th_init_d[(l, eta, "TOTAL_MEM", cd_type, noise_model)]
+            p_list = np.linspace(p_th_init - 0.01, p_th_init + 0.01, 40)
         write_data(num_shots, d_list, l, p_list, eta, task_id, corr_type, circuit_data=circuit_data, noise_model=noise_model, cd_type=cd_type, corr_decoding=corr_decoding, pymatch_corr=pymatch_corr)
     if circuit_data and (pymatch_corr or corr_decoding):
         l_eta_cd_type_arr = list(itertools.product(l_list,eta_list,cd_list))
@@ -1379,7 +1379,7 @@ def get_data_DCC(circuit_data, corr_decoding, noise_model, d_list, l_list, eta_l
         print("l,eta,cd_type", l,eta, cd_type)
         corr_type = "None"
         if p_th_init_d is not None:
-            p_th_init = p_th_init_d[(l, eta, cd_type,noise_model)]
+            p_th_init = p_th_init_d[(l, eta, cd_type,noise_model)] # add the mem type somehow
             p_list = np.linspace(p_th_init - 0.03, p_th_init + 0.03, 40)
         write_data(num_shots, d_list, l, p_list, eta, task_id, corr_type, circuit_data=circuit_data, noise_model=noise_model, cd_type=cd_type, corr_decoding=corr_decoding, pymatch_corr=pymatch_corr)
     
