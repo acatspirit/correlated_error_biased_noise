@@ -8,6 +8,8 @@ zx_circuit_data.csv
 xz_circuit_data.csv
 circuit_data.csv
 circuit_data_pre_dec2025.csv
+phenom_data.csv
+code_cap_circuit_data.csv
 
 
 __pycache__/

@@ -692,7 +692,7 @@ class CorrelatedDecoder:
         #
 
         # get the DEM get the matching graph
-        dem = circuit.detector_error_model(decompose_errors=True) 
+        dem = circuit.detector_error_model(decompose_errors=True, flatten_loops=True) 
         matchgraph = Matching.from_detector_error_model(dem, enable_correlations=False)
 
         # get the joint probabilities table of the dem hyperedges
@@ -1124,7 +1124,7 @@ def full_error_plot(full_df, curr_eta, curr_l, curr_num_shots, noise_model, CD_t
     for i, error_type in enumerate(error_types):
         ax = axes[i]
         ax.tick_params(axis='both', which='major', labelsize=16)  # Change major tick label size
-        ax.tick_params(axis='both', which='minor', labelsize=16) 
+        ax.tick_params(axis='both', which='minor', labelsize=16)  
         error_type_df = filtered_df[filtered_df['error_type'] == error_type]
         prob_scale = get_prob_scale(error_type, curr_eta)
         # Plot each d value
@@ -1516,7 +1516,7 @@ if __name__ == "__main__":
                         (6,4.26, "CORR_XZ"): 0.225, (6,4.26, "CORR_ZX"):0.226, (6,5.89, "CORR_XZ"): 0.227, (6,5.89, "CORR_ZX"):0.229
                         }
 
-    p_th_init_dict_CL = {(2, 0.5, "X_MEM", "XZZXonSqu", "code_cap"):0.11, (2, 0.5, "Z_MEM", "XZZXonSqu", "code_cap"):0.11,
+    p_th_init_dict_C_CC = {(2, 0.5, "X_MEM", "XZZXonSqu", "code_cap"):0.11, (2, 0.5, "Z_MEM", "XZZXonSqu", "code_cap"):0.11,
                          (2, 5, "X_MEM", "XZZXonSqu", "code_cap"):0.17, (2, 5, "Z_MEM", "XZZXonSqu", "code_cap"):0.16,
                          (2, 10, "X_MEM", "XZZXonSqu", "code_cap"):0.19, (2, 10, "Z_MEM", "XZZXonSqu", "code_cap"):0.19,
                          (2, 50, "X_MEM", "XZZXonSqu", "code_cap"):0.27, (2, 50, "Z_MEM", "XZZXonSqu", "code_cap"):0.23,
@@ -1561,6 +1561,37 @@ if __name__ == "__main__":
                          (6,0.5,"TOTAL_MEM_PY", "SC", "code_cap"):0.00
                          }
     
+    p_th_init_CL = {(2,0.5,"X_MEM", "SC","circuit_level"):0.00775, (2,0.5,"Z_MEM", "SC","circuit_level"):0.00765, (2,0.5,"TOTAL_MEM", "SC","circuit_level"):0.00765,
+                    (4,0.5,"X_MEM","SC", "circuit_level"):0.01021, (4,0.5,"Z_MEM", "SC","circuit_level"):0.00458, (4,0.5,"TOTAL_MEM", "SC","circuit_level"):0.00468,
+                    (6,0.5,"X_MEM", "SC","circuit_level"):0.01150, (6,0.5,"Z_MEM", "SC","circuit_level"):0.00302, (6,0.5,"TOTAL_MEM", "SC","circuit_level"):0.00294,
+                    (2,5,"X_MEM","SC", "circuit_level"):0.00774, (2,5,"Z_MEM", "SC","circuit_level"):0.00893, (2,5,"TOTAL_MEM","SC", "circuit_level"):0.00826,
+                    (4,5,"X_MEM", "SC","circuit_level"):0.00765, (4,5,"Z_MEM", "SC","circuit_level"):0.00903, (4,5,"TOTAL_MEM","SC", "circuit_level"):0.00821,
+                    (6,5,"X_MEM", "SC","circuit_level"):0.01174, (6,5,"Z_MEM", "SC","circuit_level"):0.00325, (6,5,"TOTAL_MEM", "SC","circuit_level"):0.00350,
+                    (2,10,"X_MEM","SC", "circuit_level"):0.00775, (2,10,"Z_MEM","SC", "circuit_level"):0.00919, (2,10,"TOTAL_MEM", "SC","circuit_level"):0.00826,
+                    (4,10,"X_MEM", "SC","circuit_level"):0.01031, (4,10,"Z_MEM", "SC","circuit_level"):0.00499, (4,10,"TOTAL_MEM", "SC","circuit_level"):0.00565,
+                    (6,10,"X_MEM", "SC","circuit_level"):0.01168, (6,10,"Z_MEM", "SC","circuit_level"):0.00408, (6,10,"TOTAL_MEM", "SC","circuit_level"):0.00431,
+                    (2,25,"X_MEM", "SC","circuit_level"):0.01174, (2,25,"Z_MEM","SC", "circuit_level"):0.00448, (2,25,"TOTAL_MEM", "SC","circuit_level"):0.00443,
+                    (4,25,"X_MEM", "SC","circuit_level"):0.01038, (4,25,"Z_MEM", "SC","circuit_level"):0.00520, (4,25,"TOTAL_MEM", "SC","circuit_level"):0.00614,
+                    (6,25,"X_MEM", "SC","circuit_level"):0.01174, (6,25,"Z_MEM", "SC","circuit_level"):0.00417, (6,25,"TOTAL_MEM","SC", "circuit_level"):0.00432,
+                    (2,50,"X_MEM", "SC","circuit_level"):0.00767, (2,50,"Z_MEM", "SC","circuit_level"):0.00965, (2,50,"TOTAL_MEM", "SC","circuit_level"):0.00821,
+                    (4,50,"X_MEM", "SC","circuit_level"):0.00770, (4,50,"Z_MEM", "SC","circuit_level"):0.00985, (4,50,"TOTAL_MEM", "SC","circuit_level"):0.00826,
+                    (6,50,"X_MEM","SC", "circuit_level"):0.01031, (6,50,"Z_MEM", "SC","circuit_level"):0.00509, (6,50,"TOTAL_MEM", "SC","circuit_level"):0.00622,
+                    (2,0.5,"X_MEM", "ZXXZonSqu","circuit_level"):0.00775, (2,0.5,"Z_MEM","ZXXZonSqu", "circuit_level"):0.00765, (2,0.5,"TOTAL_MEM", "ZXXZonSqu","circuit_level"):0.00765,
+                    (4,0.5,"X_MEM","ZXXZonSqu", "circuit_level"):0.01021, (4,0.5,"Z_MEM", "ZXXZonSqu","circuit_level"):0.00458, (4,0.5,"TOTAL_MEM", "ZXXZonSqu","circuit_level"):0.00468,
+                    (6,0.5,"X_MEM", "ZXXZonSqu","circuit_level"):0.01150, (6,0.5,"Z_MEM", "ZXXZonSqu","circuit_level"):0.00302, (6,0.5,"TOTAL_MEM","ZXXZonSqu", "circuit_level"):0.00294,
+                    (2,5,"X_MEM","ZXXZonSqu", "circuit_level"):0.00774, (2,5,"Z_MEM", "ZXXZonSqu","circuit_level"):0.00893, (2,5,"TOTAL_MEM", "ZXXZonSqu","circuit_level"):0.00826,
+                    (4,5,"X_MEM","ZXXZonSqu", "circuit_level"):0.00765, (4,5,"Z_MEM", "ZXXZonSqu","circuit_level"):0.00903, (4,5,"TOTAL_MEM","ZXXZonSqu", "circuit_level"):0.00821,
+                    (6,5,"X_MEM", "ZXXZonSqu","circuit_level"):0.01174, (6,5,"Z_MEM", "ZXXZonSqu","circuit_level"):0.00325, (6,5,"TOTAL_MEM", "ZXXZonSqu","circuit_level"):0.00350,
+                    (2,10,"X_MEM","ZXXZonSqu", "circuit_level"):0.00775, (2,10,"Z_MEM", "ZXXZonSqu","circuit_level"):0.00919, (2,10,"TOTAL_MEM", "ZXXZonSqu","circuit_level"):0.00826,
+                    (4,10,"X_MEM","ZXXZonSqu", "circuit_level"):0.01031, (4,10,"Z_MEM", "ZXXZonSqu","circuit_level"):0.00499, (4,10,"TOTAL_MEM", "ZXXZonSqu","circuit_level"):0.00565,
+                    (6,10,"X_MEM", "ZXXZonSqu","circuit_level"):0.01168, (6,10,"Z_MEM", "ZXXZonSqu","circuit_level"):0.00408, (6,10,"TOTAL_MEM","ZXXZonSqu", "circuit_level"):0.00431,
+                    (2,25,"X_MEM", "ZXXZonSqu","circuit_level"):0.01174, (2,25,"Z_MEM", "ZXXZonSqu","circuit_level"):0.00448, (2,25,"TOTAL_MEM","ZXXZonSqu", "circuit_level"):0.00443,
+                    (4,25,"X_MEM", "ZXXZonSqu","circuit_level"):0.01038, (4,25,"Z_MEM","ZXXZonSqu", "circuit_level"):0.00520, (4,25,"TOTAL_MEM","ZXXZonSqu", "circuit_level"):0.00614,
+                    (6,25,"X_MEM", "ZXXZonSqu","circuit_level"):0.01174, (6,25,"Z_MEM", "ZXXZonSqu","circuit_level"):0.00417, (6,25,"TOTAL_MEM", "ZXXZonSqu","circuit_level"):0.00432,
+                    (2,50,"X_MEM", "ZXXZonSqu","circuit_level"):0.00767, (2,50,"Z_MEM","ZXXZonSqu", "circuit_level"):0.00965, (2,50,"TOTAL_MEM", "ZXXZonSqu","circuit_level"):0.00821,
+                    (4,50,"X_MEM","ZXXZonSqu", "circuit_level"):0.00770, (4,50,"Z_MEM", "ZXXZonSqu","circuit_level"):0.00985, (4,50,"TOTAL_MEM", "ZXXZonSqu","circuit_level"):0.00826,
+                    (6,50,"X_MEM", "ZXXZonSqu","circuit_level"):0.01031, (6,50,"Z_MEM", "ZXXZonSqu","circuit_level"):0.00509, (6,50,"TOTAL_MEM", "ZXXZonSqu","circuit_level"):0.00622 }
+
     #### parameters
 
 
@@ -1593,8 +1624,12 @@ if __name__ == "__main__":
 
     if circuit_data:
         folder_path = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/circuit_data/'
-
-        output_file = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/circuit_data.csv'
+        if noise_model == "circuit_level":
+            output_file = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/circuit_data.csv'
+        elif noise_model == "code_cap":
+            output_file = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/code_cap_circuit_data.csv'
+        elif noise_model == "phenom":
+            output_file = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/phenom_data.csv'
     #     elif corr_type == "CORR_XZ":
     #         output_file = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/xz_circuit_data.csv'
     else:
@@ -1607,7 +1642,7 @@ if __name__ == "__main__":
 
 
     # run this to get data from the dcc
-    get_data_DCC(circuit_data, corr_decoding, noise_model, d_list, l_list, eta_list, cd_list, corr_list, total_num_shots, p_list=p_list, p_th_init_d=None, pymatch_corr=py_corr)
+    get_data_DCC(circuit_data, corr_decoding, noise_model, d_list, l_list, eta_list, cd_list, corr_list, total_num_shots, p_list=None, p_th_init_d=p_th_init_CL, pymatch_corr=py_corr)
 
     # run this once you have data and want to combo it to one csv
     # concat_csv(folder_path, circuit_data)
@@ -1615,21 +1650,22 @@ if __name__ == "__main__":
 
     # plot the threshold results
 
-    # eta - 0.5, 10, 25, 50, retake for lower ranges at lower eta 
-    # l - 2-6 
+    # eta - 0.5, 5, 10, 25, 50, retake for lower ranges at lower eta 
+    # l - 2,4,6
     # no corr
-    # code cap - only one shot, asymmetric pauli channel (before measuremnets circuit) on data
-    # preparing the circuit wrong with a probability p is how to think of it
-    # write down which one matches
+    # num_shots - 30303, total - 1e6
+    # d - 11-19 odd 
+    # CD_type - SC, ZXXZonSqu
+
 
 
     # params to plot
     # eta = 50
-    # l = 4
-    # curr_num_shots = 45454.0
-    # noise_model = "phenom"
+    # l = 6
+    # curr_num_shots = 30303.0
+    # noise_model = "circuit_level"
     # CD_type = "ZXXZonSqu"
-    # py_corr = True # whether to use pymatching correlated decoder for circuit data
+    # py_corr = False # whether to use pymatching correlated decoder for circuit data
     # corr_decoding = False # whether to get data for correlated decoding using my decoder
 
 
