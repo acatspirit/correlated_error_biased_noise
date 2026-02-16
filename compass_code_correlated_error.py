@@ -572,14 +572,14 @@ class CorrelatedDecoder:
 
             # populate cond_prob dictionary 
             for edge_2 in adjacent_edge_dict:
-                if edge_1 == edge_2:  # should I exclude the edge I already picked? Pymatching does
+                if edge_1 == edge_2:  
                     continue 
 
                 joint_p = joint_prob_dict.get(edge_1, {}).get(edge_2,0)
 
                 # conditional probability calculation. Min taken because weights cannot be negative, and eta=0.5 represents a full erasure channel
                 # cond_p = min(1/(2*self.eta + 1), joint_p/marginal_p) # how do I do directionality here / I might have to think about it, will this actually work? Dont wanna fully erase edges...?
-                cond_p = min(0.5, joint_p/marginal_p) # temporary for testing w pycorr decoder
+                cond_p = min(1/(2*self.eta + 1), joint_p/marginal_p) # trying to include the channel, not sure about directionaility still
                 cond_prob_dict.setdefault(edge_1, {})[edge_2] = cond_p
         return cond_prob_dict
 
