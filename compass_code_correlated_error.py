@@ -1155,13 +1155,13 @@ def full_error_plot(full_df, curr_eta, curr_l, curr_num_shots, noise_model, CD_t
     plt.tight_layout()
     plt.show()
 
-def threshold_plot(full_df, p_th0, p_range, curr_eta, curr_l, curr_num_shots, corr_type, file, circuit_level=False, py_corr = False, corr_decoding=False, loglog=False, averaging=True, show_threshold=True):
+def threshold_plot(full_df, p_th0, p_range, curr_eta, curr_l, curr_num_shots, corr_type, CD_type, noise_model, file, circuit_level=False, py_corr = False, corr_decoding=False, loglog=False, averaging=True, show_threshold=True):
     """Make a plot of all 4 errors given a df with unedited contents"""
 
     prob_scale = get_prob_scale(corr_type, curr_eta)
 
     # Filter the DataFrame based on the input parameters
-    filtered_df = full_df[(full_df['p'] > p_th0 - p_range)&(full_df['p'] < p_th0 + p_range)&(full_df['l'] == curr_l) & (full_df['eta'] == curr_eta) & (full_df['num_shots'] == curr_num_shots)]
+    filtered_df = full_df[(full_df['p'] > p_th0 - p_range)&(full_df['p'] < p_th0 + p_range)&(full_df['l'] == curr_l) & (full_df['eta'] == curr_eta) & (full_df['num_shots'] == curr_num_shots) & (full_df['noise_model'] == noise_model) & (full_df['CD_type'] == CD_type)]
     if py_corr: 
         filtered_df = filtered_df[filtered_df['error_type'].isin(['X_MEM_PY', 'Z_MEM_PY', 'TOTAL_MEM_PY'])]
     elif corr_decoding:
@@ -1186,17 +1186,17 @@ def threshold_plot(full_df, p_th0, p_range, curr_eta, curr_l, curr_num_shots, co
     for i,d in enumerate(d_values):
         d_df = full_df[(full_df['d'] == d)&(full_df['error_type'] == corr_type)&(full_df['l'] == curr_l) & (full_df['eta'] == curr_eta) & (full_df['num_shots'] == curr_num_shots)]
         if averaging:
-            d_df_mean = shots_averaging(curr_num_shots, curr_l, curr_eta, corr_type, d_df, file)
+            d_df_mean = shots_averaging(curr_num_shots, curr_l, curr_eta, corr_type, d_df, CD_type, file)
             if loglog:
-                ax.loglog(d_df_mean['p']*prob_scale[corr_type], d_df_mean['num_log_errors'],  label=f'd={d}', color=colors[i])
+                ax.loglog(d_df_mean['p']*prob_scale, d_df_mean['num_log_errors'],  label=f'd={d}', color=colors[i])
                 error_bars = 10**(-6)*np.ones(len(d_df_mean['num_log_errors']))
-                ax.fill_between(d_df_mean['p']*prob_scale[corr_type], d_df_mean['num_log_errors'] - error_bars, d_df_mean['num_log_errors'] + error_bars, alpha=0.2, color=colors[i])
+                ax.fill_between(d_df_mean['p']*prob_scale, d_df_mean['num_log_errors'] - error_bars, d_df_mean['num_log_errors'] + error_bars, alpha=0.2, color=colors[i])
             else:
-                ax.plot(d_df_mean['p']*prob_scale[corr_type], d_df_mean['num_log_errors'],  label=f'd={d}', color=colors[i])
+                ax.plot(d_df_mean['p']*prob_scale, d_df_mean['num_log_errors'],  label=f'd={d}', color=colors[i])
         else:
-            ax.scatter(d_df['p']*prob_scale[corr_type], d_df['num_log_errors'], s=2, label=f'd={d}',color=colors[i])
+            ax.scatter(d_df['p']*prob_scale, d_df['num_log_errors'], s=2, label=f'd={d}',color=colors[i])
 
-    pth, pth_error = get_threshold(filtered_df, p_th0, p_range, curr_l, curr_eta, corr_type,curr_num_shots)
+    pth, pth_error = get_threshold(filtered_df, p_th0, p_range, curr_l, curr_eta, corr_type,curr_num_shots, CD_type)
     
     if show_threshold:
         ax.vlines(pth, ymin=0, ymax=0.5, color='red', linestyles='--', label=f'pth = {pth:.3f} +/- {pth_error:.3f}')
@@ -1297,13 +1297,13 @@ def threshold_fit(x, pth, nu, c):
     return c + X 
 
 
-def get_threshold(full_df, pth0, p_range, l, eta, corr_type, num_shots):
+def get_threshold(full_df, pth0, p_range, l, eta, error_type, num_shots, CD_type):
     """ returns the threshold and confidence given a df 
         in: df - the dataframe containing all data, filtered for one error_type, l eta, and probability range
         out: p_thr - a float, the probability where intersection of different lattice distances occurred
     """
-    print(f"Getting threshold for l = {l}, eta = {eta}, error type = {corr_type}, num_shots = {num_shots}")
-    df = full_df[(full_df['p'] < pth0 + p_range) & ( full_df['p'] > pth0 - p_range) & (full_df['l'] == l) & (full_df['eta'] == eta) & (full_df['error_type'] == corr_type) & (full_df['num_shots'] == num_shots)]
+    print(f"Getting threshold for l = {l}, eta = {eta}, error type = {error_type}, num_shots = {num_shots}")
+    df = full_df[(full_df['p'] < pth0 + p_range) & ( full_df['p'] > pth0 - p_range) & (full_df['l'] == l) & (full_df['eta'] == eta) & (full_df['error_type'] == error_type) & (full_df['num_shots'] == num_shots) & (full_df['CD_type'] == CD_type)]
     # df = full_df
     if df.empty:
         return 0, 0
@@ -1315,7 +1315,7 @@ def get_threshold(full_df, pth0, p_range, l, eta, corr_type, num_shots):
 
     # run the fitting function
     # popt, pcov = curve_fit(threshold_fit, (p_list, d_list), error_list, p0=[pth0, 0.5, 1, 1, 1])
-    popt, pcov = curve_fit(threshold_fit, (p_list, d_list), error_list, p0=[pth0, 1, 1])
+    popt, pcov = curve_fit(threshold_fit, (p_list, d_list), error_list, p0=[pth0, 0, 0])
     
     pth = popt[0] # the threshold probability
     pth_error = np.sqrt(np.trace(pcov))
@@ -1404,59 +1404,32 @@ def get_data_DCC(circuit_data, corr_decoding, noise_model, d_list, l_list, eta_l
 
 
 
-def get_thresholds_from_data_exactish(num_shots, p_th_init_dict):
+def get_thresholds_from_data_exactish(num_shots, p_th_init_dict, output_file):
     """
     Given a dictionary of thresholds, get the thresholds from the data files and add them to the dictionary
     in: num_shots - the number of shots to sample
         p_th_init_dict - a dictionary of initial guesses for the threshold, only the entries you want to make exactish, with keys (l, eta, corr_type)
     out: threshold_d - the updated dictionary of thresholds
     """
-    all_thresholds_df = pd.read_csv('/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/all_thresholds_per_eta_elongated.csv')
-    threshold_d = {}
+    all_thresholds_df = pd.read_csv('/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/threshold_exactish_per_eta.csv')
+    # print("thresholds_df 1", all_thresholds_df)
 
-    # added some stuff for total thresholds that shouldn't be widely used
-    # p_min_dict = {}
-    # corr_pair = ["CORR_XZ","CORR_ZX"]
-    # for key in p_th_init_dict.keys():
-    #     l, eta, corr_type = key
-    #     alt_corr_type = corr_pair[(corr_pair.index(corr_type) + 1)%2]
-    #     threshold_inits = [p_th_init_dict[key],p_th_init_dict[l,eta,alt_corr_type]]
-    #     p_min_dict[l,eta, corr_type if threshold_inits.index(min(threshold_inits)) == 0 else alt_corr_type] = min(threshold_inits)
-
-    # for key in p_min_dict.keys():
-    #     l, eta, corr_type = key
-    #     print("l,eta, corr_type", l,eta, corr_type)
-
-    #     if corr_type == "CORR_ZX":
-    #         output_file = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/zx_corr_err_data.csv'
-    #     elif corr_type == "CORR_XZ":
-    #         output_file = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/xz_corr_err_data.csv'
-    #     df = pd.read_csv(output_file)
-    #     # threshold_d = {}
-
-    #     p_th_init = p_min_dict[key]
-    #     threshold,std_error = get_threshold(df, p_th_init, 0.03, l, eta, corr_type, num_shots)
-    #     threshold_d[key] = threshold
-    #     all_thresholds_df = pd.concat([all_thresholds_df,pd.DataFrame({'l':l,'eta':eta, 'error_type':"TOTAL", 'pth':threshold, 'stderr':std_error}, index=[0])], ignore_index=True)
 
     for key in p_th_init_dict.keys():
-        l, eta, corr_type = key
-        print("l,eta,corr_type", l,eta, corr_type)
+        # print("key", key)
+        l, eta, corr_type, CD_type, noise_model = key
+        print("l,eta,corr_type, CD_type, noise_model", l,eta, corr_type, CD_type, noise_model)
 
-        if corr_type == "CORR_ZX":
-            output_file = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/zx_corr_err_data.csv'
-        elif corr_type == "CORR_XZ":
-            output_file = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/xz_corr_err_data.csv'
         df = pd.read_csv(output_file)
         # threshold_d = {}
 
         p_th_init = p_th_init_dict[key]
-        threshold,std_error = get_threshold(df, p_th_init, 0.03, l, eta, corr_type, num_shots)
-        threshold_d[key] = threshold
-        all_thresholds_df = pd.concat([all_thresholds_df,pd.DataFrame({'l':l,'eta':eta, 'error_type':corr_type, 'pth':threshold, 'stderr':std_error}, index=[0])], ignore_index=True)
-    
+        threshold,std_error = get_threshold(df, p_th_init, 0.01, l, eta, corr_type, num_shots, CD_type)
+        # threshold_d[key] = threshold
+        all_thresholds_df = pd.concat([all_thresholds_df,pd.DataFrame({'l':l,'eta':eta, 'error_type':corr_type, 'CD_type':CD_type, 'noise_model':noise_model, 'pth':threshold, 'stderr':std_error}, index=[0])], ignore_index=True)
+        # print("thresholds_df 2", all_thresholds_df)
 
-    all_thresholds_df.to_csv('/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/all_thresholds_per_eta_elongated.csv', index=False)
+    all_thresholds_df.to_csv('/Usrs/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/threshold_exactish_per_eta.csv', index=False)
 
 
 #
@@ -1642,7 +1615,7 @@ if __name__ == "__main__":
 
 
     # run this to get data from the dcc
-    get_data_DCC(circuit_data, corr_decoding, noise_model, d_list, l_list, eta_list, cd_list, corr_list, total_num_shots, p_list=None, p_th_init_d=p_th_init_CL, pymatch_corr=py_corr)
+    # get_data_DCC(circuit_data, corr_decoding, noise_model, d_list, l_list, eta_list, cd_list, corr_list, total_num_shots, p_list=None, p_th_init_d=p_th_init_CL, pymatch_corr=py_corr)
 
     # run this once you have data and want to combo it to one csv
     # concat_csv(folder_path, circuit_data)
@@ -1660,19 +1633,28 @@ if __name__ == "__main__":
 
 
     # params to plot
-    # eta = 50
-    # l = 6
-    # curr_num_shots = 30303.0
-    # noise_model = "circuit_level"
-    # CD_type = "ZXXZonSqu"
-    # py_corr = False # whether to use pymatching correlated decoder for circuit data
-    # corr_decoding = False # whether to get data for correlated decoding using my decoder
+    eta = 10
+    l = 2
+    curr_num_shots = 30303.0
+    noise_model = "circuit_level"
+    CD_type = "SC"
+    py_corr = False # whether to use pymatching correlated decoder for circuit data
+    corr_decoding = False # whether to get data for correlated decoding using my decoder
+    error_type = "TOTAL_MEM" # which type of error to plot, choose from ['X_MEM', 'Z_MEM', 'TOTAL_MEM', 'TOTAL_PY_MEM', 'TOTAL_MEM_PY_CORR']
 
 
-    # df = pd.read_csv(output_file)
+    df = pd.read_csv(output_file)
     # full_error_plot(df,eta,l,curr_num_shots,noise_model, CD_type, output_file,corr_decoding=corr_decoding, py_corr=py_corr, circuit_level=circuit_data)
 
 
+    # make a plot for specific thresholds
+    pth0 = p_th_init_CL[(l, eta, error_type, CD_type, noise_model)]
+    p_th, pth_error = get_threshold(df, pth0, 0.01, l, eta, error_type, curr_num_shots, CD_type)
+    # print(p_th, pth_error)
+
+    threshold_plot(df, pth0, 0.01, eta, l, curr_num_shots, error_type, CD_type, noise_model, file=output_file, circuit_level=True, py_corr = False, corr_decoding=False, loglog=False, averaging=True, show_threshold=True)
+    
+    # get_thresholds_from_data_exactish(curr_num_shots, p_th_init_CL,output_file)
     # make eta plot
     # eta_df = pd.read_csv("/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/all_thresholds_per_eta_elongated.csv")
     # corr_type_list = ['TOTAL', "TOTAL_PY_CORR"]
