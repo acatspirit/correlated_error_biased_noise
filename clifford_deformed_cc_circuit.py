@@ -574,19 +574,20 @@ class CDCompassCodeCircuit:
 
         # reset the data qubits
         if self.type == "X":
-            circuit.append("RX", data_q_list)
-            
         
             if CD_type != "SC":
-                circuit.append("H", [q + num_ancillas for q in CD_data_transform if CD_data_transform[q] == 2]) # put code into 0L of the CD code 
+                circuit.append("R", [q + num_ancillas for q in CD_data_transform if CD_data_transform[q] == 2]) # put code into 0L of the CD code
+                circuit.append("RX", [q + num_ancillas for q in CD_data_transform if CD_data_transform[q] == 0])
+            else: 
+                circuit.append("RX", data_q_list)
 
             circuit.append("PAULI_CHANNEL_1", data_q_list, [px_data, py_data, pz_data]) # biased pauli channel on data qubits before the round
             circuit.append("Z_ERROR", [anc for anc in range(num_ancillas)], p_i) # idling error on the ancillas
         elif self.type == "Z":
             
             if CD_type != "SC":
-                circuit.append("RX", data_q_list)
-                circuit.append("H", [q + num_ancillas for q in CD_data_transform if CD_data_transform[q] == 0]) # put the code into the 1L of the CD code
+                circuit.append("RX", [q + num_ancillas for q in CD_data_transform if CD_data_transform[q] == 2])
+                circuit.append("R", [q + num_ancillas for q in CD_data_transform if CD_data_transform[q] == 0]) # put the code into the 1L of the CD code
             else:
                 circuit.append("R", data_q_list)
                 
@@ -685,10 +686,13 @@ class CDCompassCodeCircuit:
             circuit.append("PAULI_CHANNEL_1", data_q_list, [px_meas, py_meas, pz_meas]) # apply biased depolarizing error on data qubits before measurement
 
             if CD_type != "SC":
-                circuit.append("H", [q + num_ancillas for q in CD_data_transform if CD_data_transform[q] == 2]) # apply H to the qubits that have a transformation applied 
-            
-            
-            circuit.append("MX", data_q_list)
+                for q in CD_data_transform:
+                    if CD_data_transform[q] == 2:
+                        circuit.append("M", q + num_ancillas)
+                    elif CD_data_transform[q] == 0:
+                        circuit.append("MX", q + num_ancillas) # apply H to the qubits that have a transformation applied
+            else:
+                circuit.append("MX", data_q_list)
 
             # reconstruct each X stabilizer with a detector
             for anc in stab_d_x:
@@ -707,8 +711,11 @@ class CDCompassCodeCircuit:
             circuit.append("PAULI_CHANNEL_1", data_q_list, [px_meas, py_meas, pz_meas]) # apply biased depolarizing error on data qubits before measurement
 
             if CD_type != "SC":
-                circuit.append("H", [q + num_ancillas for q in CD_data_transform if CD_data_transform[q] == 0]) # apply H to the qubits that have no transformation applied
-                circuit.append("MX", data_q_list)
+                for q in CD_data_transform:
+                    if CD_data_transform[q] == 2:
+                        circuit.append("MX", q+num_ancillas)
+                    elif CD_data_transform[q] == 0:
+                        circuit.append("M", q + num_ancillas) # apply H to the qubits that have a transformation applied
             else:
                 circuit.append("M", data_q_list)
 
