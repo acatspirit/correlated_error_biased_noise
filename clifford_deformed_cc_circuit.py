@@ -448,7 +448,7 @@ class CDCompassCodeCircuit:
                 else:
                     p_x_gate = p_gate/(12*(1+self.eta))
                     p_z_gate = self.eta*p_gate/(3*(1+self.eta))
-                    circuit.append("PAULI_CHANNEL_2", [ctrl, target], [p_x_gate, p_x_gate, p_x_gate, p_z_gate, p_x_gate, p_x_gate, p_x_gate, p_x_gate, p_x_gate,p_x_gate, p_x_gate, p_x_gate, p_z_gate,p_x_gate, p_x_gate, p_z_gate]) # Z error only after CZ gate
+                    circuit.append("PAULI_CHANNEL_2", [ctrl, target], [p_x_gate, p_x_gate, p_z_gate, p_x_gate, p_x_gate, p_x_gate, p_x_gate, p_x_gate,p_x_gate, p_x_gate, p_x_gate, p_z_gate,p_x_gate, p_x_gate, p_z_gate]) # Z error only after CZ gate
 
                 if p_i > 0:
                     # apply idling errors to the qubits in the stabilizer without CX
@@ -487,7 +487,7 @@ class CDCompassCodeCircuit:
                 else:
                     p_x_gate = p_gate/(12*(1+self.eta))
                     p_z_gate = self.eta*p_gate/(3*(1+self.eta))
-                    circuit.append("PAULI_CHANNEL_2", [ctrl, target], [p_x_gate, p_x_gate, p_x_gate, p_z_gate, p_x_gate, p_x_gate, p_x_gate, p_x_gate, p_x_gate,p_x_gate, p_x_gate, p_x_gate, p_z_gate,p_x_gate, p_x_gate, p_z_gate]) # Z error only after CZ gate
+                    circuit.append("PAULI_CHANNEL_2", [ctrl, target], [p_x_gate, p_x_gate, p_z_gate, p_x_gate, p_x_gate, p_x_gate, p_x_gate, p_x_gate,p_x_gate, p_x_gate, p_x_gate, p_z_gate,p_x_gate, p_x_gate, p_z_gate]) # Z error only after CZ gate
 
 
                 if p_i > 0:
@@ -615,7 +615,8 @@ class CDCompassCodeCircuit:
 
         # Round 0 - t=0 measurements
         circuit.append("TICK")
-        circuit = self.add_meas_round(circuit, stab_d_x, stab_d_z, order_d_x, order_d_z, qubit_d_x, qubit_d_z, num_ancillas, num_qubits_x, num_qubits_z, CD_data_transform, p_i, p_gate, 0, CD_type) # set the idling error between rounds to 0 on first round
+        print(p_gate)
+        circuit = self.add_meas_round(circuit, stab_d_x, stab_d_z, order_d_x, order_d_z, qubit_d_x, qubit_d_z, num_ancillas, num_qubits_x, num_qubits_z, CD_data=CD_data_transform,p_i=p_i, p_gate=p_gate, p_i_round=0, CD_type=CD_type) # set the idling error between rounds to 0 on first round
 
         # idling errors on the data qubits during round 
         circuit.append("Z_ERROR", data_q_z_list, p_i)
@@ -656,7 +657,7 @@ class CDCompassCodeCircuit:
         # add error to the data qubits
         loop_circuit.append("PAULI_CHANNEL_1", data_q_list, [px_data, py_data, pz_data])
        
-        loop_circuit = self.add_meas_round(loop_circuit, stab_d_x, stab_d_z, order_d_x, order_d_z, qubit_d_x, qubit_d_z, num_ancillas, num_qubits_x, num_qubits_z, CD_data_transform, p_i, p_gate, p_i_round, CD_type)
+        loop_circuit = self.add_meas_round(loop_circuit, stab_d_x, stab_d_z, order_d_x, order_d_z, qubit_d_x, qubit_d_z, num_ancillas, num_qubits_x, num_qubits_z, CD_data=CD_data_transform, p_i=p_i, p_gate=p_gate, p_i_round=p_i_round, CD_type=CD_type)
 
 
         # idling errors on the data qubits, measure the ancillas, bit flip errors on measurements

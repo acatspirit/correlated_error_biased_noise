@@ -821,7 +821,7 @@ class CorrelatedDecoder:
             elif noise_model == "phenom":
                 circuit = circuit_obj.make_elongated_circuit_from_parity(p,0,0,p,0,0,CD_type=cd_type, phenom_meas=True) # check the plots that matched pymatching to get error model right, before meas flip and data qubit pauli between rounds
             elif noise_model == "circuit_level":
-                circuit = circuit_obj.make_elongated_circuit_from_parity(p,0,p,0,p,0,CD_type=cd_type) # between round idling biased pauli on all qubits, measurement flip errors, 2-qubit gate depolarizing
+                circuit = circuit_obj.make_elongated_circuit_from_parity(before_measure_flip=p,before_measure_pauli_channel=0,after_clifford_depolarization=p,before_round_data_pauli_channel=0,between_round_idling_pauli_channel=p,idling_dephasing=0,CD_type=cd_type) # between round idling biased pauli on all qubits, measurement flip errors, 2-qubit gate depolarizing
             else:
                 raise ValueError("Invalid noise model. Choose either 'code_cap', 'phenom', or 'circuit_level'.")
             
