@@ -415,6 +415,7 @@ class CDCompassCodeCircuit:
 
         circuit.append("PAULI_CHANNEL_1",range(num_ancillas + num_qubits_x), [px,px,pz]) # idling error on all qubits in between measurement rounds
         circuit.append("H", range(num_ancillas))
+        circuit.append("DEPOLARIZE1", range(num_ancillas), p_gate) # depolarizing error on the ancillas after H
 
         
         if p_i > 0: circuit.append("Z_ERROR", [num_ancillas + q for q in list(qubit_d_x.keys())], p_i) # idling error on the data qubits during round
@@ -441,8 +442,13 @@ class CDCompassCodeCircuit:
 
                 circuit.append(gate, [ctrl, target]) # apply the gate gate
 
-                # apply the depolarizing channel to the CX gate
-                circuit.append("DEPOLARIZE2", [ctrl, target], p_gate)
+                # add 2-qubit depolarizing (biased or not depending on CD type) after the gate
+                if gate == "CX":
+                    circuit.append("DEPOLARIZE2", [ctrl, target], p_gate)
+                else:
+                    p_x_gate = p_gate/(12*(1+self.eta))
+                    p_z_gate = self.eta*p_gate/(3*(1+self.eta))
+                    circuit.append("PAULI_CHANNEL_2", [ctrl, target], [p_x_gate, p_x_gate, p_x_gate, p_z_gate, p_x_gate, p_x_gate, p_x_gate, p_x_gate, p_x_gate,p_x_gate, p_x_gate, p_x_gate, p_z_gate,p_x_gate, p_x_gate, p_z_gate]) # Z error only after CZ gate
 
                 if p_i > 0:
                     # apply idling errors to the qubits in the stabilizer without CX
@@ -475,7 +481,14 @@ class CDCompassCodeCircuit:
                 gate = "CZ" if CD_type == "SC" else ("CX" if CD_data[q] == 2 else "CZ")
 
                 circuit.append(gate, [ctrl, target]) # apply the CX gate
-                circuit.append("DEPOLARIZE2", [ctrl, target], p_gate) # CNOT gate errors
+                # add 2-qubit depolarizing (biased or not depending on CD type) after the gate
+                if gate == "CX":
+                    circuit.append("DEPOLARIZE2", [ctrl, target], p_gate)
+                else:
+                    p_x_gate = p_gate/(12*(1+self.eta))
+                    p_z_gate = self.eta*p_gate/(3*(1+self.eta))
+                    circuit.append("PAULI_CHANNEL_2", [ctrl, target], [p_x_gate, p_x_gate, p_x_gate, p_z_gate, p_x_gate, p_x_gate, p_x_gate, p_x_gate, p_x_gate,p_x_gate, p_x_gate, p_x_gate, p_z_gate,p_x_gate, p_x_gate, p_z_gate]) # Z error only after CZ gate
+
 
                 if p_i > 0:
                     # apply idling errors to the qubits in the stabilizer without CX
@@ -484,6 +497,7 @@ class CDCompassCodeCircuit:
                     circuit.append("Z_ERROR", full_inactive_list, p_i) # Idling error on the ancillas and qubits outside the stabilizer
 
         circuit.append("H", range(num_ancillas))
+        circuit.append("DEPOLARIZE1", range(num_ancillas), p_gate) # depolarizing error on the ancillas after H
         circuit.append("TICK")
         
         
@@ -516,7 +530,7 @@ class CDCompassCodeCircuit:
 
             Z memory - measuring X stabs first time is random, don't add detectors to these, just the second round
         """
-        p_gate = after_clifford_depolarization # gate error on two-qubit gates
+        p_gate = after_clifford_depolarization # gate error on two-qubit and single qubit cliffords (H, CNOT, CZ)
         p_meas = before_measure_flip # measurement bit/phase flip error before measurements unweighted
         p_data_meas = before_measure_pauli_channel # apply biased depolarizing error on DATA qubits before measurement
         p_data_dep = before_round_data_pauli_channel # apply biased depolarizing error on data qubits before each round
