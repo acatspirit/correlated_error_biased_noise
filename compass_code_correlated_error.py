@@ -692,7 +692,7 @@ class CorrelatedDecoder:
         #
 
         # get the DEM get the matching graph
-        dem = circuit.detector_error_model(decompose_errors=True, flatten_loops=True) 
+        dem = circuit.detector_error_model(decompose_errors=True, flatten_loops=True, approximate_disjoint_errors=True)
         matchgraph = Matching.from_detector_error_model(dem, enable_correlations=False)
 
         # get the joint probabilities table of the dem hyperedges
@@ -787,7 +787,7 @@ class CorrelatedDecoder:
 
         
         else: # no correlated decoding or pymatching correlated decoding
-            dem = circuit.detector_error_model(decompose_errors=enable_pymatch_corr)
+            dem = circuit.detector_error_model(decompose_errors=enable_pymatch_corr, approximate_disjoint_errors=True)
             matchgraph = Matching.from_detector_error_model(dem,enable_correlations=enable_pymatch_corr)
             seed = np.random.randint(0, 2**32 - 1)
             sampler = circuit.compile_detector_sampler(seed=seed) # double check that this randomness is doing the right thing, every shot should be random and compare
