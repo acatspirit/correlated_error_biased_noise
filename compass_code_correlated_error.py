@@ -1201,7 +1201,7 @@ def threshold_plot(full_df, p_th0, p_range, curr_eta, curr_l, curr_num_shots, co
     pth_error = np.sqrt(np.diag(pcov))[0]
     
     if show_threshold:
-        ax.vlines(pth, ymin=0, ymax=0.5, color='red', linestyles='--', label=f'pth = {pth:.3f} +/- {pth_error:.3f}')
+        ax.vlines(pth, ymin=0, ymax=max(filtered_df['num_log_errors']), color='red', linestyles='--', label=f'pth = {pth:.3f} +/- {pth_error:.3f}')
     if show_fit:
         for d in d_values:
             y_fit = []
@@ -1307,10 +1307,10 @@ def eta_threshold_plot(eta_df, cd_type, corr_type_list, noise_model):
 #     X = (d**(1/nu))*(p-pth)
 #     return c + b*X + a*X**2
 
-def threshold_fit(x, pth, nu, a,b):
+def threshold_fit(x, pth, nu, a,b,c):
     p,d = x
     X = (d**(1/nu))*(p-pth)
-    return a + b*X + X**2
+    return a + b*X + c*X**2
 
 def get_threshold(full_df, pth0, p_range, l, eta, error_type, num_shots, CD_type):
     """ returns the threshold and confidence given a df 
@@ -1330,7 +1330,7 @@ def get_threshold(full_df, pth0, p_range, l, eta, error_type, num_shots, CD_type
 
     # run the fitting function
     # popt, pcov = curve_fit(threshold_fit, (p_list, d_list), error_list, p0=[pth0, 0.5, 1, 1, 1])
-    popt, pcov = curve_fit(threshold_fit, (p_list, d_list), error_list, p0=[pth0, 0.5, 0,0])
+    popt, pcov = curve_fit(threshold_fit, (p_list, d_list), error_list, p0=[pth0, 0.5, 0,0,0])
     
     # pth = popt[0] # the threshold probability
     # pth_error = np.sqrt(np.trace(pcov))
@@ -1419,7 +1419,7 @@ def get_data_DCC(circuit_data, corr_decoding, noise_model, d_list, l_list, eta_l
 
 
 
-def get_thresholds_from_data_exactish(num_shots, p_th_init_dict, output_file):
+def get_thresholds_from_data_exactish(num_shots, p_th_init_dict, p_range, output_file):
     """
     Given a dictionary of thresholds, get the thresholds from the data files and add them to the dictionary
     in: num_shots - the number of shots to sample
@@ -1439,14 +1439,14 @@ def get_thresholds_from_data_exactish(num_shots, p_th_init_dict, output_file):
         # threshold_d = {}
 
         p_th_init = p_th_init_dict[key]
-        pop,pcov = get_threshold(df, p_th_init, 0.01, l, eta, corr_type, num_shots, CD_type)
+        pop,pcov = get_threshold(df, p_th_init,p_range, l, eta, corr_type, num_shots, CD_type)
         threshold = pop[0]
         std_error = np.sqrt(np.diag(pcov))[0] # should it be np.sqrt(np.trace(pcov)) instead to get the overall error?
         # threshold_d[key] = threshold
         all_thresholds_df = pd.concat([all_thresholds_df,pd.DataFrame({'l':l,'eta':eta, 'error_type':corr_type, 'CD_type':CD_type, 'noise_model':noise_model, 'pth':threshold, 'stderr':std_error}, index=[0])], ignore_index=True)
         # print("thresholds_df 2", all_thresholds_df)
 
-    all_thresholds_df.to_csv('/Usrs/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/threshold_exactish_per_eta.csv', index=False)
+    all_thresholds_df.to_csv('/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/threshold_exactish_per_eta.csv', index=False)
 
 
 #
@@ -1551,7 +1551,7 @@ if __name__ == "__main__":
                          (6,0.5,"TOTAL_MEM_PY", "SC", "code_cap"):0.00
                          }
     
-    p_th_init_CL = {(2,0.5,"X_MEM", "SC","circuit_level"):0.00721, (2,0.5,"Z_MEM", "SC","circuit_level"):0.00736, (2,0.5,"TOTAL_MEM", "SC","circuit_level"):0.00730,
+    p_th_init_CL = {(2,0.5,"X_MEM", "SC","circuit_level"):0.00721, (2,0.5,"Z_MEM", "SC","circuit_level"):0.00736, (2,0.5,"TOTAL_MEM", "SC","circuit_level"):0.00728,
                     (4,0.5,"X_MEM","SC", "circuit_level"):0.00935, (4,0.5,"Z_MEM", "SC","circuit_level"):0.00466, (4,0.5,"TOTAL_MEM", "SC","circuit_level"):0.00474,
                     (6,0.5,"X_MEM", "SC","circuit_level"):0.01027, (6,0.5,"Z_MEM", "SC","circuit_level"):0.00354, (6,0.5,"TOTAL_MEM", "SC","circuit_level"):0.00348,
                     (2,5,"X_MEM","SC", "circuit_level"):0.00734, (2,5,"Z_MEM", "SC","circuit_level"):0.01051, (2,5,"TOTAL_MEM","SC", "circuit_level"):0.00745,
@@ -1631,7 +1631,7 @@ if __name__ == "__main__":
 
 
     # run this to get data from the dcc
-    get_data_DCC(circuit_data, corr_decoding, noise_model, d_list, l_list, eta_list, cd_list, corr_list, total_num_shots, p_list=None, p_th_init_d=p_th_init_CL, pymatch_corr=py_corr)
+    # get_data_DCC(circuit_data, corr_decoding, noise_model, d_list, l_list, eta_list, cd_list, corr_list, total_num_shots, p_list=None, p_th_init_d=p_th_init_CL, pymatch_corr=py_corr)
 
     # run this once you have data and want to combo it to one csv
     # concat_csv(folder_path, circuit_data)
@@ -1648,33 +1648,34 @@ if __name__ == "__main__":
 
 
 
-    # # params to plot
-    # eta = 0.5
-    # l = 6
-    # curr_num_shots = 30303.0
-    # noise_model = "circuit_level"
-    # CD_type = "SC"
-    # py_corr = False # whether to use pymatching correlated decoder for circuit data
-    # corr_decoding = False # whether to get data for correlated decoding using my decoder
-    # error_type = "TOTAL_MEM" # which type of error to plot, choose from ['X_MEM', 'Z_MEM', 'TOTAL_MEM', 'TOTAL_PY_MEM', 'TOTAL_MEM_PY_CORR']
+    # params to plot
+    eta = 0.5
+    l = 6
+    curr_num_shots = 30303.0
+    noise_model = "circuit_level"
+    CD_type = "ZXXZonSqu"
+    py_corr = False # whether to use pymatching correlated decoder for circuit data
+    corr_decoding = False # whether to get data for correlated decoding using my decoder
+    error_type = "TOTAL_MEM" # which type of error to plot, choose from ['X_MEM', 'Z_MEM', 'TOTAL_MEM', 'TOTAL_PY_MEM', 'TOTAL_MEM_PY_CORR']
+    p_range = 0.001
 
 
-    # df = pd.read_csv(output_file)
+    df = pd.read_csv(output_file)
 
     # full_error_plot(df,eta,l,curr_num_shots,noise_model, CD_type, output_file,corr_decoding=corr_decoding, py_corr=py_corr, circuit_level=circuit_data)
 
 
     # make a plot for specific thresholds
-    # pth0 = p_th_init_CL[(l, eta, error_type, CD_type, noise_model)]
-    # popt, pcov = get_threshold(df, pth0, 0.005, l, eta, error_type, curr_num_shots, CD_type)
-    # p_th = popt[0]
-    # pth_error = np.sqrt(pcov[0][0])
-    # print(p_th, pth_error)
-    # # eta_df = pd.read_csv("/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/threshold_exactish_per_eta.csv")
-    # p_range_df = df[(df['p'] <= p_th + 0.005) & (df["p"] >= p_th - 0.005)]
-    # threshold_plot(p_range_df, pth0, 0.005, eta, l, curr_num_shots, error_type, CD_type, noise_model, file=output_file, circuit_level=True, py_corr = False, corr_decoding=False, loglog=False, averaging=True, show_threshold=True, show_fit=True)
-    # eta_threshold_plot(eta_df, CD_type,corr_type_list, noise_model)
-    # get_thresholds_from_data_exactish(curr_num_shots, p_th_init_CL,output_file)
+    pth0 = p_th_init_CL[(l, eta, error_type, CD_type, noise_model)]
+    popt, pcov = get_threshold(df, pth0, p_range, l, eta, error_type, curr_num_shots, CD_type)
+    p_th = popt[0]
+    pth_error = np.sqrt(pcov[0][0])
+    print(p_th, pth_error)
+    eta_df = pd.read_csv("/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/threshold_exactish_per_eta.csv")
+    p_range_df = df[(df['p'] <= p_th + p_range) & (df["p"] >= p_th - p_range)]
+    # threshold_plot(p_range_df, pth0, p_range, eta, l, curr_num_shots, error_type, CD_type, noise_model, file=output_file, circuit_level=True, py_corr = False, corr_decoding=False, loglog=False, averaging=True, show_threshold=True, show_fit=True)
+    eta_threshold_plot(eta_df, CD_type,corr_type_list, noise_model)
+    # get_thresholds_from_data_exactish(curr_num_shots, p_th_init_CL,p_range, output_file)
     # make eta plot
     # eta_df = pd.read_csv("/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/all_thresholds_per_eta_elongated.csv")
     # corr_type_list = ['TOTAL', "TOTAL_PY_CORR"]
