@@ -6,19 +6,15 @@ import CompassCodes as cc
 import stim 
 import pandas as pd
 import sys
+from compass_code_correlated_error import CorrelatedDecoder
 
-#
-# TODO: This code is unfinished. Currently, the surface_code_circuit_scratch file contains the working code that generates a surface code circuit.
-# Next:
-# (1) modify to work on compass code
-# (2) modify to work on XZZX / ZXXZ codes
-# (3) modify to work on clifford deformed compass codes
 
 class CDCompassCodeCircuit:
-    def __init__(self, d, l, eta, type):
+    def __init__(self, d, l, eta, type,memory=True):
         self.d = d
         self.l = l
         self.eta = eta
+        self.memory = memory
         
         self.code = cc.CompassCode(d=d, l=l)
         self.H_x, self.H_z = self.code.H['X'], self.code.H['Z']
@@ -26,8 +22,9 @@ class CDCompassCodeCircuit:
         self.type = type # str "X" or "Z", indicates the type of memory experiment / which stabilizer you measure, also which logical you want to measure
 
         self.qubit_order_d = self.check_order_d_elongated()
-        
-        # self.circuit= self.make_elongated_circuit_from_parity() # uncomment to make the circuit from the parity check matrix
+    
+    
+    
 
     def get_circuit(self, before_measure_flip, after_clifford_depolarization, before_round_data_depolarization, idling_dephasing):
         """ 
@@ -197,24 +194,6 @@ class CDCompassCodeCircuit:
         sorted_d_z = dict(sorted(zip(d_z.keys(),d_z.values())))
         return sorted_d_x, sorted_d_z
 
-
-    def clifford_deform_parity_mats(self):
-        """ Add clifford deformation to parity matrices for elongated compass code with elongation l and
-            distance d. Clifford deformations are added according to Julie's model by the transformation XZZXonSq, or transform 2 (i.e. each weight 4
-            X stabilizer has 2 H applied to antidiagonal)
-            returns: (np array) H_x and H_z with clifford deformations
-        """
-        H_x, H_z = self.H_x, self.H_z
-
-        # apply transformation row by row
-        for row in range(H_x.shape[0]):
-            start = self.H_x.indptr[row]
-            end = self.H_x.indptr[row+1]
-            qubit_inds = self.H_x.indices[start:end] # the qubits in the stabilizer
-            
-
-
-        return H_x, H_z
     
 
     def isolate_observables_DEM(self) -> stim.DetectorErrorModel:
@@ -507,7 +486,7 @@ class CDCompassCodeCircuit:
     
 
     def make_elongated_circuit_from_parity(self, before_measure_flip, before_measure_pauli_channel, after_clifford_depolarization, before_round_data_pauli_channel,
-                                            between_round_idling_pauli_channel, idling_dephasing, phenom_meas=False, CD_type = "SC", memory=True):
+                                            between_round_idling_pauli_channel, idling_dephasing, phenom_meas=False, CD_type = "SC"):
         """ 
         create a surface code memory experiment circuit from a parity check matrix
         Inputs:
@@ -539,6 +518,7 @@ class CDCompassCodeCircuit:
 
 
         num_rounds = self.d
+        memory = self.memory
 
         px_data = 0.5*p_data_dep/(1+self.eta) # biased depolarizing error on data qubits before round
         pz_data = p_data_dep*(self.eta/(1+self.eta)) # biased depolarizing error on data qubits before round

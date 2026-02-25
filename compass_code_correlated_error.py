@@ -29,7 +29,8 @@ class CorrelatedDecoder:
         self.eta = eta # the noise bias
         self.d = d # the distance of the compass code
         self.l = l # the elongation parameter
-        self.corr_type = corr_type # the type of correlation for decoder
+        self.corr_type = corr_type # the type of correlation for decoder (directional)
+        self.edge_type_d = {} # dictionary of the edge types for each detector. Empty until populated by running method to populate. Type 0(1) use pauli X(Z) measurements
 
         compass_code = cc.CompassCode(d=self.d, l=self.l)
         self.H_x, self.H_z = compass_code.H['X'], compass_code.H['Z'] # parity check matrices from compass code class
@@ -236,6 +237,89 @@ class CorrelatedDecoder:
                 weights_dict.setdefault(edge_1, {})[edge_2] = weight
         
         return weights_dict
+    
+    def get_edge_type_from_detector(self, edge, mem_type) -> int:
+        """
+        Returns the edge type (0 or 1) for a given edge in the DEM. Type 0(1) use pauli X(Z) measurements. 
+        """
+        d1 = edge[0]
+        d2 = edge[1]
+        stab1 = self.get_stab_from_detector(d1, mem_type)
+        stab2 = self.get_stab_from_detector(d2, mem_type)
+        edge_type = 0
+
+        if stab1 >= self.H_x.shape[0] and stab2 >= self.H_x.shape[0]:
+            edge_type = 1
+        elif stab1 < self.H_x.shape[0] and stab2 < self.H_x.shape[0]:
+            edge_type = 0
+        elif stab1 == -1 or stab2 ==-1:
+            edge_type = 0 if max(stab1,stab2) < self.H_x.shape[0] else 1
+        else:
+            edge_type = 2 # edge between X and Z types ... don't touch this - directly from DEM during perfect round
+
+        return edge_type
+    
+    def get_stab_from_detector(self, detector, mem_type) -> int:
+        """
+        Returns the stabilizer index for a given detector in the DEM. This is used to determine which stabilizer measurement type (X or Z) is associated with a given detector.
+
+        Inputs:
+        detector - (integer) the value of the detector of question
+        
+        Outputs:
+        stab_index - (integer) the index of the stabilizer included in the detector. The full stabilizer list includes X and Z types.
+        """
+        stab_index=0
+        curr_det_index = detector
+
+        if detector == -1:
+            return -1
+
+        # should be d*(Hx.shape[0] + Hz.shape[0]) detectors
+
+        # X detectors are always the first half
+        if mem_type == "X":
+            if detector < self.H_x.shape[0]: # the detector is in the first layer and is an X detector for sure but whatever
+                stab_index = detector
+            elif detector > self.H_x.shape[0] + (self.d-1)*(self.H_x.shape[0] + self.H_z.shape[0]): # last layer of checks
+                stab_index = detector- (self.d-1)*(self.H_x.shape[0] + self.H_z.shape[0]) - self.H_x.shape[0]
+            else:
+                curr_det_index -= self.H_x.shape[0]
+                stab_index = curr_det_index % (self.H_x.shape[0] + self.H_z.shape[0])
+        else: # Z detectors
+            if detector < self.H_z.shape[0]: 
+                stab_index = detector + self.H_x.shape[0] # Z stabs are offset by X ones, check X first
+            elif detector > self.H_z.shape[0] + (self.d-1)*(self.H_x.shape[0] + self.H_z.shape[0]):
+                stab_index = detector - (self.d-1)*(self.H_x.shape[0] + self.H_z.shape[0]) - self.H_z.shape[0] + self.H_x.shape[0]
+            else:
+                curr_det_index -= self.H_z.shape[0]
+                stab_index = curr_det_index%(self.H_x.shape[0] + self.H_z.shape[0])
+        
+        return stab_index
+
+    def get_edge_type_d(self, dem, mem_type) -> dict:
+        """
+        Returns the dictionary mapping edges in the DEM to stabilizer measurement types. Updates the edge_type_d attribute of the class.
+        The dictionary is for marginal edges only: hyperedges are assumed decomposed.
+        Inputs:
+        dem - (stim.DetectorErrorModel) the dem noise model used for the code
+        Outputs:
+        edge_type_d - (dict) a dictionary mapping edges in the DEM to stabilizer measurement types. Type 0(1) use pauli X(Z) measurements
+            eg. {(0,-1):0, (2,4):1, (3,5):0, ...}
+        """
+
+        for inst in dem:
+            if inst.type == "error":
+                decomposed_inst = self.decompose_dem_instruction_stim(inst)
+
+                for edge in decomposed_inst["detectors"]:
+                    print(edge)
+                    if tuple(sorted(edge)) in self.edge_type_d:
+                        pass
+                    else:
+                        self.edge_type_d[tuple(sorted(edge))] = self.get_edge_type_from_detector(edge, mem_type)
+
+        return self.edge_type_d
     
     def decompose_dem_instruction_stim_auto(self, inst):
         """ Decomposes a stim DEM instruction into its component detectors and probability. Uses STIM's decompose_errors to determine hyperedge decomposition.
