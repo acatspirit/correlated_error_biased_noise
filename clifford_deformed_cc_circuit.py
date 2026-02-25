@@ -137,8 +137,8 @@ class CDCompassCodeCircuit:
         return order_d_x, order_d_z
 
     def qubit_to_stab_d(self):  
-        """ Given a parity check matrix, returns a dictionary of qubits to plaquettes
-            Returns: (dict) qubit to plaquette mapping
+        """ Given a parity check matrix, returns a dictionary of qubits to stabs
+            Returns: (dict) qubit to stab mapping
         """
         rows_x, cols_x, values = sparse.find(self.H_x)
         rows_z, cols_z, values = sparse.find(self.H_z)

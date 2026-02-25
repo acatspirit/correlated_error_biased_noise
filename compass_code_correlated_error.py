@@ -32,9 +32,9 @@ class CorrelatedDecoder:
         self.corr_type = corr_type # the type of correlation for decoder (directional)
         self.edge_type_d = {} # dictionary of the edge types for each detector. Empty until populated by running method to populate. Type 0(1) use pauli X(Z) measurements
 
-        compass_code = cc.CompassCode(d=self.d, l=self.l)
-        self.H_x, self.H_z = compass_code.H['X'], compass_code.H['Z'] # parity check matrices from compass code class
-        self.log_x, self.log_z = compass_code.logicals['X'], compass_code.logicals['Z'] # logical operators from compass code class
+        self.code = cc.CompassCode(d=self.d, l=self.l)
+        self.H_x, self.H_z = self.code.H['X'], self.code.H['Z'] # parity check matrices from compass code class
+        self.log_x, self.log_z = self.code.logicals['X'], self.code.logicals['Z'] # logical operators from compass code class
 
     def bernoulli_prob(self, old_prob, p):
         """ Given an old probability and a new error probability, return the updated probability
@@ -238,7 +238,48 @@ class CorrelatedDecoder:
         
         return weights_dict
     
-    def get_edge_type_from_detector(self, edge, mem_type) -> int:
+    def get_qubit_in_edge(self, edge_type, stab1, stab2) -> np.ndarray:
+        """
+        Return the qubits involved in the edge connecting two stabilizers.
+        If the stabilizer is connected to a boundary (stab == -1),
+        return all zeros for that side.
+        """
+
+        n_qubits = self.H_x.shape[1]   # <-- number of columns = number of qubits
+        H_x = self.H_x.toarray()
+        H_z = self.H_z.toarray()
+        qubits_stab1 = np.zeros(n_qubits, dtype=int)
+        qubits_stab2 = np.zeros(n_qubits, dtype=int)
+
+        if edge_type == 1:
+            # Z stabilizers
+            if stab1 != -1:
+                row = self.H_z[stab1 - self.H_x.shape[0]]
+                print(row)
+                qubits_stab1[row.nonzero()[0]] = 1
+
+            if stab2 != -1:
+                print(row)
+                row = self.H_z[stab2 - self.H_x.shape[0]]
+                qubits_stab2[row.nonzero()[0]] = 1
+
+        elif edge_type == 0:
+            # X stabilizers
+            if stab1 != -1:
+                row = self.H_x[stab1]
+                qubits_stab1[row.nonzero()[0]] = 1
+
+            if stab2 != -1:
+                row = self.H_x[stab2]
+                qubits_stab2[row.nonzero()[0]] = 1
+        print("qubits in 1", qubits_stab1)
+        print("qubits in 2", qubits_stab2)
+        qubits_in_edge = np.logical_and(qubits_stab1, qubits_stab2).astype(int)
+
+        return qubits_in_edge
+
+    
+    def get_edge_type_from_detector(self, edge, mem_type, CD_data_transform) -> int:
         """
         Returns the edge type (0 or 1) for a given edge in the DEM. Type 0(1) use pauli X(Z) measurements. 
         """
@@ -246,10 +287,11 @@ class CorrelatedDecoder:
         d2 = edge[1]
         stab1 = self.get_stab_from_detector(d1, mem_type)
         stab2 = self.get_stab_from_detector(d2, mem_type)
-        print("stab map", stab1, stab2)
+
+        
         edge_type = 0
 
-        if stab1 >= self.H_x.shape[0] and stab2 >= self.H_x.shape[0]:
+        if stab1 >= self.H_x.shape[0] and stab2 >= self.H_x.shape[0]: # Z type edge in SC
             edge_type = 1
         elif stab1 < self.H_x.shape[0] and stab2 < self.H_x.shape[0]:
             edge_type = 0
@@ -257,7 +299,9 @@ class CorrelatedDecoder:
             edge_type = 0 if max(stab1,stab2) < self.H_x.shape[0] else 1
         else:
             edge_type = 2 # edge between X and Z types ... don't touch this - directly from DEM during perfect round
-
+        
+        # apply the deformation if necessary
+        
         return edge_type
     
     def get_stab_from_detector(self, detector, mem_type) -> int:
@@ -298,7 +342,7 @@ class CorrelatedDecoder:
         
         return stab_index
 
-    def get_edge_type_d(self, dem, mem_type) -> dict:
+    def get_edge_type_d(self, dem, mem_type, CD_type) -> dict:
         """
         Returns the dictionary mapping edges in the DEM to stabilizer measurement types. Updates the edge_type_d attribute of the class.
         The dictionary is for marginal edges only: hyperedges are assumed decomposed.
@@ -308,6 +352,10 @@ class CorrelatedDecoder:
         edge_type_d - (dict) a dictionary mapping edges in the DEM to stabilizer measurement types. Type 0(1) use pauli X(Z) measurements
             eg. {(0,-1):0, (2,4):1, (3,5):0, ...}
         """
+        if CD_type != "SC":
+            CD_data_transform = cc.CD_data_func(self.code.qbit_dict.values(), special=CD_type, ell=self.l, size=self.d)
+        else:
+            CD_data_transform = cc.CD_data_func(self.code.qbit_dict.values(), special="I", ell=self.l, size=self.d)
 
         for inst in dem:
             if inst.type == "error":
@@ -318,7 +366,7 @@ class CorrelatedDecoder:
                     if tuple(sorted(edge)) in self.edge_type_d:
                         pass
                     else:
-                        self.edge_type_d[tuple(sorted(edge))] = self.get_edge_type_from_detector(edge, mem_type)
+                        self.edge_type_d[tuple(sorted(edge))] = self.get_edge_type_from_detector(edge, mem_type, CD_data_transform)
                     
         return self.edge_type_d
     
