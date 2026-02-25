@@ -246,6 +246,7 @@ class CorrelatedDecoder:
         d2 = edge[1]
         stab1 = self.get_stab_from_detector(d1, mem_type)
         stab2 = self.get_stab_from_detector(d2, mem_type)
+        print("stab map", stab1, stab2)
         edge_type = 0
 
         if stab1 >= self.H_x.shape[0] and stab2 >= self.H_x.shape[0]:
@@ -289,7 +290,7 @@ class CorrelatedDecoder:
         else: # Z detectors
             if detector < self.H_z.shape[0]: 
                 stab_index = detector + self.H_x.shape[0] # Z stabs are offset by X ones, check X first
-            elif detector > self.H_z.shape[0] + (self.d-1)*(self.H_x.shape[0] + self.H_z.shape[0]):
+            elif detector >= self.H_z.shape[0] + (self.d-1)*(self.H_x.shape[0] + self.H_z.shape[0]):
                 stab_index = detector - (self.d-1)*(self.H_x.shape[0] + self.H_z.shape[0]) - self.H_z.shape[0] + self.H_x.shape[0]
             else:
                 curr_det_index -= self.H_z.shape[0]
@@ -318,7 +319,7 @@ class CorrelatedDecoder:
                         pass
                     else:
                         self.edge_type_d[tuple(sorted(edge))] = self.get_edge_type_from_detector(edge, mem_type)
-
+                    
         return self.edge_type_d
     
     def decompose_dem_instruction_stim_auto(self, inst):
@@ -437,7 +438,6 @@ class CorrelatedDecoder:
         """ Decomposes a stim DEM instruction into its component detectors and probability. Uses pairwise decomposition to determine hyperedge decomposition.
             Decomposed edge is in the form {probability: [detector1, detector2, ...]}. Logical operators are omitted, and single detector errors are merged to a pair if decomposed.
             We insert boundary edges to edges with one detector, boundary node value is -1. Edges are sorted such that boundary edges are always last in the tuple, and the detectors are in ascending order.
-            PASS IN DEM with DECOMPOSE_ERRORS=FALSE - talk to ken about this
 
 
             eg. error(p) D0 D1 L0 -> {p: p, detectors: [(0, 1)], observables: [0]}
