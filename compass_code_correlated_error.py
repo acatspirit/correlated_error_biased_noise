@@ -246,35 +246,26 @@ class CorrelatedDecoder:
         """
 
         n_qubits = self.H_x.shape[1]   # <-- number of columns = number of qubits
-        H_x = self.H_x.toarray()
-        H_z = self.H_z.toarray()
         qubits_stab1 = np.zeros(n_qubits, dtype=int)
         qubits_stab2 = np.zeros(n_qubits, dtype=int)
 
         if edge_type == 1:
             # Z stabilizers
             if stab1 != -1:
-                row = self.H_z[stab1 - self.H_x.shape[0]]
-                print(row)
-                qubits_stab1[row.nonzero()[0]] = 1
+                qubits_stab1 = self.H_z.getrow(stab1 - self.H_x.shape[0])
 
             if stab2 != -1:
-                print(row)
-                row = self.H_z[stab2 - self.H_x.shape[0]]
-                qubits_stab2[row.nonzero()[0]] = 1
+                qubits_stab2 = self.H_z.getrow(stab2 - self.H_x.shape[0])
 
         elif edge_type == 0:
             # X stabilizers
             if stab1 != -1:
-                row = self.H_x[stab1]
-                qubits_stab1[row.nonzero()[0]] = 1
+                qubits_stab1 = self.H_x.getrow(stab1)
 
             if stab2 != -1:
-                row = self.H_x[stab2]
-                qubits_stab2[row.nonzero()[0]] = 1
-        print("qubits in 1", qubits_stab1)
-        print("qubits in 2", qubits_stab2)
-        qubits_in_edge = np.logical_and(qubits_stab1, qubits_stab2).astype(int)
+                qubits_stab2= self.H_x.getrow(stab2)
+
+        qubits_in_edge = qubits_stab1.multiply(qubits_stab2).indices
 
         return qubits_in_edge
 
