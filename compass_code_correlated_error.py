@@ -242,12 +242,12 @@ class CorrelatedDecoder:
         """
         Return the qubits involved in the edge connecting two stabilizers.
         If the stabilizer is connected to a boundary (stab == -1),
-        return all zeros for that side.
+        return empty for that side.
         """
 
         n_qubits = self.H_x.shape[1]   # <-- number of columns = number of qubits
-        qubits_stab1 = np.zeros(n_qubits, dtype=int)
-        qubits_stab2 = np.zeros(n_qubits, dtype=int)
+        qubits_stab1 = sparse.csr_matrix(np.zeros(n_qubits, dtype=int))
+        qubits_stab2 = sparse.csr_matrix(np.zeros(n_qubits, dtype=int))
 
         if edge_type == 1:
             # Z stabilizers
@@ -279,7 +279,7 @@ class CorrelatedDecoder:
         stab1 = self.get_stab_from_detector(d1, mem_type)
         stab2 = self.get_stab_from_detector(d2, mem_type)
 
-        
+        num_stabs_r1 = self.H_x.shape[0] if mem_type == "X" else self.H_z.shape[0]
         edge_type = 0
 
         if stab1 >= self.H_x.shape[0] and stab2 >= self.H_x.shape[0]: # Z type edge in SC
@@ -292,6 +292,17 @@ class CorrelatedDecoder:
             edge_type = 2 # edge between X and Z types ... don't touch this - directly from DEM during perfect round
         
         # apply the deformation if necessary
+        qubit_in_edge = self.get_qubit_in_edge(edge_type, stab1, stab2)
+        if qubit_in_edge.size == 0:
+            CD_applied = 0
+        elif abs(d1 - d2) >= num_stabs_r1:
+            CD_applied = 0
+        else:
+            CD_applied = CD_data_transform[qubit_in_edge[0]]
+
+        
+        if CD_applied == 2 and edge_type != 2: # if there is a Hadamard on that qubit, swap the edge type
+            edge_type = (edge_type + 1)%2
         
         return edge_type
     
