@@ -25,11 +25,12 @@ import stim
 ##############################################
 
 class CorrelatedDecoder:
-    def __init__(self, eta, d, l, corr_type):
+    def __init__(self, eta, d, l, corr_type, mem_type="X"):
         self.eta = eta # the noise bias
         self.d = d # the distance of the compass code
         self.l = l # the elongation parameter
         self.corr_type = corr_type # the type of correlation for decoder (directional)
+        self.mem_type = mem_type
         self.edge_type_d = {} # dictionary of the edge types for each detector. Empty until populated by running method to populate. Type 0(1) use pauli X(Z) measurements
 
         self.code = cc.CompassCode(d=self.d, l=self.l)
@@ -343,6 +344,47 @@ class CorrelatedDecoder:
                 stab_index = curr_det_index%(self.H_x.shape[0] + self.H_z.shape[0])
         
         return stab_index
+    
+    def get_LB_RB_nodes(self, DEM):
+        """ Get a list of the LB and RB on the code
+        """
+        xlb_nodes = [] # the detectors that correspond to top X stabilizers
+        xrb_nodes = [] # '' bottom X stabilizers
+        zlb_nodes = [] # '' left Z stabilizers
+        zrb_nodes = [] # '' right Z stabilizers
+
+
+        # for detector in DEM ...
+        detectors = DEM.num_detectors
+
+        # get the stab index from the detector
+        for d in range(detectors):
+            stab_index = self.get_stab_from_detector(d, self.mem_type)
+            # print("stab and d",stab_index, d)
+
+            # Check if the stabilizer is an X boundary
+            if stab_index < self.H_x.shape[0]: # it is an X detector
+
+                qubits_in_stab = sorted(self.H_x.getrow(stab_index).indices)
+                # print(qubits_in_stab)
+
+                if qubits_in_stab[0] < self.d: # on the top
+                    xlb_nodes += [d]
+                elif qubits_in_stab[-1] >= (self.d**2-self.d): # on the bottom
+                    xrb_nodes += [d]
+                else:
+                    pass
+            # Check if the stabilizer is a Z boundary
+            else: # now these are Z detectors
+                qubits_in_stab = sorted(self.H_z.getrow(stab_index - self.H_x.shape[0]).indices)
+                # print(qubits_in_stab[0])
+                if qubits_in_stab[0]%self.d == 0:
+                    zlb_nodes += [d]
+                elif (qubits_in_stab[-1] +1)% self.d == 0:
+                    zrb_nodes += [d]
+
+        return xlb_nodes,xrb_nodes,zlb_nodes,zrb_nodes
+
 
     def get_edge_type_d(self, dem, mem_type, CD_type) -> dict:
         """
@@ -633,8 +675,8 @@ class CorrelatedDecoder:
     def get_conditional_prob(self, joint_prob_dict):
         """ Given a joint probability dictionary, calculates the conditional probabilities for each hyperedge. The conditional probability is given by 
             P(A|B) = P(A^B)/P(A)
-            Where A and B are edges from decomposed hyperedges. The marginal probability is P(A), and the joint probability is P(A^B). The maximum conditional probability is 
-            P_max = 1/(2*eta + 1), derived from the biased pauli channel. Only hyperedge components are present in final dictionary.
+            Where A and B are edges from decomposed hyperedges. The marginal probability is P(A), and the joint probability is P(A^B). The maximum conditional probability is 0.5
+            Only hyperedge components are present in final dictionary.
 
             :param joint_prob_dict: the joint probability of decomposed hyperedge between edges A and B
             :return: conditional probability nested dictionary. Of the same form as joint_prob_dict:
@@ -654,14 +696,24 @@ class CorrelatedDecoder:
 
             # populate cond_prob dictionary 
             for edge_2 in adjacent_edge_dict:
+                edge_type = self.get_edge_type_d()
+
                 if edge_1 == edge_2:  
                     continue 
 
                 joint_p = joint_prob_dict.get(edge_1, {}).get(edge_2,0)
+                edge_check_type = self.edge_type_d[edge_2] # have to make sure this is populated by the time I populate
+
+                scale = 1
+                if edge_check_type == "X": # edge_2 is a Z error since it's checks are X type.
+                    scale = self.eta/(self.eta + 1)
+                elif edge_check_type == "Z": # edge_2 is an X error
+                    scale = 1/2*(self.eta + 1)
+
 
                 # conditional probability calculation. Min taken because weights cannot be negative, and eta=0.5 represents a full erasure channel
                 # cond_p = min(1/(2*self.eta + 1), joint_p/marginal_p) # how do I do directionality here / I might have to think about it, will this actually work? Dont wanna fully erase edges...?
-                cond_p = min(1/(2*self.eta + 1), joint_p/marginal_p) # trying to include the channel, not sure about directionaility still
+                cond_p = min(0.5, scale*joint_p/marginal_p) # trying to include the channel, not sure about directionaility still
                 cond_prob_dict.setdefault(edge_1, {})[edge_2] = cond_p
         return cond_prob_dict
 
@@ -759,7 +811,7 @@ class CorrelatedDecoder:
         
         return match
 
-    def decoding_failures_correlated_circuit_level(self, circuit, shots):
+    def decoding_failures_correlated_circuit_level(self, circuit, shots, mem_type, CD_type):
         """
         Finds the number of logical errors given a circuit using correlated decoding. Uses pymatching's correlated decoding approach, inspired by
         papers cited in the README.
@@ -776,6 +828,7 @@ class CorrelatedDecoder:
         # get the DEM get the matching graph
         dem = circuit.detector_error_model(decompose_errors=True, flatten_loops=True, approximate_disjoint_errors=True)
         matchgraph = Matching.from_detector_error_model(dem, enable_correlations=False)
+        self.edge_type_d = self.get_edge_type_d(dem, mem_type, CD_type)
 
         # get the joint probabilities table of the dem hyperedges
         joint_prob_dict, fault_ids = self.get_joint_prob(dem)
@@ -854,7 +907,7 @@ class CorrelatedDecoder:
                 num_errors_array[shot] = 1
         return num_errors_array
 
-    def get_num_log_errors_DEM(self, circuit, num_shots, enable_corr, enable_pymatch_corr):
+    def get_num_log_errors_DEM(self, circuit, num_shots, enable_corr, enable_pymatch_corr, meas_type, CD_type="SC"):
         """
         Get the number of logical errors from the detector error model
         :param circuit: stim.Circuit object
@@ -865,7 +918,7 @@ class CorrelatedDecoder:
         """
         if enable_corr:
             # house-made circuit level correlated decoder
-            log_errors_array = self.decoding_failures_correlated_circuit_level(circuit, num_shots)
+            log_errors_array = self.decoding_failures_correlated_circuit_level(circuit, num_shots, meas_type, CD_type)
 
         
         else: # no correlated decoding or pymatching correlated decoding
@@ -907,7 +960,7 @@ class CorrelatedDecoder:
             else:
                 raise ValueError("Invalid noise model. Choose either 'code_cap', 'phenom', or 'circuit_level'.")
             
-            log_errors_array = self.get_num_log_errors_DEM(circuit, num_shots, corr_decoding, pymatch_corr)
+            log_errors_array = self.get_num_log_errors_DEM(circuit, num_shots, corr_decoding, pymatch_corr, meas_type, cd_type)
             log_error_L.append(log_errors_array)
 
         return log_error_L

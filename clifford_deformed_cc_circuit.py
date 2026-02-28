@@ -10,7 +10,7 @@ from compass_code_correlated_error import CorrelatedDecoder
 
 
 class CDCompassCodeCircuit:
-    def __init__(self, d, l, eta, type,memory=True):
+    def __init__(self, d, l, eta, mem_type,memory=True):
         self.d = d
         self.l = l
         self.eta = eta
@@ -19,7 +19,7 @@ class CDCompassCodeCircuit:
         self.code = cc.CompassCode(d=d, l=l)
         self.H_x, self.H_z = self.code.H['X'], self.code.H['Z']
         self.log_x, self.log_z = self.code.logicals['X'], self.code.logicals['Z']
-        self.type = type # str "X" or "Z", indicates the type of memory experiment / which stabilizer you measure, also which logical you want to measure
+        self.type = mem_type # str "X" or "Z", indicates the type of memory experiment / which stabilizer you measure, also which logical you want to measure
 
         self.qubit_order_d = self.check_order_d_elongated()
     
