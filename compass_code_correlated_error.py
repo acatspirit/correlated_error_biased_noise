@@ -958,7 +958,7 @@ class CorrelatedDecoder:
 
             :param correction_edges(list): list of node pairs that represent the edges in the first MWPM pass
             :param matching(Matching): the matching graph to be updated
-            :param unsigned_gap(float): the first pass decoder confidence (sum of weights). Must be normalized to avoid negative weights
+            :param unsigned_gap(float): the first pass decoder confidence (sum of weights). 
             :return: the weights and fault_ids dictionary recording the adjusted weight for each edge in the matchgraph
         """
 
@@ -966,13 +966,14 @@ class CorrelatedDecoder:
         fault_ids = {}
         sorted_edges_in_correction = [tuple(sorted(edge)) for edge in correction_edges]
         for u,v,data in matching.edges():
-            if tuple(sorted(u,v)) in sorted_edges_in_correction:
-                us_gap_weights = -np.ln(unsigned_gap)
-                weights[tuple(sorted(u,v))] = us_gap_weights
+            if (u,v) in sorted_edges_in_correction:
+                print("actually running the important function")
+                us_gap_weights = 1/unsigned_gap # change this after chatting with eva
+                weights[(u,v)] = us_gap_weights
             else:
-                weights[tuple(sorted(u,v))] = data['weight']
+                weights[(u,v)] = data['weight']
             
-            fault_ids[tuple(sorted(u,v))] = data['fault_ids']
+            fault_ids[(u,v)] = data['fault_ids']
 
         return weights, fault_ids
     
@@ -984,23 +985,23 @@ class CorrelatedDecoder:
 
             # edges in the correction get adjusted by unsigned gap
             if (u,v) in edges_in_correction:
-                weight = -np.ln(unsigned_gap)
-                log_error = data['fault_ids']
+                print(f"{u,v} weight adjusted by unsigned gap")
+                weight = 1/unsigned_gap
 
             # edges not in the correction get hyperedge adjustments
             else:
                 e2 = tuple(sorted([-1 if x is None else x for x in (u, v)])) # get (u,v) to the proper bndry format given my code
-                log_error = fault_ids_dict.get(e2, None)
                 
                 # find the max conditional probability adjustment for this edge given the correction
                 p = max((cond_prob_dict.get(e1, {}).get(e2, 0) for e1 in edges_in_correction), default=0) 
 
                 if p > 0:
+                    print(f"{u,v} weight adjusted by cond prob")
                     weight = np.log((1-p)/p) 
                 else:
                     weight = data['weight']
+            fault_ids[(u, v)] = data['fault_ids']
             weights[(u, v)] = weight
-            fault_ids[(u, v)] = set([log_error]) if log_error is not None else set()
 
         return weights, fault_ids
 
@@ -2011,7 +2012,7 @@ if __name__ == "__main__":
     # otherwise p_list is range of probabilities
     p_list = np.logspace(-2.5, -1.5, 40)
 
-    l_list = [2,4,6] # elongation params
+    l_list = [1,3,5] # elongation params
     d_list = [11,13,15,17,19] # code distances
     eta_list = [0.5,5,10,25,50] # noise bias , removed 5,50 for my corr 
     cd_list = ["SC", "ZXXZonSqu"] # clifford deformation types
@@ -2043,7 +2044,7 @@ if __name__ == "__main__":
 
 
     # run this to get data from the dcc
-    # get_data_DCC(circuit_data, corr_decoding, noise_model, d_list, l_list, eta_list, cd_list, corr_list, total_num_shots, p_list=None, p_th_init_d=p_th_init_CL, pymatch_corr=py_corr)
+    get_data_DCC(circuit_data, corr_decoding, noise_model, d_list, l_list, eta_list, cd_list, corr_list, total_num_shots, p_list=p_list, p_th_init_d=None, pymatch_corr=py_corr)
 
     # run this once you have data and want to combo it to one csv
     # concat_csv(folder_path, circuit_data)
