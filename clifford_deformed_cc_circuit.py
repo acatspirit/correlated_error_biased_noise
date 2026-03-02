@@ -379,7 +379,7 @@ class CDCompassCodeCircuit:
         
             # construct the logical observable to include - pick the top line of qubits since this is an X meas
             circuit.append("OBSERVABLE_INCLUDE", [stim.target_rec(- num_qubits + q) for q in range(d)], 0)
-        print(repr(circuit))
+        # print(repr(circuit))
         return circuit
     
     def add_meas_round(self, curr_circuit, stab_d_x, stab_d_z, order_d_x, order_d_z, qubit_d_x, qubit_d_z, num_ancillas, num_qubits_x, num_qubits_z, CD_data, p_i, p_gate, p_i_round, CD_type):
@@ -394,7 +394,7 @@ class CDCompassCodeCircuit:
 
         circuit.append("PAULI_CHANNEL_1",range(num_ancillas + num_qubits_x), [px,px,pz]) # idling error on all qubits in between measurement rounds
         circuit.append("H", range(num_ancillas))
-        circuit.append("DEPOLARIZE1", range(num_ancillas), p_gate) # depolarizing error on the ancillas after H
+        # circuit.append("DEPOLARIZE1", range(num_ancillas), p_gate) # depolarizing error on the ancillas after H
 
         
         if p_i > 0: circuit.append("Z_ERROR", [num_ancillas + q for q in list(qubit_d_x.keys())], p_i) # idling error on the data qubits during round
@@ -476,7 +476,7 @@ class CDCompassCodeCircuit:
                     circuit.append("Z_ERROR", full_inactive_list, p_i) # Idling error on the ancillas and qubits outside the stabilizer
 
         circuit.append("H", range(num_ancillas))
-        circuit.append("DEPOLARIZE1", range(num_ancillas), p_gate) # depolarizing error on the ancillas after H
+        # circuit.append("DEPOLARIZE1", range(num_ancillas), p_gate) # depolarizing error on the ancillas after H
         circuit.append("TICK")
         
         
@@ -595,7 +595,7 @@ class CDCompassCodeCircuit:
 
         # Round 0 - t=0 measurements
         circuit.append("TICK")
-        print(p_gate)
+        # print(p_gate)
         circuit = self.add_meas_round(circuit, stab_d_x, stab_d_z, order_d_x, order_d_z, qubit_d_x, qubit_d_z, num_ancillas, num_qubits_x, num_qubits_z, CD_data=CD_data_transform,p_i=p_i, p_gate=p_gate, p_i_round=0, CD_type=CD_type) # set the idling error between rounds to 0 on first round
 
         # idling errors on the data qubits during round 

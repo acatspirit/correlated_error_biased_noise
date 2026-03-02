@@ -8,6 +8,7 @@ import CompassCodes as cc
 import csv
 import pandas as pd
 import os
+import collections
 from datetime import datetime
 import sys
 import glob
@@ -213,11 +214,17 @@ class CorrelatedDecoder:
         
         return num_errors_x, num_errors_z
     
-    
+    ########################################################################
     #
     # Circuit level correlated decoding functions
     #
+    ########################################################################
 
+
+
+    #
+    # Graph labelling / edge tracking
+    #
 
     def probability_edge_mapping(self, edge_dict):
         """ Maps the probabilities to the corresponding edge weight in the matching graph. Takes into
@@ -346,12 +353,15 @@ class CorrelatedDecoder:
         return stab_index
     
     def get_LB_RB_nodes(self, DEM):
-        """ Get a list of the LB and RB on the code
+        """ Get a list of the LB and RB on the code (closed boundary for each stabilizer type)
+            Inputs - (detector error model) the model representing errors in system of choice
+            Outputs - (list)s the lists of the X measurement L/R stabilizers, and the Z measurement
+                        T/B stabilizers. Orthogonal to that logical type
         """
-        xlb_nodes = [] # the detectors that correspond to top X stabilizers
-        xrb_nodes = [] # '' bottom X stabilizers
-        zlb_nodes = [] # '' left Z stabilizers
-        zrb_nodes = [] # '' right Z stabilizers
+        xlb_nodes = [] # the detectors that correspond to left X stabilizers
+        xrb_nodes = [] # '' right X stabilizers
+        ztb_nodes = [] # '' top Z stabilizers
+        zbb_nodes = [] # '' bottom Z stabilizers
 
 
         # for detector in DEM ...
@@ -362,28 +372,29 @@ class CorrelatedDecoder:
             stab_index = self.get_stab_from_detector(d, self.mem_type)
             # print("stab and d",stab_index, d)
 
-            # Check if the stabilizer is an X boundary
+            # Assign X left/right stabilizers
             if stab_index < self.H_x.shape[0]: # it is an X detector
 
                 qubits_in_stab = sorted(self.H_x.getrow(stab_index).indices)
                 # print(qubits_in_stab)
 
-                if qubits_in_stab[0] < self.d: # on the top
+                if qubits_in_stab[0] % self.d == 0: # on the left
+                    # print(qubits_in_stab[0] % self.d)
                     xlb_nodes += [d]
-                elif qubits_in_stab[-1] >= (self.d**2-self.d): # on the bottom
+                elif (qubits_in_stab[-1] +1)% self.d == 0: # on the right 
                     xrb_nodes += [d]
                 else:
                     pass
-            # Check if the stabilizer is a Z boundary
+            # Check if Z are top/bottom
             else: # now these are Z detectors
                 qubits_in_stab = sorted(self.H_z.getrow(stab_index - self.H_x.shape[0]).indices)
                 # print(qubits_in_stab[0])
-                if qubits_in_stab[0]%self.d == 0:
-                    zlb_nodes += [d]
-                elif (qubits_in_stab[-1] +1)% self.d == 0:
-                    zrb_nodes += [d]
+                if qubits_in_stab[0] < self.d:
+                    ztb_nodes += [d]
+                elif qubits_in_stab[-1] >= (self.d**2-self.d):
+                    zbb_nodes += [d]
 
-        return xlb_nodes,xrb_nodes,zlb_nodes,zrb_nodes
+        return xlb_nodes,xrb_nodes,ztb_nodes,zbb_nodes
 
 
     def get_edge_type_d(self, dem, mem_type, CD_type) -> dict:
@@ -414,6 +425,163 @@ class CorrelatedDecoder:
                     
         return self.edge_type_d
     
+
+    #
+    # Complementary Gap
+    #
+
+    def get_complementary_gap(self,dem,syndrome,obs_flips):
+        '''
+        Credit: Eva Takou for code backbone. Minor style changes have been made. The original function
+        calculates the complementary gap (MWPM soft information) in the style of arxiv:2312.04522
+
+        Inputs: 
+        matching: the pymatching graph
+        syndrome: the detector syndrome
+        obs_flips: Z(X) logical flipped in X(Z) memory
+        b1_nodes: the X(Z) detector nodes to the left(top) boundary for X(Z) memory (list of ints)
+        b2_nodes: the X(Z) detector nodes to the right(bottom) boundary for X(Z) memory (list of ints)
+
+        Outputs:
+        Gap:                complementary gap
+        Signed_Gap:         signed complementary gap
+        gap_conditioned_PL: gap conditioned logical error rate
+        
+        
+        '''    
+        
+        num_shots = np.shape(syndrome)[0]
+        comp_matching = Matching()
+        matching = Matching.from_detector_error_model(dem)
+
+        xlb_nodes, xrb_nodes, ztb_nodes, zbb_nodes = self.get_LB_RB_nodes(dem)
+
+        if self.mem_type == "X":
+            b1_nodes = xlb_nodes
+            b2_nodes = xrb_nodes
+        else:
+            b1_nodes = ztb_nodes
+            b2_nodes = zbb_nodes
+
+
+        b1 = max(b2_nodes)+1
+        b2 = b1+1
+        
+        for edge in matching.edges():
+            node1 = edge[0]
+            node2 = edge[1]
+
+
+            # when the edge is not a boundary add to the graph normally
+            if node2 is not None:
+                
+                comp_matching.add_edge(node1=node1,node2=node2,
+                                fault_ids = edge[2]['fault_ids'],
+                                weight=edge[2]['weight'],
+                                error_probability=edge[2]['error_probability'])
+            
+            # if the edge is a boundary edge 
+            else: 
+                if node1 in b1_nodes: # match to the left/top node
+                    node2 = b1 
+                if node1 in b2_nodes: # match to the right/bottom node
+                    node2 = b2 
+
+                # if the stabilizer is not of the memory type, keep to normal boundaries
+                if node2 is None:
+                    comp_matching.add_boundary_edge(node=node1,
+                                                    fault_ids = edge[2]['fault_ids'],
+                                                    weight=edge[2]['weight'],
+                                                    error_probability=edge[2]['error_probability'])
+
+                else:
+                    comp_matching.add_edge(node1=node1,node2=node2,
+                                    fault_ids = edge[2]['fault_ids'],
+                                    weight=edge[2]['weight'],
+                                    error_probability=edge[2]['error_probability'])            
+                
+        
+        comp_matching.set_boundary_nodes({b2})     
+                
+        # decode to obtain the original matching
+        pred_reg, W_reg = matching.decode_batch(syndrome,return_weights=True) #This is the regular matching
+
+
+        # don't fire the b1
+        new_array = np.zeros((num_shots,1),dtype=int)
+        det0      = np.hstack((syndrome,new_array))
+        
+        # do fire b1
+        new_array = np.ones((num_shots,1),dtype=int)
+        det1      = np.hstack((syndrome,new_array))
+
+        # the I_L / ERR_L complementary matchings. Return the total weights of the solutions for each shot
+        pred0, W0 = comp_matching.decode_batch(det0,return_weights=True)
+        pred1, W1 = comp_matching.decode_batch(det1,return_weights=True)
+
+
+        # scale by edge weight, get dB. Why do we do this? also do we assume all edges normalized by the weight of the first
+        edge = next(iter(matching.to_networkx().edges.values()))
+        edge_w = edge['weight']
+        edge_p = edge['error_probability']
+        decibels_per_w = -np.log10(edge_p / (1 - edge_p)) * 10 / edge_w                
+
+        # Unsigned gap
+        Gap = []
+        for k in range(num_shots):
+            if W1[k]<W0[k]:
+                Gap.append( (W0[k]-W1[k]) * decibels_per_w)
+            else:
+                Gap.append( (W1[k]-W0[k]) * decibels_per_w)     
+
+        
+        # signed gap
+        Signed_Gap = []
+        for k in range(num_shots):
+            if pred0[k]==obs_flips[k]:
+                Signed_Gap.append( (W1[k]-W0[k]) * decibels_per_w)
+            else:
+                Signed_Gap.append( (W0[k]-W1[k]) * decibels_per_w)
+
+
+        errors = np.any(pred_reg != obs_flips, axis=1)
+
+        # Classify all shots by their error + gap.
+        custom_counts = collections.Counter()
+        Gap  = np.round(Gap).astype(dtype=np.int64)
+        for k in range(len(Gap)):
+            g = Gap[k]
+            key = f'E{g}' if errors[k] else f'C{g}'
+            custom_counts[key] += 1/num_shots
+
+        # P_L(e | g) = E_g / (E_g + C_g)
+
+        gap_conditioned_PL = {}
+
+        # collect all gap values that appear
+        gaps = set()
+        for key in custom_counts:
+            gaps.add(int(key[1:]))
+
+        for g in gaps:
+            E = custom_counts.get(f'E{g}', 0.0)
+            C = custom_counts.get(f'C{g}', 0.0)
+
+            if E + C > 0:
+                gap_conditioned_PL[g] = E / (E + C)
+            else:
+                gap_conditioned_PL[g] = np.nan    
+
+
+        return Gap,Signed_Gap,gap_conditioned_PL
+
+
+
+    #
+    # Hyperedge decomposition (only decompose_dem_instruction_stim used)
+    #
+
+
     def decompose_dem_instruction_stim_auto(self, inst):
         """ Decomposes a stim DEM instruction into its component detectors and probability. Uses STIM's decompose_errors to determine hyperedge decomposition.
             Decomposed edge is in the form {probability: [detector1, detector2, ...]}. Logical operators are omitted, and single detector errors are merged to a pair if decomposed.
@@ -624,7 +792,9 @@ class CorrelatedDecoder:
         decomp_inst["detectors"] = edges
         return decomp_inst
 
-
+    # 
+    # Edge decomposition tables 
+    #
 
     def get_joint_prob(self, dem):
         """ Creates an array of joint probabilities representing edges in the DEM. Each entry [E][F] is the joint probability of edges E and detector F. 
@@ -717,7 +887,9 @@ class CorrelatedDecoder:
                 cond_prob_dict.setdefault(edge_1, {})[edge_2] = cond_p
         return cond_prob_dict
 
-        
+    #
+    # Graph construction and DEM editing
+    #
 
     def edit_dem(self, edges_in_correction, dem, cond_prob_dict):
         """ Given a stim DEM, updates the probabilities in error instructions with detectors given by cond_prob_dict based on detectors fired in correction.
@@ -811,6 +983,11 @@ class CorrelatedDecoder:
         
         return match
 
+
+    #
+    # Decoding
+    #
+
     def decoding_failures_correlated_circuit_level(self, circuit, shots, mem_type, CD_type):
         """
         Finds the number of logical errors given a circuit using correlated decoding. Uses pymatching's correlated decoding approach, inspired by
@@ -877,6 +1054,15 @@ class CorrelatedDecoder:
         # calculate the number of logical errors
         log_errors_array = np.any(np.array(observable_flips) != np.array(corrections), axis=1) # usual code
         return log_errors_array
+
+
+    def decoding_failures_comp_gap(self, circuit, shots, mem_type, CD_type):
+        """
+        Two stage decoding following arxiv:2312.04522. 
+        """
+
+
+        return 
 
 
     #
