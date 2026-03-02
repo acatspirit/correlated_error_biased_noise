@@ -535,7 +535,7 @@ class CorrelatedDecoder:
                 Gap.append( (W1[k]-W0[k]) * decibels_per_w)     
 
         
-        # signed gap
+        # signed gap - negative indicates the matching solution was incorrect
         Signed_Gap = []
         for k in range(num_shots):
             if pred0[k]==obs_flips[k]:
@@ -555,7 +555,7 @@ class CorrelatedDecoder:
             custom_counts[key] += 1/num_shots
 
         # P_L(e | g) = E_g / (E_g + C_g)
-
+ 
         gap_conditioned_PL = {}
 
         # collect all gap values that appear
@@ -866,19 +866,18 @@ class CorrelatedDecoder:
 
             # populate cond_prob dictionary 
             for edge_2 in adjacent_edge_dict:
-                edge_type = self.get_edge_type_d()
 
                 if edge_1 == edge_2:  
                     continue 
 
                 joint_p = joint_prob_dict.get(edge_1, {}).get(edge_2,0)
-                edge_check_type = self.edge_type_d[edge_2] # have to make sure this is populated by the time I populate
+                # edge_check_type = self.edge_type_d[edge_2] # have to make sure this is populated by the time I populate
 
                 scale = 1
-                if edge_check_type == "X": # edge_2 is a Z error since it's checks are X type.
-                    scale = self.eta/(self.eta + 1)
-                elif edge_check_type == "Z": # edge_2 is an X error
-                    scale = 1/2*(self.eta + 1)
+                # if edge_check_type == "X": # edge_2 is a Z error since it's checks are X type.
+                #     scale = self.eta/(self.eta + 1)
+                # elif edge_check_type == "Z": # edge_2 is an X error
+                #     scale = 1/2*(self.eta + 1)
 
 
                 # conditional probability calculation. Min taken because weights cannot be negative, and eta=0.5 represents a full erasure channel
@@ -934,8 +933,6 @@ class CorrelatedDecoder:
         return new_dem
 
     def compute_edge_weights_from_conditional_probs(self, correction_edges, match_graph, cond_prob_dict, fault_ids_dict):
-        # do i need to keep track of fault ids? probably
-
         weights = {}
         fault_ids = {}
         all_edges = match_graph.edges()
@@ -954,6 +951,59 @@ class CorrelatedDecoder:
             fault_ids[(u, v)] = set([log_error]) if log_error is not None else set()
 
         return weights, fault_ids
+    
+    def compute_edge_weights_from_comp_gap(self, correction_edges, matching, unsigned_gap):
+        """ Adjust the edge weights based on the complementary gap obtained during first pass matching.
+            Use the unsigned gap (normalized and log) to adjust log error likelihood. 
+
+            :param correction_edges(list): list of node pairs that represent the edges in the first MWPM pass
+            :param matching(Matching): the matching graph to be updated
+            :param unsigned_gap(float): the first pass decoder confidence (sum of weights). Must be normalized to avoid negative weights
+            :return: the weights and fault_ids dictionary recording the adjusted weight for each edge in the matchgraph
+        """
+
+        weights = {}
+        fault_ids = {}
+        sorted_edges_in_correction = [tuple(sorted(edge)) for edge in correction_edges]
+        for u,v,data in matching.edges():
+            if tuple(sorted(u,v)) in sorted_edges_in_correction:
+                us_gap_weights = -np.ln(unsigned_gap)
+                weights[tuple(sorted(u,v))] = us_gap_weights
+            else:
+                weights[tuple(sorted(u,v))] = data['weight']
+            
+            fault_ids[tuple(sorted(u,v))] = data['fault_ids']
+
+        return weights, fault_ids
+    
+    def compute_edge_weights_all_correlated_info(self, correction_edges, matching, unsigned_gap, cond_prob_dict, fault_ids_dict):
+        weights = {}
+        fault_ids = {}
+        edges_in_correction = [tuple(sorted(edge)) for edge in correction_edges]
+        for u,v,data in matching.edges():
+
+            # edges in the correction get adjusted by unsigned gap
+            if (u,v) in edges_in_correction:
+                weight = -np.ln(unsigned_gap)
+                log_error = data['fault_ids']
+
+            # edges not in the correction get hyperedge adjustments
+            else:
+                e2 = tuple(sorted([-1 if x is None else x for x in (u, v)])) # get (u,v) to the proper bndry format given my code
+                log_error = fault_ids_dict.get(e2, None)
+                
+                # find the max conditional probability adjustment for this edge given the correction
+                p = max((cond_prob_dict.get(e1, {}).get(e2, 0) for e1 in edges_in_correction), default=0) 
+
+                if p > 0:
+                    weight = np.log((1-p)/p) 
+                else:
+                    weight = data['weight']
+            weights[(u, v)] = weight
+            fault_ids[(u, v)] = set([log_error]) if log_error is not None else set()
+
+        return weights, fault_ids
+
 
     def build_matching_from_weights(self, weights_dict, fault_ids_dict, original_num_nodes):
         match = Matching()
@@ -1060,6 +1110,47 @@ class CorrelatedDecoder:
         """
         Two stage decoding following arxiv:2312.04522. 
         """
+
+        # get the hyperedge data + set up original matching
+        dem = circuit.detector_error_model(decompose_errors=True, flatten_loops=True, approximate_disjoint_errors=True)
+        matchgraph = Matching.from_detector_error_model(dem, enable_correlations=False)
+        self.edge_type_d = self.get_edge_type_d(dem, mem_type, CD_type)
+
+        # get the joint probabilities table of the dem hyperedges
+        joint_prob_dict, fault_ids = self.get_joint_prob(dem)
+        
+        # calculate the conditional probabilities based on joint probablities and marginal probabilities 
+        cond_prob_dict = self.get_conditional_prob(joint_prob_dict)
+
+
+        #
+        # Decode the circuit
+        #
+        
+        # first round of decoding
+        # get the syndromes and observable flips
+        seed = np.random.randint(0, 2**32 - 1)
+        sampler = circuit.compile_detector_sampler(seed=seed)
+        syndrome, observable_flips = sampler.sample(shots, separate_observables=True)
+
+        # get the complementary gap 
+        us_gap, s_gap, cond_log_prob = self.get_complementary_gap(dem, syndrome, observable_flips)
+
+        # first just test without hyperedge additions
+        # set the us-gap normalized as edge weights for first correction
+        us_gap_norm = us_gap/max(us_gap)
+        # use the weights to apply to the edges in correction 
+        for shot in range(shots):
+            edges_in_correction = matchgraph.decode_to_edges_array(syndrome[shot])
+
+
+
+
+        # construct new matching graph with the updated weights
+
+        # decode on this matching graph
+
+        # check for logical error
 
 
         return 
