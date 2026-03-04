@@ -535,13 +535,27 @@ class CorrelatedDecoder:
                 Gap.append( (W1[k]-W0[k]) * decibels_per_w)     
 
         
-        # signed gap - negative indicates the matching solution was incorrect
+        # signed gap - negative indicates MWPM failed
         Signed_Gap = []
+        W_min = np.zeros(W_reg.shape)
+        W_comp = np.zeros(W_reg.shape)
+        pred_min = np.zeros(pred0.shape)
+
+
         for k in range(num_shots):
-            if pred0[k]==obs_flips[k]:
-                Signed_Gap.append( (W1[k]-W0[k]) * decibels_per_w)
+            if W_reg[k] == W0[k]: 
+                W_min[k] = W0[k]
+                pred_min[k] = pred0[k]
+                W_comp[k] = W1[k]
+            elif W_reg[k] == W1[k]:
+                W_min[k] = W1[k]
+                pred_min[k] = pred1[k]
+                W_comp[k] = W0[k]
+
+            if pred_min[k]==obs_flips[k]: 
+                Signed_Gap.append( (W_comp[k]-W_min[k]) * decibels_per_w) 
             else:
-                Signed_Gap.append( (W0[k]-W1[k]) * decibels_per_w)
+                Signed_Gap.append( (W_min[k]-W_comp[k]) * decibels_per_w) 
 
 
         errors = np.any(pred_reg != obs_flips, axis=1)
@@ -574,6 +588,123 @@ class CorrelatedDecoder:
 
 
         return Gap,Signed_Gap,gap_conditioned_PL
+    
+    def get_complementary_correction(self, dem, syndrome, observable_flip):
+        """ For one shot at a time, get the unsigned gap, the matching and the complementary matching for one dem
+
+            :param dem: (stim.DetectorErrorModel) the input detector error model to be used in matching
+            :param syndrome: (numpy array) the detectors flipped in the experiment
+            :param observable_flip: (numpy array) whether a logical observable was flipped
+
+            :return unsigned_gap: (array) decoder confidence from comparing two matchings
+            :return matching_correction: (array) the edges included in the solution to the I_L matching
+            :return comp_matching_correction: (array) the edges in the solution to hte X_L/Z_L matching
+        """
+        
+        comp_matching = Matching()
+        matching = Matching.from_detector_error_model(dem)
+
+        xlb_nodes, xrb_nodes, ztb_nodes, zbb_nodes = self.get_LB_RB_nodes(dem)
+
+        if self.mem_type == "X":
+            b1_nodes = xlb_nodes
+            b2_nodes = xrb_nodes
+        else:
+            b1_nodes = ztb_nodes
+            b2_nodes = zbb_nodes
+
+
+        b1 = max(b2_nodes)+1
+        b2 = b1+1
+        
+        for edge in matching.edges():
+            node1 = edge[0]
+            node2 = edge[1]
+
+
+            # when the edge is not a boundary add to the graph normally
+            if node2 is not None:
+                
+                comp_matching.add_edge(node1=node1,node2=node2,
+                                fault_ids = edge[2]['fault_ids'],
+                                weight=edge[2]['weight'],
+                                error_probability=edge[2]['error_probability'])
+            
+            # if the edge is a boundary edge 
+            else: 
+                if node1 in b1_nodes: # match to the left/top node
+                    node2 = b1 
+                if node1 in b2_nodes: # match to the right/bottom node
+                    node2 = b2 
+
+                # if the stabilizer is not of the memory type, keep to normal boundaries
+                if node2 is None:
+                    comp_matching.add_boundary_edge(node=node1,
+                                                    fault_ids = edge[2]['fault_ids'],
+                                                    weight=edge[2]['weight'],
+                                                    error_probability=edge[2]['error_probability'])
+
+                else:
+                    comp_matching.add_edge(node1=node1,node2=node2,
+                                    fault_ids = edge[2]['fault_ids'],
+                                    weight=edge[2]['weight'],
+                                    error_probability=edge[2]['error_probability'])            
+                
+        
+        comp_matching.set_boundary_nodes({b2})     
+                
+        # decode to obtain the original matching
+        pred_reg, W_reg = matching.decode(syndrome,return_weight=True) #This is the regular matching
+
+
+        # don't fire the b1 - I_L coset
+        new_array = np.zeros((1,1),dtype=int)
+        det0      = np.hstack((syndrome,new_array))
+        
+        # do fire b1 - Z/X_L coset
+        new_array = np.ones((1,1),dtype=int)
+        det1      = np.hstack((syndrome,new_array))
+
+        # pred0 crosses logical even number of times, pred1 crosses odd number. Return the total weights of the solutions for each shot
+        pred0, W0 = comp_matching.decode(det0,return_weight=True)
+        pred1, W1 = comp_matching.decode(det1,return_weight=True)
+
+        edges_in_pred0 = np.array(comp_matching.decode_to_edges_array(det0))
+        edges_in_pred1 = np.array(comp_matching.decode_to_edges_array(det1))
+           
+
+        # Unsigned gap
+        # if W1<W0:
+        #     unsigned_gap = (W0-W1)
+        # else:
+        #     unsigned_gap = (W1-W0)
+
+
+        # signed gap
+
+        if W_reg == W0: # MWPM picked pred0 solution
+            W_min = W0
+            pred_min = pred0
+            W_comp = W1
+            edges_in_correction = np.where(np.logical_or((edges_in_pred0 == b1) ,(edges_in_pred0 == b2)), -1, edges_in_pred0)
+            edges_in_comp_correction = np.where(np.logical_or((edges_in_pred1 == b1), (edges_in_pred1 == b2)), -1, edges_in_pred1)
+        else: # MWPM picked pred 1 solution 
+            W_min = W1
+            pred_min = pred1
+            W_comp = W0
+            edges_in_correction = np.where(np.logical_or((edges_in_pred1 == b1), (edges_in_pred1 == b2)), -1, edges_in_pred1)
+            edges_in_comp_correction = np.where(np.logical_or((edges_in_pred0 == b1), (edges_in_pred0 == b2)), -1, edges_in_pred0)
+        
+
+        if pred_min == observable_flip: # MWPM was successful 
+            signed_gap = W_comp - W_min
+        else:
+            signed_gap = W_min - W_comp
+
+        # edges_in_correction[(edges_in_correction == b1) or (edges_in_correction == b2)] = -1
+        # edges_in_comp_correction[(edges_in_comp_correction == b1) or (edges_in_comp_correction == b2)] = -1
+
+        return signed_gap, edges_in_correction, edges_in_comp_correction
 
 
 
@@ -967,7 +1098,7 @@ class CorrelatedDecoder:
         sorted_edges_in_correction = [tuple(sorted(edge)) for edge in correction_edges]
         for u,v,data in matching.edges():
             if (u,v) in sorted_edges_in_correction:
-                print("actually running the important function")
+                print("actually running the important function", (u,v))
                 us_gap_weights = 1/unsigned_gap # change this after chatting with eva
                 weights[(u,v)] = us_gap_weights
             else:

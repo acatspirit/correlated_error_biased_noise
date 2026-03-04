@@ -665,7 +665,7 @@ class CDCompassCodeCircuit:
         
         if memory:
             # repeat the loop circuit d-1 times - circuit level only
-            circuit.append(stim.CircuitRepeatBlock(repeat_count=num_rounds-1, body=loop_circuit))# end the repeat block
+            circuit.append(stim.CircuitRepeatBlock(repeat_count=(num_rounds-1), body=loop_circuit))# end the repeat block
 
 
         #
