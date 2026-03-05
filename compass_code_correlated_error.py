@@ -608,7 +608,7 @@ class CorrelatedDecoder:
         
         comp_matching = Matching()
         matching = Matching.from_detector_error_model(dem)
-
+        # syndrome = syndrome.reshape(1,syndrome.shape[0]) # I hope this is doing the right thing not sure it is
         xlb_nodes, xrb_nodes, ztb_nodes, zbb_nodes = self.get_LB_RB_nodes(dem)
 
         if self.mem_type == "X":
@@ -1080,7 +1080,7 @@ class CorrelatedDecoder:
     
     def compute_edge_weights_from_comp_gap(self, correction_edges, comp_correction_edges, matching, signed_gap, cutoff):
         """ Adjust the edge weights based on the complementary gap obtained during first pass matching.
-            Use the unsigned gap (normalized and log) to adjust log error likelihood. 
+            Use the signed gap to determine whether to use the min weight or complementary correction. 
 
             :param correction_edges(list): list of node pairs that represent the edges in the first MWPM pass
             :param comp_correction_edges(list): list of node pairs that represent the spatial complementary error in MWPM first pass
@@ -1109,16 +1109,17 @@ class CorrelatedDecoder:
             if signed_gap > 0: # MWPM first pass was correct, don't mess with the correct solution. Could change this to make other solution big
                 weights[(u,v)] = data['weight']
             else: # MWPM second pass failed. Want the second pass to try the comp correction instead. Reweight accordingly
-                if np.abs(edge_weight_dB_scale*signed_gap) > cutoff: # when the signed gap is more than the cutoff
+                if np.abs(edge_weight_dB_scale*signed_gap) > cutoff: # when the confidence is high choose the complementary path
                     if edge in mwpm_correction:
-                        weights[(u,v)] = np.abs(edge_weight_dB_scale*signed_gap)
+                        weights[(u,v)] = 1e6
                     else:
                         weights[(u,v)] = data['weight']
                 else:
-                    if edge in comp_correction:
-                        weights[(u,v)] = np.abs(edge_weight_dB_scale*signed_gap)
-                    else:
-                        weights[(u,v)] = data['weight']
+                    weights[(u,v)] = data['weight'] # maybe try the other way later ... 
+                    # if edge in comp_correction:
+                    #     weights[(u,v)] = np.abs(edge_weight_dB_scale*signed_gap)
+                    # else:
+                    #     weights[(u,v)] = data['weight']
             
             fault_ids[(u,v)] = data['fault_ids']
 
@@ -1235,7 +1236,7 @@ class CorrelatedDecoder:
 
         corrections = np.zeros((shots, 2)) # largest fault id is 1, len of correction = 2
         for i in range(shots):
-            # print(syndrome[i])
+            print(syndrome[i].shape)
             edges_in_correction = matchgraph.decode_to_edges_array(syndrome[i])
             # print("edges in correction inside function from mycorr", edges_in_correction)
 
@@ -1248,6 +1249,7 @@ class CorrelatedDecoder:
             updated_weights, fault_ids_dict = self.compute_edge_weights_from_conditional_probs(edges_in_correction, matchgraph, cond_prob_dict, fault_ids)
             matching_corr = self.build_matching_from_weights(updated_weights, fault_ids_dict, matchgraph.num_nodes)
             # print("updated edges inside function from mycorr", matching_corr.edges())
+            print(matching_corr.decode(syndrome[i]).shape, matching_corr.decode(syndrome[i]))
             corrections[i] = matching_corr.decode(syndrome[i]) #usual code
 
         
