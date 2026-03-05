@@ -45,7 +45,12 @@ class CorrelatedDecoder:
         new_prob = old_prob*(1-p) + p*(1 - old_prob)
         return new_prob  
 
-
+    def get_dB_scaling(self, matching):
+        edge = next(iter(matching.to_networkx().edges.values()))
+        edge_w = edge['weight']
+        edge_p = edge['error_probability']
+        decibels_per_w = -np.log10(edge_p / (1 - edge_p)) * 10 / edge_w 
+        return decibels_per_w
 
     def depolarizing_err(self, p):
         """Generates the error vector for one shot according to depolarizing noise model.
@@ -671,17 +676,8 @@ class CorrelatedDecoder:
 
         edges_in_pred0 = np.array(comp_matching.decode_to_edges_array(det0))
         edges_in_pred1 = np.array(comp_matching.decode_to_edges_array(det1))
-           
-
-        # Unsigned gap
-        # if W1<W0:
-        #     unsigned_gap = (W0-W1)
-        # else:
-        #     unsigned_gap = (W1-W0)
-
 
         # signed gap
-
         if W_reg == W0: # MWPM picked pred0 solution
             W_min = W0
             pred_min = pred0
@@ -701,8 +697,7 @@ class CorrelatedDecoder:
         else:
             signed_gap = W_min - W_comp
 
-        # edges_in_correction[(edges_in_correction == b1) or (edges_in_correction == b2)] = -1
-        # edges_in_comp_correction[(edges_in_comp_correction == b1) or (edges_in_comp_correction == b2)] = -1
+
 
         return signed_gap, edges_in_correction, edges_in_comp_correction
 
@@ -1083,32 +1078,56 @@ class CorrelatedDecoder:
 
         return weights, fault_ids
     
-    def compute_edge_weights_from_comp_gap(self, correction_edges, matching, unsigned_gap):
+    def compute_edge_weights_from_comp_gap(self, correction_edges, comp_correction_edges, matching, signed_gap, cutoff):
         """ Adjust the edge weights based on the complementary gap obtained during first pass matching.
             Use the unsigned gap (normalized and log) to adjust log error likelihood. 
 
             :param correction_edges(list): list of node pairs that represent the edges in the first MWPM pass
+            :param comp_correction_edges(list): list of node pairs that represent the spatial complementary error in MWPM first pass
             :param matching(Matching): the matching graph to be updated
-            :param unsigned_gap(float): the first pass decoder confidence (sum of weights). 
+            :param signed_gap(float): magnitude represents first pass decoder confidence (sum of weights). 
+                                    If it is negative, MWPM failed first round. Otherwise, it is positive.
+            :param cutoff(float): the gap magnitude that is lower than the relative weights. Determines whether
+                                we assign the gap to the complementary or minimum error path.
             :return: the weights and fault_ids dictionary recording the adjusted weight for each edge in the matchgraph
         """
 
         weights = {}
         fault_ids = {}
+
         sorted_edges_in_correction = [tuple(sorted(edge)) for edge in correction_edges]
+        sorted_comp_correction_edges = [tuple(sorted(edge)) for edge in comp_correction_edges]
+
+        mwpm_correction = [edge for edge in sorted_edges_in_correction if edge not in sorted_comp_correction_edges]
+        comp_correction = [edge for edge in sorted_comp_correction_edges if edge not in sorted_edges_in_correction]
+
+        edge_weight_dB_scale = self.get_dB_scaling(matching)
+        
         for u,v,data in matching.edges():
-            if (u,v) in sorted_edges_in_correction:
-                print("actually running the important function", (u,v))
-                us_gap_weights = 1/unsigned_gap # change this after chatting with eva
-                weights[(u,v)] = us_gap_weights
-            else:
+            # fix the boundary nodes comparison because pymatching is inconsistent
+            edge = tuple([u if (v is not None) else -1, v if (v is not None) else u])
+            if signed_gap > 0: # MWPM first pass was correct, don't mess with the correct solution. Could change this to make other solution big
                 weights[(u,v)] = data['weight']
+            else: # MWPM second pass failed. Want the second pass to try the comp correction instead. Reweight accordingly
+                if np.abs(edge_weight_dB_scale*signed_gap) > cutoff: # when the signed gap is more than the cutoff
+                    if edge in mwpm_correction:
+                        weights[(u,v)] = np.abs(edge_weight_dB_scale*signed_gap)
+                    else:
+                        weights[(u,v)] = data['weight']
+                else:
+                    if edge in comp_correction:
+                        weights[(u,v)] = np.abs(edge_weight_dB_scale*signed_gap)
+                    else:
+                        weights[(u,v)] = data['weight']
             
             fault_ids[(u,v)] = data['fault_ids']
 
         return weights, fault_ids
     
     def compute_edge_weights_all_correlated_info(self, correction_edges, matching, unsigned_gap, cond_prob_dict, fault_ids_dict):
+        # definitely add stopping conditions if decoder is already right
+        # when getting the hyperedge corrections, check if the comp decoder was right first too 
+        
         weights = {}
         fault_ids = {}
         edges_in_correction = [tuple(sorted(edge)) for edge in correction_edges]
@@ -1139,9 +1158,8 @@ class CorrelatedDecoder:
 
     def build_matching_from_weights(self, weights_dict, fault_ids_dict, original_num_nodes):
         match = Matching()
-
         for (u, v), weight in weights_dict.items():
-            fault_id = fault_ids_dict.get((u, v), None)
+            fault_id = fault_ids_dict.get(tuple([u if v is not None else -1, v if v is not None else u]), None)
             if None in (u, v):
                 match.add_boundary_edge(u if u is not None else v, weight=weight, fault_ids=fault_id)
             else:
