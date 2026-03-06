@@ -422,7 +422,7 @@ class CorrelatedDecoder:
                 decomposed_inst = self.decompose_dem_instruction_stim(inst)
 
                 for edge in decomposed_inst["detectors"]:
-                    print(edge)
+                    # print(edge)
                     if tuple(sorted(edge)) in self.edge_type_d:
                         pass
                     else:
@@ -608,7 +608,7 @@ class CorrelatedDecoder:
         
         comp_matching = Matching()
         matching = Matching.from_detector_error_model(dem)
-        # syndrome = syndrome.reshape(1,syndrome.shape[0]) # I hope this is doing the right thing not sure it is
+        syndrome = syndrome.reshape(1,syndrome.shape[0]) # I hope this is doing the right thing not sure it is
         xlb_nodes, xrb_nodes, ztb_nodes, zbb_nodes = self.get_LB_RB_nodes(dem)
 
         if self.mem_type == "X":
@@ -1062,11 +1062,14 @@ class CorrelatedDecoder:
         weights = {}
         fault_ids = {}
         all_edges = match_graph.edges()
-
+        # print(fault_ids_dict)
         edges_in_correction = [tuple(sorted(edge)) for edge in correction_edges]
         for u,v,data in all_edges:
+            # print(u,v)
             e2 = tuple(sorted([-1 if x is None else x for x in (u, v)]))
+            # print(e2)
             log_error = fault_ids_dict.get(e2, None)
+            # print(log_error)
             p = max((cond_prob_dict.get(e1, {}).get(e2, 0) for e1 in edges_in_correction), default=0)
             if p > 0:
                 weight = np.log((1-p)/p) 
@@ -1075,7 +1078,8 @@ class CorrelatedDecoder:
                 weight = data['weight']
             weights[(u, v)] = weight
             fault_ids[(u, v)] = set([log_error]) if log_error is not None else set()
-
+            # this fault id has indices with (node, None): set(id)
+        # print(fault_ids)
         return weights, fault_ids
     
     def compute_edge_weights_from_comp_gap(self, correction_edges, comp_correction_edges, matching, signed_gap, cutoff):
@@ -1122,7 +1126,6 @@ class CorrelatedDecoder:
                     #     weights[(u,v)] = data['weight']
             
             fault_ids[(u,v)] = data['fault_ids']
-
         return weights, fault_ids
     
     def compute_edge_weights_all_correlated_info(self, correction_edges, matching, unsigned_gap, cond_prob_dict, fault_ids_dict):
@@ -1160,7 +1163,9 @@ class CorrelatedDecoder:
     def build_matching_from_weights(self, weights_dict, fault_ids_dict, original_num_nodes):
         match = Matching()
         for (u, v), weight in weights_dict.items():
-            fault_id = fault_ids_dict.get(tuple([u if v is not None else -1, v if v is not None else u]), None)
+            # fault_id = fault_ids_dict.get(tuple([u if v is not None else -1, v if v is not None else u]), None)
+            # print(fault_id, u,v)
+            fault_id = fault_ids_dict.get((u,v),None)
             if None in (u, v):
                 match.add_boundary_edge(u if u is not None else v, weight=weight, fault_ids=fault_id)
             else:
@@ -1236,7 +1241,7 @@ class CorrelatedDecoder:
 
         corrections = np.zeros((shots, 2)) # largest fault id is 1, len of correction = 2
         for i in range(shots):
-            print(syndrome[i].shape)
+            # print(syndrome[i].shape)
             edges_in_correction = matchgraph.decode_to_edges_array(syndrome[i])
             # print("edges in correction inside function from mycorr", edges_in_correction)
 
@@ -1249,7 +1254,7 @@ class CorrelatedDecoder:
             updated_weights, fault_ids_dict = self.compute_edge_weights_from_conditional_probs(edges_in_correction, matchgraph, cond_prob_dict, fault_ids)
             matching_corr = self.build_matching_from_weights(updated_weights, fault_ids_dict, matchgraph.num_nodes)
             # print("updated edges inside function from mycorr", matching_corr.edges())
-            print(matching_corr.decode(syndrome[i]).shape, matching_corr.decode(syndrome[i]))
+            # print(matching_corr.decode(syndrome[i]).shape, matching_corr.decode(syndrome[i]))
             corrections[i] = matching_corr.decode(syndrome[i]) #usual code
 
         
