@@ -2188,7 +2188,7 @@ if __name__ == "__main__":
     # otherwise p_list is range of probabilities
     p_list = np.logspace(-2.5, -1.5, 40)
 
-    l_list = [1,3,5] # elongation params
+    l_list = [3,5] # elongation params
     d_list = [11,13,15,17,19] # code distances
     eta_list = [0.5,5,10,25,50] # noise bias , removed 5,50 for my corr 
     cd_list = ["SC", "ZXXZonSqu"] # clifford deformation types
