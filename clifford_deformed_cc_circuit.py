@@ -394,7 +394,7 @@ class CDCompassCodeCircuit:
 
         circuit.append("PAULI_CHANNEL_1",range(num_ancillas + num_qubits_x), [px,px,pz]) # idling error on all qubits in between measurement rounds
         circuit.append("H", range(num_ancillas))
-        # circuit.append("DEPOLARIZE1", range(num_ancillas), p_gate) # depolarizing error on the ancillas after H
+        circuit.append("DEPOLARIZE1", range(num_ancillas), p_gate) # depolarizing error on the ancillas after H
 
         
         if p_i > 0: circuit.append("Z_ERROR", [num_ancillas + q for q in list(qubit_d_x.keys())], p_i) # idling error on the data qubits during round
@@ -476,7 +476,7 @@ class CDCompassCodeCircuit:
                     circuit.append("Z_ERROR", full_inactive_list, p_i) # Idling error on the ancillas and qubits outside the stabilizer
 
         circuit.append("H", range(num_ancillas))
-        # circuit.append("DEPOLARIZE1", range(num_ancillas), p_gate) # depolarizing error on the ancillas after H
+        circuit.append("DEPOLARIZE1", range(num_ancillas), p_gate) # depolarizing error on the ancillas after H
         circuit.append("TICK")
         
         
