@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+     width="910.0" height="910.0" viewBox="0 0 910.0 910.0" style="background-color:white">
+<defs>
+</defs>
+<path d="M170,50 L170,50 L290,50 L410,50 L410,170 L290,170 L170,170" stroke="None" fill="firebrick" fill-opacity="0.6" />
+<path d="M530,50 L530,50 L650,50 L770,50 L770,170 L650,170 L530,170" stroke="None" fill="firebrick" fill-opacity="0.6" />
+<path d="M50,170 L50,170 L170,170 L170,290 L50,290" stroke="None" fill="firebrick" fill-opacity="0.6" />
+<path d="M290,170 L290,170 L410,170 L530,170 L530,290 L410,290 L290,290" stroke="None" fill="firebrick" fill-opacity="0.6" />
+<path d="M650,170 L650,170 L770,170 L770,290 L650,290" stroke="None" fill="firebrick" fill-opacity="0.6" />
+<path d="M50,290 L50,290 L170,290 L290,290 L290,410 L170,410 L50,410" stroke="None" fill="firebrick" fill-opacity="0.6" />
+<path d="M410,290 L410,290 L530,290 L650,290 L650,410 L530,410 L410,410" stroke="None" fill="firebrick" fill-opacity="0.6" />
+<path d="M170,410 L170,410 L290,410 L410,410 L410,530 L290,530 L170,530" stroke="None" fill="firebrick" fill-opacity="0.6" />
+<path d="M530,410 L530,410 L650,410 L770,410 L770,530 L650,530 L530,530" stroke="None" fill="firebrick" fill-opacity="0.6" />
+<path d="M50,530 L50,530 L170,530 L170,650 L50,650" stroke="None" fill="firebrick" fill-opacity="0.6" />
+<path d="M290,530 L290,530 L410,530 L530,530 L530,650 L410,650 L290,650" stroke="None" fill="firebrick" fill-opacity="0.6" />
+<path d="M650,530 L650,530 L770,530 L770,650 L650,650" stroke="None" fill="firebrick" fill-opacity="0.6" />
+<path d="M50,650 L50,650 L170,650 L290,650 L290,770 L170,770 L50,770" stroke="None" fill="firebrick" fill-opacity="0.6" />
+<path d="M410,650 L410,650 L530,650 L650,650 L650,770 L530,770 L410,770" stroke="None" fill="firebrick" fill-opacity="0.6" />
+<path d="M50,50 L50,50 L50,170 L170,170 L170,50" stroke="None" fill="cornflowerblue" fill-opacity="0.7" />
+<rect x="50" y="285.0" width="120" height="10" stroke="None" fill="cornflowerblue" fill-opacity="1" />
+<path d="M50,410 L50,410 L50,530 L170,530 L170,410" stroke="None" fill="cornflowerblue" fill-opacity="0.7" />
+<rect x="50" y="645.0" width="120" height="10" stroke="None" fill="cornflowerblue" fill-opacity="1" />
+<rect x="50" y="765.0" width="120" height="10" stroke="None" fill="cornflowerblue" fill-opacity="1" />
+<rect x="170" y="45.0" width="120" height="10" stroke="None" fill="cornflowerblue" fill-opacity="1" />
+<path d="M170,170 L170,170 L170,290 L290,290 L290,170" stroke="None" fill="cornflowerblue" fill-opacity="0.7" />
+<rect x="170" y="405.0" width="120" height="10" stroke="None" fill="cornflowerblue" fill-opacity="1" />
+<path d="M170,530 L170,530 L170,650 L290,650 L290,530" stroke="None" fill="cornflowerblue" fill-opacity="0.7" />
+<rect x="170" y="765.0" width="120" height="10" stroke="None" fill="cornflowerblue" fill-opacity="1" />
+<rect x="290" y="45.0" width="120" height="10" stroke="None" fill="cornflowerblue" fill-opacity="1" />
+<rect x="290" y="165.0" width="120" height="10" stroke="None" fill="cornflowerblue" fill-opacity="1" />
+<path d="M290,290 L290,290 L290,410 L410,410 L410,290" stroke="None" fill="cornflowerblue" fill-opacity="0.7" />
+<rect x="290" y="525.0" width="120" height="10" stroke="None" fill="cornflowerblue" fill-opacity="1" />
+<path d="M290,650 L290,650 L290,770 L410,770 L410,650" stroke="None" fill="cornflowerblue" fill-opacity="0.7" />
+<path d="M410,50 L410,50 L410,170 L530,170 L530,50" stroke="None" fill="cornflowerblue" fill-opacity="0.7" />
+<rect x="410" y="285.0" width="120" height="10" stroke="None" fill="cornflowerblue" fill-opacity="1" />
+<path d="M410,410 L410,410 L410,530 L530,530 L530,410" stroke="None" fill="cornflowerblue" fill-opacity="0.7" />
+<rect x="410" y="645.0" width="120" height="10" stroke="None" fill="cornflowerblue" fill-opacity="1" />
+<rect x="410" y="765.0" width="120" height="10" stroke="None" fill="cornflowerblue" fill-opacity="1" />
+<rect x="530" y="45.0" width="120" height="10" stroke="None" fill="cornflowerblue" fill-opacity="1" />
+<path d="M530,170 L530,170 L530,290 L650,290 L650,170" stroke="None" fill="cornflowerblue" fill-opacity="0.7" />
+<rect x="530" y="405.0" width="120" height="10" stroke="None" fill="cornflowerblue" fill-opacity="1" />
+<path d="M530,530 L530,530 L530,650 L650,650 L650,530" stroke="None" fill="cornflowerblue" fill-opacity="0.7" />
+<rect x="530" y="765.0" width="120" height="10" stroke="None" fill="cornflowerblue" fill-opacity="1" />
+<rect x="650" y="45.0" width="120" height="10" stroke="None" fill="cornflowerblue" fill-opacity="1" />
+<rect x="650" y="165.0" width="120" height="10" stroke="None" fill="cornflowerblue" fill-opacity="1" />
+<path d="M650,290 L650,290 L650,410 L770,410 L770,290" stroke="None" fill="cornflowerblue" fill-opacity="0.7" />
+<rect x="650" y="525.0" width="120" height="10" stroke="None" fill="cornflowerblue" fill-opacity="1" />
+<path d="M650,650 L650,650 L650,770 L770,770 L770,650" stroke="None" fill="cornflowerblue" fill-opacity="0.7" />
+<rect x="45.0" y="50" width="10" height="120" stroke="None" fill="firebrick" fill-opacity="0.8" />
+<rect x="765.0" y="290" width="10" height="120" stroke="None" fill="firebrick" fill-opacity="0.8" />
+<rect x="45.0" y="410" width="10" height="120" stroke="None" fill="firebrick" fill-opacity="0.8" />
+<rect x="765.0" y="650" width="10" height="120" stroke="None" fill="firebrick" fill-opacity="0.8" />
+<circle cx="50" cy="50" r="10" fill="gold" />
+<circle cx="170" cy="50" r="10" fill="navyblue" />
+<circle cx="290" cy="50" r="10" fill="navyblue" />
+<circle cx="410" cy="50" r="10" fill="gold" />
+<circle cx="530" cy="50" r="10" fill="navyblue" />
+<circle cx="650" cy="50" r="10" fill="navyblue" />
+<circle cx="770" cy="50" r="10" fill="gold" />
+<circle cx="50" cy="170" r="10" fill="navyblue" />
+<circle cx="170" cy="170" r="10" fill="gold" />
+<circle cx="290" cy="170" r="10" fill="navyblue" />
+<circle cx="410" cy="170" r="10" fill="navyblue" />
+<circle cx="530" cy="170" r="10" fill="gold" />
+<circle cx="650" cy="170" r="10" fill="navyblue" />
+<circle cx="770" cy="170" r="10" fill="navyblue" />
+<circle cx="50" cy="290" r="10" fill="navyblue" />
+<circle cx="170" cy="290" r="10" fill="navyblue" />
+<circle cx="290" cy="290" r="10" fill="gold" />
+<circle cx="410" cy="290" r="10" fill="navyblue" />
+<circle cx="530" cy="290" r="10" fill="navyblue" />
+<circle cx="650" cy="290" r="10" fill="gold" />
+<circle cx="770" cy="290" r="10" fill="navyblue" />
+<circle cx="50" cy="410" r="10" fill="gold" />
+<circle cx="170" cy="410" r="10" fill="navyblue" />
+<circle cx="290" cy="410" r="10" fill="navyblue" />
+<circle cx="410" cy="410" r="10" fill="gold" />
+<circle cx="530" cy="410" r="10" fill="navyblue" />
+<circle cx="650" cy="410" r="10" fill="navyblue" />
+<circle cx="770" cy="410" r="10" fill="gold" />
+<circle cx="50" cy="530" r="10" fill="navyblue" />
+<circle cx="170" cy="530" r="10" fill="gold" />
+<circle cx="290" cy="530" r="10" fill="navyblue" />
+<circle cx="410" cy="530" r="10" fill="navyblue" />
+<circle cx="530" cy="530" r="10" fill="gold" />
+<circle cx="650" cy="530" r="10" fill="navyblue" />
+<circle cx="770" cy="530" r="10" fill="navyblue" />
+<circle cx="50" cy="650" r="10" fill="navyblue" />
+<circle cx="170" cy="650" r="10" fill="navyblue" />
+<circle cx="290" cy="650" r="10" fill="gold" />
+<circle cx="410" cy="650" r="10" fill="navyblue" />
+<circle cx="530" cy="650" r="10" fill="navyblue" />
+<circle cx="650" cy="650" r="10" fill="gold" />
+<circle cx="770" cy="650" r="10" fill="navyblue" />
+<circle cx="50" cy="770" r="10" fill="gold" />
+<circle cx="170" cy="770" r="10" fill="navyblue" />
+<circle cx="290" cy="770" r="10" fill="navyblue" />
+<circle cx="410" cy="770" r="10" fill="gold" />
+<circle cx="530" cy="770" r="10" fill="navyblue" />
+<circle cx="650" cy="770" r="10" fill="navyblue" />
+<circle cx="770" cy="770" r="10" fill="gold" />
+</svg>

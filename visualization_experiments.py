@@ -159,8 +159,8 @@ def vertices(d, q_vertices, vertex_radius, color_vertex, CD_data):
             d.append(
                 draw.Circle(
                     *center,
-                    vertex_radius*1.3,
-                    fill="darkslategray",
+                    vertex_radius,
+                    fill=color_vertex,
                 )
             )
             label = f"{q}"
@@ -169,11 +169,11 @@ def vertices(d, q_vertices, vertex_radius, color_vertex, CD_data):
             d.append(
                 draw.Circle(
                     *center,
-                    vertex_radius*1.3,
+                    vertex_radius,
                     fill="gold",
                 )
             )
-            # label = f"{q}"
+            label = f"{q}"
         # d.append(
         #     draw.Text(
         #         label,
@@ -240,7 +240,7 @@ def matching_graph(d, h, q_vertices, type, weight = "all", high_weight = 'no'):
         d.append(draw.Circle(
                 *generator_center(g, q_vertices),
                 14,
-                fill="black",
+                fill="navyblue",
             ))
         if weight == "high" and high_weight == "dashed":
             dash = "10"
@@ -295,8 +295,8 @@ def stabilizers_svg(code: CompassCode, filename, CD_data, edges = "all", type = 
     top = 50
     left = 50
 
-    vertex_radius = 15
-    color_vertex = "grey"
+    vertex_radius = 10
+    color_vertex = "navyblue"
 
     color_x = "cornflowerblue"
     color_z = "firebrick"
@@ -323,7 +323,7 @@ def stabilizers_svg(code: CompassCode, filename, CD_data, edges = "all", type = 
     ######### TEST
     # CD_MatchingGraph(d, code, CD_data, q_vertices, type, weight = edges, high_weight = high_weight)
     ######### TEST
-    # vertices(d, q_vertices, 10, color_vertex, CD_data) # qubits at vertices
+    vertices(d, q_vertices, vertex_radius, color_vertex, CD_data) # qubits at vertices
     
     with open(filename, "w") as f:
         d.as_svg(f)
@@ -340,7 +340,7 @@ def CompassModel(code, filename):
     left = 50
 
     vertex_radius = 15
-    color_vertex = "black"
+    color_vertex = "navyblue"
 
     color_x = "cornflowerblue"
     color_z = "firebrick"
@@ -365,18 +365,18 @@ def CompassModel(code, filename):
             d.append(draw.Line(*q_vertices[j*l+i],
                 *q_vertices[(j+1)*l+i], stroke_width = 10, stroke = color_z))
     
-    # vertices(d, q_vertices, vertex_radius, color_vertex)
+    vertices(d, q_vertices, vertex_radius, color_vertex)
      
     with open(filename, "w") as f:
         d.as_svg(f)   
    
 if __name__ == "__main__":
-    L = 5
-    ell = 2
+    L = 7
+    ell = 3
     code = CompassCode(L, l=ell)
     
     CD_data = np.zeros(L**2)
-    CDtype= "XZZX"
+    CDtype= "ZXXZonSqu"
     if CDtype =="XZZX": 
         #XZZX 
         for i in range(L**2):
@@ -408,13 +408,13 @@ if __name__ == "__main__":
         if (L-1)%ell == 0:
             CD_data[L-1] = 2
             CD_data[L**2-L] = 2
-    fname = "test.svg"
+    fname = f"./paper_diagrams/d{L}_l{ell}_cc_{CDtype}.svg"
     # fname = f"FinalPlots/MatchingGraphs/PDFS/Graph_l{ell}_Xstabs_{CDtype}.svg"
     # fname = f"FinalPlots/MatchingGraphs/PDFS/Graph_l{ell}_Zstabs_{CDtype}.svg"
     # fname = f"FinalPlots/MatchingGraphs/l{ell}_lowweight_{CDtype}.svg"
-    stabilizers_svg(code, fname, CD_data, edges = "low", type = "both", high_weight = 'dashed')
+    stabilizers_svg(code, fname, CD_data, edges = "high", type = "both", high_weight = 'dashed')
     # fname = f"FinalPlots/MatchingGraphs/qbits_l{ell}_lowweight_{CDtype}_mod{L%6}.svg"
     # stabilizers_svg(code, fname, CD_data, edges = "low", type = "both", high_weight = 'dashed')
     # CompassModel(code, fname)
     # stabilizers_svg(code, fname, edges = "high", stabs = "both", high_weight = 'dashed')
-    print("result in test.svg")
+    print(f"result in {fname}")

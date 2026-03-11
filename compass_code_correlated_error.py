@@ -594,12 +594,14 @@ class CorrelatedDecoder:
 
         return Gap,Signed_Gap,gap_conditioned_PL
     
-    def get_complementary_correction(self, dem, syndrome, observable_flip):
+    def get_complementary_correction(self, dem, syndrome, observable_flip, input_matching=None, return_predictions=False):
         """ For one shot at a time, get the unsigned gap, the matching and the complementary matching for one dem
 
             :param dem: (stim.DetectorErrorModel) the input detector error model to be used in matching
             :param syndrome: (numpy array) the detectors flipped in the experiment
             :param observable_flip: (numpy array) whether a logical observable was flipped
+            :param matching: (Matching matching object) if you want to directly feed in a matching graph, use this instead of dem
+            :param return_predictions: (bool) include the prediction in the return value
 
             :return unsigned_gap: (array) decoder confidence from comparing two matchings
             :return matching_correction: (array) the edges included in the solution to the I_L matching
@@ -607,7 +609,11 @@ class CorrelatedDecoder:
         """
         
         comp_matching = Matching()
-        matching = Matching.from_detector_error_model(dem)
+        if input_matching is None:
+            matching = Matching.from_detector_error_model(dem)
+        else:
+            matching = input_matching
+
         syndrome = syndrome.reshape(1,syndrome.shape[0]) # I hope this is doing the right thing not sure it is
         xlb_nodes, xrb_nodes, ztb_nodes, zbb_nodes = self.get_LB_RB_nodes(dem)
 
@@ -698,8 +704,10 @@ class CorrelatedDecoder:
             signed_gap = W_min - W_comp
 
 
-
-        return signed_gap, edges_in_correction, edges_in_comp_correction
+        if return_predictions:
+            return signed_gap, edges_in_correction, edges_in_comp_correction, pred_min
+        else:
+            return signed_gap, edges_in_correction, edges_in_comp_correction
 
 
 
@@ -982,7 +990,6 @@ class CorrelatedDecoder:
         cond_prob_dict = {}
 
         for edge_1 in joint_prob_dict:
-            
             # find P(A)
             marginal_p = joint_prob_dict.get(edge_1, {}).get(edge_1,0)
             if marginal_p == 0:
@@ -1077,7 +1084,8 @@ class CorrelatedDecoder:
             else:
                 weight = data['weight']
             weights[(u, v)] = weight
-            fault_ids[(u, v)] = set([log_error]) if log_error is not None else set()
+            # fault_ids[(u, v)] = set([log_error]) if log_error is not None else set()
+            fault_ids[(u, v)] = data['fault_ids']
             # this fault id has indices with (node, None): set(id)
         # print(fault_ids)
         return weights, fault_ids
@@ -1263,15 +1271,16 @@ class CorrelatedDecoder:
         return log_errors_array
 
 
-    def decoding_failures_comp_gap(self, circuit, shots, mem_type, CD_type):
+    def decoding_failures_correlated_gap(self, circuit, shots, mem_type, CD_type, cutoff=1):
         """
-        Two stage decoding following arxiv:2312.04522. 
+        Two stage decoding following arxiv:2312.04522., with the addition of a hyperedge decoding step.
         """
 
         # get the hyperedge data + set up original matching
         dem = circuit.detector_error_model(decompose_errors=True, flatten_loops=True, approximate_disjoint_errors=True)
         matchgraph = Matching.from_detector_error_model(dem, enable_correlations=False)
-        self.edge_type_d = self.get_edge_type_d(dem, mem_type, CD_type)
+        
+        # self.edge_type_d = self.get_edge_type_d(dem, mem_type, CD_type) to be implemented??
 
         # get the joint probabilities table of the dem hyperedges
         joint_prob_dict, fault_ids = self.get_joint_prob(dem)
@@ -1287,30 +1296,40 @@ class CorrelatedDecoder:
         # first round of decoding
         # get the syndromes and observable flips
         seed = np.random.randint(0, 2**32 - 1)
-        sampler = circuit.compile_detector_sampler(seed=seed)
-        syndrome, observable_flips = sampler.sample(shots, separate_observables=True)
+        sampler = circuit.compile_detector_sampler(seed=seed) # should I be passing in a seed instead so I am comparing LER of right shots?
+        detection_events, observable_flips = sampler.sample(shots, separate_observables=True)
 
-        # get the complementary gap 
-        us_gap, s_gap, cond_log_prob = self.get_complementary_gap(dem, syndrome, observable_flips)
-
-        # first just test without hyperedge additions
-        # set the us-gap normalized as edge weights for first correction
-        us_gap_norm = us_gap/max(us_gap)
-        # use the weights to apply to the edges in correction 
+        
+        corrections = np.zeros(observable_flips.shape)
         for shot in range(shots):
-            edges_in_correction = matchgraph.decode_to_edges_array(syndrome[shot])
+            s_gap, edges_in_correction, edges_in_comp_correction, pred_min = self.get_complementary_correction(dem, detection_events[shot], observable_flips[shot], return_predictions=True)
 
+            # check if mwpm first round was correct
+            if s_gap > 0:
+                corrections[shot] = pred_min
+                continue
+            
+            # when first pass mwpm is incorrect, reweight with comp_gap
+            comp_weights,comp_fault_ids = self.compute_edge_weights_from_comp_gap(edges_in_correction,edges_in_comp_correction, matchgraph, s_gap, cutoff)
+            comp_matching = self.build_matching_from_weights(comp_weights, comp_fault_ids, matchgraph.num_nodes)
+            comp_observable = comp_matching.decode(detection_events[shot])
 
+            # set the logical observable to the comp one if it was right
+            if comp_observable == observable_flips[shot]: # comp step was good, stop here
+                corrections[shot] = comp_observable
+                continue
 
+            # mwpm and comp_mwpm were incorrect, reweight hyperedges based on comp_correction
+            hyperedge_weights, hyperedge_fault_ids = self.compute_edge_weights_from_conditional_probs(edges_in_comp_correction,
+                                                                                                            comp_matching,
+                                                                                                            cond_prob_dict,
+                                                                                                            comp_fault_ids)
+            hyperedge_matching = self.build_matching_from_weights(hyperedge_weights, hyperedge_fault_ids,matchgraph.num_nodes)
+            corrections[shot] = hyperedge_matching.decode(detection_events[shot])
+        
+        log_errors_array = np.any(np.array(observable_flips) != np.array(corrections), axis=1)
 
-        # construct new matching graph with the updated weights
-
-        # decode on this matching graph
-
-        # check for logical error
-
-
-        return 
+        return log_errors_array
 
 
     #
