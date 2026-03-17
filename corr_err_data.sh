@@ -6,7 +6,7 @@
 #SBATCH -c 1
 #SBATCH --mail-type=END        
 #SBATCH --mail-user=am1155@duke.edu       # It will send you an email when the job is finishe$
-#SBATCH --mem=1G                # Memory, keep it as 10G
+#SBATCH --mem=2G                # Memory, keep it as 10G
 #SBATCH --time=48:00:00            # Time limit hrs:min:sec
 #SBATCH --job-name=circuit_thresholds_py_corr.out                # How is your output is called, you n$
 
