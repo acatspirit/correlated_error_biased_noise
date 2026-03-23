@@ -1097,15 +1097,14 @@ class CorrelatedDecoder:
         # print(fault_ids)
         return weights, fault_ids
     
-    def compute_edge_weights_from_comp_gap(self, correction_edges, comp_correction_edges, matching, signed_gap, cutoff):
+    def compute_edge_weights_from_comp_gap(self, correction_edges, comp_correction_edges, matching, unsigned_gap, cutoff):
         """ Adjust the edge weights based on the complementary gap obtained during first pass matching.
             Use the signed gap to determine whether to use the min weight or complementary correction. 
 
             :param correction_edges(list): list of node pairs that represent the edges in the first MWPM pass
             :param comp_correction_edges(list): list of node pairs that represent the spatial complementary error in MWPM first pass
             :param matching(Matching): the matching graph to be updated
-            :param signed_gap(float): magnitude represents first pass decoder confidence (sum of weights). 
-                                    If it is negative, MWPM failed first round. Otherwise, it is positive.
+            :param unsigned_gap(float): magnitude represents first pass decoder confidence (sum of weights). 
             :param cutoff(float): the gap magnitude that is lower than the relative weights. Determines whether
                                 we assign the gap to the complementary or minimum error path.
             :return: the weights and fault_ids dictionary recording the adjusted weight for each edge in the matchgraph
@@ -1125,21 +1124,19 @@ class CorrelatedDecoder:
         for u,v,data in matching.edges():
             # fix the boundary nodes comparison because pymatching is inconsistent
             edge = tuple([u if (v is not None) else -1, v if (v is not None) else u])
-            if signed_gap > 0: # MWPM first pass was correct, don't mess with the correct solution. Could change this to make other solution big
-                weights[(u,v)] = data['weight']
-            else: # MWPM second pass failed. Want the second pass to try the comp correction instead. Reweight accordingly
-                if np.abs(edge_weight_dB_scale*signed_gap) > cutoff: # when the confidence is high choose the complementary path
-                    if edge in mwpm_correction:
-                        weights[(u,v)] = 1e6
-                    else:
-                        weights[(u,v)] = data['weight']
-                else:
-                    weights[(u,v)] = data['weight'] # maybe try the other way later ... 
-                    # if edge in comp_correction:
-                    #     weights[(u,v)] = np.abs(edge_weight_dB_scale*signed_gap)
-                    # else:
-                    #     weights[(u,v)] = data['weight']
             
+            if np.abs(edge_weight_dB_scale*unsigned_gap) < cutoff: # when the confidence is low choose the complementary path
+                if edge in mwpm_correction:
+                    weights[(u,v)] = 1e6
+                else:
+                    weights[(u,v)] = data['weight']
+            else:
+                weights[(u,v)] = data['weight'] # maybe try the other way later ... 
+                # if edge in comp_correction:
+                #     weights[(u,v)] = np.abs(edge_weight_dB_scale*signed_gap)
+                # else:
+                #     weights[(u,v)] = data['weight']
+        
             fault_ids[(u,v)] = data['fault_ids']
         return weights, fault_ids
     
