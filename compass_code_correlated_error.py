@@ -1253,7 +1253,6 @@ class CorrelatedDecoder:
 
         corrections = np.zeros((shots, 2)) # largest fault id is 1, len of correction = 2
         for i in range(shots):
-            # first check if original matching was good
 
             # print(syndrome[i].shape)
             edges_in_correction = matchgraph.decode_to_edges_array(syndrome[i])
@@ -1308,22 +1307,22 @@ class CorrelatedDecoder:
         
         corrections = np.zeros(observable_flips.shape)
         for shot in range(shots):
-            s_gap, edges_in_correction, edges_in_comp_correction, pred_min = self.get_complementary_correction(dem, detection_events[shot], observable_flips[shot], return_predictions=True)
+            us_gap, edges_in_correction, edges_in_comp_correction, pred_min, pred_picked = self.get_complementary_correction(dem, detection_events[shot], observable_flips[shot], return_predictions=True)
 
             # check if mwpm first round was correct
-            if s_gap > 0:
-                corrections[shot] = pred_min
-                continue
+            # if us_gap > 0:
+            #     corrections[shot] = pred_min
+            #     continue
             
             # when first pass mwpm is incorrect, reweight with comp_gap
-            comp_weights,comp_fault_ids = self.compute_edge_weights_from_comp_gap(edges_in_correction,edges_in_comp_correction, matchgraph, s_gap, cutoff)
+            comp_weights,comp_fault_ids = self.compute_edge_weights_from_comp_gap(edges_in_correction,edges_in_comp_correction, matchgraph, us_gap, cutoff)
             comp_matching = self.build_matching_from_weights(comp_weights, comp_fault_ids, matchgraph.num_nodes)
-            comp_observable = comp_matching.decode(detection_events[shot])
+            # comp_observable = comp_matching.decode(detection_events[shot])
 
             # set the logical observable to the comp one if it was right
-            if comp_observable == observable_flips[shot]: # comp step was good, stop here
-                corrections[shot] = comp_observable
-                continue
+            # if comp_observable == observable_flips[shot]: # comp step was good, stop here
+            #     corrections[shot] = comp_observable
+            #     continue
 
             # mwpm and comp_mwpm were incorrect, reweight hyperedges based on comp_correction
             hyperedge_weights, hyperedge_fault_ids = self.compute_edge_weights_from_conditional_probs(edges_in_comp_correction,
