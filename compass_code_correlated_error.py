@@ -2189,7 +2189,236 @@ if __name__ == "__main__":
                     (3,25,"X_MEM", "ZXXZonSqu","circuit_level"):0.01297, (3,25,"Z_MEM","ZXXZonSqu", "circuit_level"):0.00715, (3,25,"TOTAL_MEM","ZXXZonSqu", "circuit_level"):0.00759,
                     (5,25,"X_MEM", "ZXXZonSqu","circuit_level"):0.01466, (5,25,"Z_MEM", "ZXXZonSqu","circuit_level"):0.00525, (5,25,"TOTAL_MEM", "ZXXZonSqu","circuit_level"):0.00538,
                     (3,50,"X_MEM","ZXXZonSqu", "circuit_level"):0.01288, (3,50,"Z_MEM", "ZXXZonSqu","circuit_level"):0.00713, (3,50,"TOTAL_MEM", "ZXXZonSqu","circuit_level"):0.00764,
-                    (5,50,"X_MEM", "ZXXZonSqu","circuit_level"):0.01502, (5,50,"Z_MEM", "ZXXZonSqu","circuit_level"):0.00529, (5,50,"TOTAL_MEM", "ZXXZonSqu","circuit_level"):0.00538}
+                    (5,50,"X_MEM", "ZXXZonSqu","circuit_level"):0.01502, (5,50,"Z_MEM", "ZXXZonSqu","circuit_level"):0.00529, (5,50,"TOTAL_MEM", "ZXXZonSqu","circuit_level"):0.00538,
+                    # CHAT DATA In the middle
+
+                    # ===================== SC =====================
+                    # eta = 0.5
+                    (2,0.5,"X_MEM_PY","SC","circuit_level"):0.00852,
+                    (2,0.5,"Z_MEM_PY","SC","circuit_level"):0.00609,
+                    (2,0.5,"TOTAL_MEM_PY","SC","circuit_level"):0.00859,
+
+                    (3,0.5,"X_MEM_PY","SC","circuit_level"):0.00897,
+                    (3,0.5,"Z_MEM_PY","SC","circuit_level"):0.00721,
+                    (3,0.5,"TOTAL_MEM_PY","SC","circuit_level"):0.00768,
+
+                    (4,0.5,"X_MEM_PY","SC","circuit_level"):0.00949,
+                    (4,0.5,"Z_MEM_PY","SC","circuit_level"):0.00620,
+                    (4,0.5,"TOTAL_MEM_PY","SC","circuit_level"):0.00652,
+
+                    (5,0.5,"X_MEM_PY","SC","circuit_level"):0.00996,
+                    (5,0.5,"Z_MEM_PY","SC","circuit_level"):0.00546,
+                    (5,0.5,"TOTAL_MEM_PY","SC","circuit_level"):0.00565,
+
+                    (6,0.5,"X_MEM_PY","SC","circuit_level"):0.01034,
+                    (6,0.5,"Z_MEM_PY","SC","circuit_level"):0.00485,
+                    (6,0.5,"TOTAL_MEM_PY","SC","circuit_level"):0.00493,
+
+
+                    # eta = 5
+                    (2,5,"X_MEM_PY","SC","circuit_level"):0.00801,
+                    (2,5,"Z_MEM_PY","SC","circuit_level"):0.01167,
+                    (2,5,"TOTAL_MEM_PY","SC","circuit_level"):0.00871,
+
+                    (3,5,"X_MEM_PY","SC","circuit_level"):0.01002,
+                    (3,5,"Z_MEM_PY","SC","circuit_level"):0.00962,
+                    (3,5,"TOTAL_MEM_PY","SC","circuit_level"):0.00989,
+
+                    (4,5,"X_MEM_PY","SC","circuit_level"):0.01097,
+                    (4,5,"Z_MEM_PY","SC","circuit_level"):0.00814,
+                    (4,5,"TOTAL_MEM_PY","SC","circuit_level"):0.00916,
+
+                    (5,5,"X_MEM_PY","SC","circuit_level"):0.01109,
+                    (5,5,"Z_MEM_PY","SC","circuit_level"):0.00719,
+                    (5,5,"TOTAL_MEM_PY","SC","circuit_level"):0.00768,
+
+                    (6,5,"X_MEM_PY","SC","circuit_level"):0.01226,
+                    (6,5,"Z_MEM_PY","SC","circuit_level"):0.00037,
+                    (6,5,"TOTAL_MEM_PY","SC","circuit_level"):0.00606,
+
+
+                    # eta = 10
+                    (2,10,"X_MEM_PY","SC","circuit_level"):0.00863,
+                    (2,10,"Z_MEM_PY","SC","circuit_level"):0.01241,
+                    (2,10,"TOTAL_MEM_PY","SC","circuit_level"):0.00871,
+
+                    (3,10,"X_MEM_PY","SC","circuit_level"):0.01029,
+                    (3,10,"Z_MEM_PY","SC","circuit_level"):0.01008,
+                    (3,10,"TOTAL_MEM_PY","SC","circuit_level"):0.01029,
+
+                    (4,10,"X_MEM_PY","SC","circuit_level"):0.01137,
+                    (4,10,"Z_MEM_PY","SC","circuit_level"):0.00861,
+                    (4,10,"TOTAL_MEM_PY","SC","circuit_level"):0.00977,
+
+                    (5,10,"X_MEM_PY","SC","circuit_level"):0.01215,
+                    (5,10,"Z_MEM_PY","SC","circuit_level"):0.00789,
+                    (5,10,"TOTAL_MEM_PY","SC","circuit_level"):0.00852,
+
+                    (6,10,"X_MEM_PY","SC","circuit_level"):0.01285,
+                    (6,10,"Z_MEM_PY","SC","circuit_level"):0.00088,
+                    (6,10,"TOTAL_MEM_PY","SC","circuit_level"):0.00732,
+
+
+                    # ===================== ZXXZonSqu =====================
+                    # eta = 0.5
+                    (2,0.5,"X_MEM_PY","ZXXZonSqu","circuit_level"):0.00850,
+                    (2,0.5,"Z_MEM_PY","ZXXZonSqu","circuit_level"):0.00852,
+                    (2,0.5,"TOTAL_MEM_PY","ZXXZonSqu","circuit_level"):0.00959,
+
+                    (3,0.5,"X_MEM_PY","ZXXZonSqu","circuit_level"):0.00910,
+                    (3,0.5,"Z_MEM_PY","ZXXZonSqu","circuit_level"):0.00721,
+                    (3,0.5,"TOTAL_MEM_PY","ZXXZonSqu","circuit_level"):0.00751,
+
+                    (4,0.5,"X_MEM_PY","ZXXZonSqu","circuit_level"):0.00948,
+                    (4,0.5,"Z_MEM_PY","ZXXZonSqu","circuit_level"):0.00610,
+                    (4,0.5,"TOTAL_MEM_PY","ZXXZonSqu","circuit_level"):0.00635,
+
+                    (5,0.5,"X_MEM_PY","ZXXZonSqu","circuit_level"):0.01015,
+                    (5,0.5,"Z_MEM_PY","ZXXZonSqu","circuit_level"):0.00527,
+                    (5,0.5,"TOTAL_MEM_PY","ZXXZonSqu","circuit_level"):0.00540,
+
+                    (6,0.5,"X_MEM_PY","ZXXZonSqu","circuit_level"):0.01048,
+                    (6,0.5,"Z_MEM_PY","ZXXZonSqu","circuit_level"):0.00477,
+                    (6,0.5,"TOTAL_MEM_PY","ZXXZonSqu","circuit_level"):0.00496,
+
+
+                    # eta = 5
+                    (2,5,"X_MEM_PY","ZXXZonSqu","circuit_level"):0.00998,
+                    (2,5,"Z_MEM_PY","ZXXZonSqu","circuit_level"):0.0100,
+                    (2,5,"TOTAL_MEM_PY","ZXXZonSqu","circuit_level"):0.00974,
+
+                    (3,5,"X_MEM_PY","ZXXZonSqu","circuit_level"):0.01146,
+                    (3,5,"Z_MEM_PY","ZXXZonSqu","circuit_level"):0.00823,
+                    (3,5,"TOTAL_MEM_PY","ZXXZonSqu","circuit_level"):0.00871,
+
+                    (4,5,"X_MEM_PY","ZXXZonSqu","circuit_level"):0.01245,
+                    (4,5,"Z_MEM_PY","ZXXZonSqu","circuit_level"):0.00678,
+                    (4,5,"TOTAL_MEM_PY","ZXXZonSqu","circuit_level"):0.00728,
+
+                    (5,5,"X_MEM_PY","ZXXZonSqu","circuit_level"):0.01323,
+                    (5,5,"Z_MEM_PY","ZXXZonSqu","circuit_level"):0.00614,
+                    (5,5,"TOTAL_MEM_PY","ZXXZonSqu","circuit_level"):0.00631,
+
+                    (6,5,"X_MEM_PY","ZXXZonSqu","circuit_level"):0.01378,
+                    (6,5,"Z_MEM_PY","ZXXZonSqu","circuit_level"):0.00557,
+                    (6,5,"TOTAL_MEM_PY","ZXXZonSqu","circuit_level"):0.00569,
+
+                    # eta = 10 
+
+                    (2,10,"X_MEM_PY","ZXXZonSqu","circuit_level"):0.01638,
+                    (2,10,"Z_MEM_PY","ZXXZonSqu","circuit_level"):0.01038,
+                    (2,10,"TOTAL_MEM_PY","ZXXZonSqu","circuit_level"):0.01052,
+
+                    (3,10,"X_MEM_PY","ZXXZonSqu","circuit_level"):0.01205,
+                    (3,10,"Z_MEM_PY","ZXXZonSqu","circuit_level"):0.00850,
+                    (3,10,"TOTAL_MEM_PY","ZXXZonSqu","circuit_level"):0.00922,
+
+                    (4,10,"X_MEM_PY","ZXXZonSqu","circuit_level"):0.01325,
+                    (4,10,"Z_MEM_PY","ZXXZonSqu","circuit_level"):0.00740,
+                    (4,10,"TOTAL_MEM_PY","ZXXZonSqu","circuit_level"):0.00766,
+
+                    (5,10,"X_MEM_PY","ZXXZonSqu","circuit_level"):0.01401,
+                    (5,10,"Z_MEM_PY","ZXXZonSqu","circuit_level"):0.00641,
+                    (5,10,"TOTAL_MEM_PY","ZXXZonSqu","circuit_level"):0.00658,
+
+                    (6,10,"X_MEM_PY","ZXXZonSqu","circuit_level"):0.01479,
+                    (6,10,"Z_MEM_PY","ZXXZonSqu","circuit_level"):0.00570,
+                    (6,10,"TOTAL_MEM_PY","ZXXZonSqu","circuit_level"):0.00586,
+
+                    # eta = 25
+                    (2,25,"X_MEM_PY","ZXXZonSqu","circuit_level"):0.01076,
+                    (2,25,"Z_MEM_PY","ZXXZonSqu","circuit_level"):0.01008,
+                    (2,25,"TOTAL_MEM_PY","ZXXZonSqu","circuit_level"):0.01070,
+
+                    (3,25,"X_MEM_PY","ZXXZonSqu","circuit_level"):0.01251,
+                    (3,25,"Z_MEM_PY","ZXXZonSqu","circuit_level"):0.00882,
+                    (3,25,"TOTAL_MEM_PY","ZXXZonSqu","circuit_level"):0.00945,
+
+                    (4,25,"X_MEM_PY","ZXXZonSqu","circuit_level"):0.01397,
+                    (4,25,"Z_MEM_PY","ZXXZonSqu","circuit_level"):0.00751,
+                    (4,25,"TOTAL_MEM_PY","ZXXZonSqu","circuit_level"):0.00772,
+
+                    (5,25,"X_MEM_PY","ZXXZonSqu","circuit_level"):0.01487,
+                    (5,25,"Z_MEM_PY","ZXXZonSqu","circuit_level"):0.00677,
+                    (5,25,"TOTAL_MEM_PY","ZXXZonSqu","circuit_level"):0.00688,
+
+                    (6,25,"X_MEM_PY","ZXXZonSqu","circuit_level"):0.01574,
+                    (6,25,"Z_MEM_PY","ZXXZonSqu","circuit_level"):0.00603,
+                    (6,25,"TOTAL_MEM_PY","ZXXZonSqu","circuit_level"):0.00620,
+
+                    # eta = 50
+                    (2,50,"X_MEM_PY","ZXXZonSqu","circuit_level"):0.01082,
+                    (2,50,"Z_MEM_PY","ZXXZonSqu","circuit_level"):0.01087,
+                    (2,50,"TOTAL_MEM_PY","ZXXZonSqu","circuit_level"):0.01089,
+
+                    (3,50,"X_MEM_PY","ZXXZonSqu","circuit_level"):0.01285,
+                    (3,50,"Z_MEM_PY","ZXXZonSqu","circuit_level"):0.00897,
+                    (3,50,"TOTAL_MEM_PY","ZXXZonSqu","circuit_level"):0.00960,
+
+                    (4,50,"X_MEM_PY","ZXXZonSqu","circuit_level"):0.01420,
+                    (4,50,"Z_MEM_PY","ZXXZonSqu","circuit_level"):0.00772,
+                    (4,50,"TOTAL_MEM_PY","ZXXZonSqu","circuit_level"):0.00802,
+
+                    (5,50,"X_MEM_PY","ZXXZonSqu","circuit_level"):0.01536,
+                    (5,50,"Z_MEM_PY","ZXXZonSqu","circuit_level"):0.00683,
+                    (5,50,"TOTAL_MEM_PY","ZXXZonSqu","circuit_level"):0.00704,
+
+                    (6,50,"X_MEM_PY","ZXXZonSqu","circuit_level"):0.01629,
+                    (6,50,"Z_MEM_PY","ZXXZonSqu","circuit_level"):0.00618,
+                    (6,50,"TOTAL_MEM_PY","ZXXZonSqu","circuit_level"):0.00641 }
+
+
+
+                    # (2,0.5,"X_MEM_PY", "SC","circuit_level"):0.00852, (2,0.5,"Z_MEM_PY", "SC","circuit_level"):0.00869, (2,0.5,"TOTAL_MEM_PY", "SC","circuit_level"):0.00859,
+                    # (3,0.5,"X_MEM_PY","SC", "circuit_level"):0.00897, (3,0.5,"Z_MEM_PY", "SC","circuit_level"):0.00721, (3,0.5,"TOTAL_MEM_PY", "SC","circuit_level"):0.00768,
+                    # (4,0.5,"X_MEM_PY", "SC","circuit_level"):0.00949, (4,0.5,"Z_MEM_PY", "SC","circuit_level"):0.00620, (4,0.5,"TOTAL_MEM_PY", "SC","circuit_level"):0.00652,
+                    # (5,0.5,"X_MEM_PY", "SC","circuit_level"):0.00996, (5,0.5,"Z_MEM_PY", "SC","circuit_level"):0.00546, (5,0.5,"TOTAL_MEM_PY", "SC","circuit_level"):0.00,
+                    # (6,0.5,"X_MEM_PY","SC", "circuit_level"):0.00935, (6,0.5,"Z_MEM_PY", "SC","circuit_level"):0.00466, (6,0.5,"TOTAL_MEM_PY", "SC","circuit_level"):0.00474,
+                    # (2,5,"X_MEM_PY", "SC","circuit_level"):0.00721, (2,5,"Z_MEM_PY", "SC","circuit_level"):0.00736, (2,5,"TOTAL_MEM_PY", "SC","circuit_level"):0.00728,
+                    # (3,5,"X_MEM_PY","SC", "circuit_level"):0.00935, (3,5,"Z_MEM_PY", "SC","circuit_level"):0.00466, (3,5,"TOTAL_MEM_PY", "SC","circuit_level"):0.00474,
+                    # (4,5,"X_MEM_PY", "SC","circuit_level"):0.01027, (4,5,"Z_MEM_PY", "SC","circuit_level"):0.00354, (4,5,"TOTAL_MEM_PY", "SC","circuit_level"):0.00348,
+                    # (5,5,"X_MEM_PY", "SC","circuit_level"):0.00721, (5,5,"Z_MEM_PY", "SC","circuit_level"):0.00736, (5,5,"TOTAL_MEM_PY", "SC","circuit_level"):0.00728,
+                    # (6,5,"X_MEM_PY","SC", "circuit_level"):0.00935, (6,5,"Z_MEM_PY", "SC","circuit_level"):0.00466, (6,5,"TOTAL_MEM_PY", "SC","circuit_level"):0.00474,
+                    # (2,10,"X_MEM_PY", "SC","circuit_level"):0.00721, (2,10,"Z_MEM_PY", "SC","circuit_level"):0.00736, (2,10,"TOTAL_MEM_PY", "SC","circuit_level"):0.00728,
+                    # (3,10,"X_MEM_PY","SC", "circuit_level"):0.00935, (3,10,"Z_MEM_PY", "SC","circuit_level"):0.00466, (3,10,"TOTAL_MEM_PY", "SC","circuit_level"):0.00474,
+                    # (4,10,"X_MEM_PY", "SC","circuit_level"):0.01027, (4,10,"Z_MEM_PY", "SC","circuit_level"):0.00354, (4,10,"TOTAL_MEM_PY", "SC","circuit_level"):0.00348,
+                    # (5,10,"X_MEM_PY", "SC","circuit_level"):0.00721, (5,10,"Z_MEM_PY", "SC","circuit_level"):0.00736, (5,10,"TOTAL_MEM_PY", "SC","circuit_level"):0.00728,
+                    # (6,10,"X_MEM_PY","SC", "circuit_level"):0.00935, (6,10,"Z_MEM_PY", "SC","circuit_level"):0.00466, (6,10,"TOTAL_MEM_PY", "SC","circuit_level"):0.00474,
+                    # (2,25,"X_MEM_PY", "SC","circuit_level"):0.00721, (2,25,"Z_MEM_PY", "SC","circuit_level"):0.00736, (2,25,"TOTAL_MEM_PY", "SC","circuit_level"):0.00728,
+                    # (3,25,"X_MEM_PY","SC", "circuit_level"):0.00935, (3,25,"Z_MEM_PY", "SC","circuit_level"):0.00466, (3,25,"TOTAL_MEM_PY", "SC","circuit_level"):0.00474,
+                    # (4,25,"X_MEM_PY", "SC","circuit_level"):0.01027, (4,25,"Z_MEM_PY", "SC","circuit_level"):0.00354, (4,25,"TOTAL_MEM_PY", "SC","circuit_level"):0.00348,
+                    # (5,25,"X_MEM_PY", "SC","circuit_level"):0.00721, (5,25,"Z_MEM_PY", "SC","circuit_level"):0.00736, (5,25,"TOTAL_MEM_PY", "SC","circuit_level"):0.00728,
+                    # (6,25,"X_MEM_PY","SC", "circuit_level"):0.00935, (6,25,"Z_MEM_PY", "SC","circuit_level"):0.00466, (6,25,"TOTAL_MEM_PY", "SC","circuit_level"):0.00474,
+                    # (2,50,"X_MEM_PY", "SC","circuit_level"):0.00721, (2,50,"Z_MEM_PY", "SC","circuit_level"):0.00736, (2,50,"TOTAL_MEM_PY", "SC","circuit_level"):0.00728,
+                    # (3,50,"X_MEM_PY","SC", "circuit_level"):0.00935, (3,50,"Z_MEM_PY", "SC","circuit_level"):0.00466, (3,50,"TOTAL_MEM_PY", "SC","circuit_level"):0.00474,
+                    # (4,50,"X_MEM_PY", "SC","circuit_level"):0.01027, (4,50,"Z_MEM_PY", "SC","circuit_level"):0.00354, (4,50,"TOTAL_MEM_PY", "SC","circuit_level"):0.00348,
+                    # (5,50,"X_MEM_PY", "SC","circuit_level"):0.00721, (5,50,"Z_MEM_PY", "SC","circuit_level"):0.00736, (5,50,"TOTAL_MEM_PY", "SC","circuit_level"):0.00728,
+                    # (6,50,"X_MEM_PY","SC", "circuit_level"):0.00935, (6,50,"Z_MEM_PY", "SC","circuit_level"):0.00466, (6,50,"TOTAL_MEM_PY", "SC","circuit_level"):0.00474,
+                    # (2,0.5,"X_MEM_PY", "ZXXZonSqu","circuit_level"):0.00721, (2,0.5,"Z_MEM_PY", "ZXXZonSqu","circuit_level"):0.00736, (2,0.5,"TOTAL_MEM_PY", "ZXXZonSqu","circuit_level"):0.00728,
+                    # (3,0.5,"X_MEM_PY","ZXXZonSqu", "circuit_level"):0.00935, (3,0.5,"Z_MEM_PY", "ZXXZonSqu","circuit_level"):0.00466, (3,0.5,"TOTAL_MEM_PY", "ZXXZonSqu","circuit_level"):0.00474,
+                    # (4,0.5,"X_MEM_PY", "ZXXZonSqu","circuit_level"):0.01027, (4,0.5,"Z_MEM_PY", "ZXXZonSqu","circuit_level"):0.00354, (4,0.5,"TOTAL_MEM_PY", "ZXXZonSqu","circuit_level"):0.00348,
+                    # (5,0.5,"X_MEM_PY", "ZXXZonSqu","circuit_level"):0.00721, (5,0.5,"Z_MEM_PY", "ZXXZonSqu","circuit_level"):0.00736, (5,0.5,"TOTAL_MEM_PY", "ZXXZonSqu","circuit_level"):0.00728,
+                    # (6,0.5,"X_MEM_PY","ZXXZonSqu", "circuit_level"):0.00935, (6,0.5,"Z_MEM_PY", "ZXXZonSqu","circuit_level"):0.00466, (6,0.5,"TOTAL_MEM_PY", "ZXXZonSqu","circuit_level"):0.00474,
+                    # (2,5,"X_MEM_PY", "ZXXZonSqu","circuit_level"):0.00721, (2,5,"Z_MEM_PY", "ZXXZonSqu","circuit_level"):0.00736, (2,5,"TOTAL_MEM_PY", "ZXXZonSqu","circuit_level"):0.00728,
+                    # (3,5,"X_MEM_PY","ZXXZonSqu", "circuit_level"):0.00935, (3,5,"Z_MEM_PY", "ZXXZonSqu","circuit_level"):0.00466, (3,5,"TOTAL_MEM_PY", "ZXXZonSqu","circuit_level"):0.00474,
+                    # (4,5,"X_MEM_PY", "ZXXZonSqu","circuit_level"):0.01027, (4,5,"Z_MEM_PY", "ZXXZonSqu","circuit_level"):0.00354, (4,5,"TOTAL_MEM_PY", "ZXXZonSqu","circuit_level"):0.00348,
+                    # (5,5,"X_MEM_PY", "ZXXZonSqu","circuit_level"):0.00721, (5,5,"Z_MEM_PY", "ZXXZonSqu","circuit_level"):0.00736, (5,5,"TOTAL_MEM_PY", "ZXXZonSqu","circuit_level"):0.00728,
+                    # (6,5,"X_MEM_PY","ZXXZonSqu", "circuit_level"):0.00935, (6,5,"Z_MEM_PY", "ZXXZonSqu","circuit_level"):0.00466, (6,5,"TOTAL_MEM_PY", "ZXXZonSqu","circuit_level"):0.00474,
+                    # (2,10,"X_MEM_PY", "ZXXZonSqu","circuit_level"):0.00721, (2,10,"Z_MEM_PY", "ZXXZonSqu","circuit_level"):0.00736, (2,10,"TOTAL_MEM_PY", "ZXXZonSqu","circuit_level"):0.00728,
+                    # (3,10,"X_MEM_PY","ZXXZonSqu", "circuit_level"):0.00935, (3,10,"Z_MEM_PY", "ZXXZonSqu","circuit_level"):0.00466, (3,10,"TOTAL_MEM_PY", "ZXXZonSqu","circuit_level"):0.00474,
+                    # (4,10,"X_MEM_PY", "ZXXZonSqu","circuit_level"):0.01027, (4,10,"Z_MEM_PY", "ZXXZonSqu","circuit_level"):0.00354, (4,10,"TOTAL_MEM_PY", "ZXXZonSqu","circuit_level"):0.00348,
+                    # (5,10,"X_MEM_PY", "ZXXZonSqu","circuit_level"):0.00721, (5,10,"Z_MEM_PY", "ZXXZonSqu","circuit_level"):0.00736, (5,10,"TOTAL_MEM_PY", "ZXXZonSqu","circuit_level"):0.00728,
+                    # (6,10,"X_MEM_PY","ZXXZonSqu", "circuit_level"):0.00935, (6,10,"Z_MEM_PY", "ZXXZonSqu","circuit_level"):0.00466, (6,10,"TOTAL_MEM_PY", "ZXXZonSqu","circuit_level"):0.00474,
+                    # (2,25,"X_MEM_PY", "ZXXZonSqu","circuit_level"):0.00721, (2,25,"Z_MEM_PY", "ZXXZonSqu","circuit_level"):0.00736, (2,25,"TOTAL_MEM_PY", "ZXXZonSqu","circuit_level"):0.00728,
+                    # (3,25,"X_MEM_PY","ZXXZonSqu", "circuit_level"):0.00935, (3,25,"Z_MEM_PY", "ZXXZonSqu","circuit_level"):0.00466, (3,25,"TOTAL_MEM_PY", "ZXXZonSqu","circuit_level"):0.00474,
+                    # (4,25,"X_MEM_PY", "ZXXZonSqu","circuit_level"):0.01027, (4,25,"Z_MEM_PY", "ZXXZonSqu","circuit_level"):0.00354, (4,25,"TOTAL_MEM_PY", "ZXXZonSqu","circuit_level"):0.00348,
+                    # (5,25,"X_MEM_PY", "ZXXZonSqu","circuit_level"):0.00721, (5,25,"Z_MEM_PY", "ZXXZonSqu","circuit_level"):0.00736, (5,25,"TOTAL_MEM_PY", "ZXXZonSqu","circuit_level"):0.00728,
+                    # (6,25,"X_MEM_PY","ZXXZonSqu", "circuit_level"):0.00935, (6,25,"Z_MEM_PY", "ZXXZonSqu","circuit_level"):0.00466, (6,25,"TOTAL_MEM_PY", "ZXXZonSqu","circuit_level"):0.00474,
+                    # (2,50,"X_MEM_PY", "ZXXZonSqu","circuit_level"):0.00721, (2,50,"Z_MEM_PY", "ZXXZonSqu","circuit_level"):0.00736, (2,50,"TOTAL_MEM_PY", "ZXXZonSqu","circuit_level"):0.00728,
+                    # (3,50,"X_MEM_PY","ZXXZonSqu", "circuit_level"):0.00935, (3,50,"Z_MEM_PY", "ZXXZonSqu","circuit_level"):0.00466, (3,50,"TOTAL_MEM_PY", "ZXXZonSqu","circuit_level"):0.00474,
+                    # (4,50,"X_MEM_PY", "ZXXZonSqu","circuit_level"):0.01027, (4,50,"Z_MEM_PY", "ZXXZonSqu","circuit_level"):0.00354, (4,50,"TOTAL_MEM_PY", "ZXXZonSqu","circuit_level"):0.00348,
+                    # (5,50,"X_MEM_PY", "ZXXZonSqu","circuit_level"):0.00721, (5,50,"Z_MEM_PY", "ZXXZonSqu","circuit_level"):0.00736, (5,50,"TOTAL_MEM_PY", "ZXXZonSqu","circuit_level"):0.00728,
+                    # (6,50,"X_MEM_PY","ZXXZonSqu", "circuit_level"):0.00935, (6,50,"Z_MEM_PY", "ZXXZonSqu","circuit_level"):0.00466, (6,50,"TOTAL_MEM_PY", "ZXXZonSqu","circuit_level"):0.00474}
 
     #### parameters
 
@@ -2206,7 +2435,8 @@ if __name__ == "__main__":
     # p_list = np.linspace(p_th_init-0.03, p_th_init + 0.03, 40)
 
     # otherwise p_list is range of probabilities
-    p_list = np.logspace(-2.5, -1.5, 40)
+    # p_list = np.logspace(-2.5, -1.5, 40)
+    p_list = None
 
     l_list = [2,3,4,5,6] # elongation params
     d_list = [11,13,15,17,19] # code distances
@@ -2240,7 +2470,7 @@ if __name__ == "__main__":
 
 
     # run this to get data from the dcc
-    get_data_DCC(circuit_data, corr_decoding, noise_model, d_list, l_list, eta_list, cd_list, corr_list, total_num_shots, p_list=p_list, p_th_init_d=None, pymatch_corr=py_corr)
+    get_data_DCC(circuit_data, corr_decoding, noise_model, d_list, l_list, eta_list, cd_list, corr_list, total_num_shots, p_list=None, p_th_init_d=p_th_init_CL, pymatch_corr=py_corr)
 
     # run this once you have data and want to combo it to one csv
     # concat_csv(folder_path, circuit_data)
@@ -2249,7 +2479,7 @@ if __name__ == "__main__":
     # plot the threshold results
 
     # eta - 0.5, 5, 10, 25, 50, retake for lower ranges at lower eta 
-    # l - 2,4,6
+    # l - 2,3,4,5,6
     # no corr
     # num_shots - 30303, total - 1e6
     # d - 11-19 odd 
@@ -2258,20 +2488,20 @@ if __name__ == "__main__":
 
 
     # params to plot
-    # eta = 25
-    # l = 5
-    # curr_num_shots = 20408.0
-    # noise_model = "circuit_level"
-    # CD_type = "SC"
-    # py_corr = False # whether to use pymatching correlated decoder for circuit data
-    # corr_decoding = False # whether to get data for correlated decoding using my decoder
-    # error_type = "TOTAL_MEM" # which type of error to plot, choose from ['X_MEM', 'Z_MEM', 'TOTAL_MEM', 'TOTAL_PY_MEM', 'TOTAL_MEM_PY_CORR']
-    # p_range = 0.001
+    eta = 50
+    l = 6
+    curr_num_shots = 52631.0
+    noise_model = "circuit_level"
+    CD_type = "ZXXZonSqu"
+    py_corr = True # whether to use pymatching correlated decoder for circuit data
+    corr_decoding = False # whether to get data for correlated decoding using my decoder
+    error_type = "TOTAL_MEM" # which type of error to plot, choose from ['X_MEM', 'Z_MEM', 'TOTAL_MEM', 'TOTAL_PY_MEM', 'TOTAL_MEM_PY_CORR']
+    p_range = 0.001
 
 
-    # df = pd.read_csv(output_file)
+    df = pd.read_csv(output_file)
 
-    # full_error_plot(df,eta,l,curr_num_shots,noise_model, CD_type, output_file,corr_decoding=corr_decoding, py_corr=py_corr, circuit_level=circuit_data)
+    full_error_plot(df,eta,l,curr_num_shots,noise_model, CD_type, output_file,corr_decoding=corr_decoding, py_corr=py_corr, circuit_level=circuit_data)
 
 
     # make a plot for specific thresholds

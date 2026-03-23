@@ -323,7 +323,7 @@ def stabilizers_svg(code: CompassCode, filename, CD_data, edges = "all", type = 
     ######### TEST
     # CD_MatchingGraph(d, code, CD_data, q_vertices, type, weight = edges, high_weight = high_weight)
     ######### TEST
-    vertices(d, q_vertices, vertex_radius, color_vertex, CD_data) # qubits at vertices
+    # vertices(d, q_vertices, vertex_radius, color_vertex, CD_data) # qubits at vertices
     
     with open(filename, "w") as f:
         d.as_svg(f)
@@ -371,12 +371,12 @@ def CompassModel(code, filename):
         d.as_svg(f)   
    
 if __name__ == "__main__":
-    L = 7
-    ell = 3
+    L = 5
+    ell = 2
     code = CompassCode(L, l=ell)
     
     CD_data = np.zeros(L**2)
-    CDtype= "ZXXZonSqu"
+    CDtype= "SC"
     if CDtype =="XZZX": 
         #XZZX 
         for i in range(L**2):
