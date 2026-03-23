@@ -604,8 +604,10 @@ class CorrelatedDecoder:
             :param return_predictions: (bool) include the prediction in the return value
 
             :return unsigned_gap: (array) decoder confidence from comparing two matchings
-            :return matching_correction: (array) the edges included in the solution to the I_L matching
-            :return comp_matching_correction: (array) the edges in the solution to hte X_L/Z_L matching
+            :return matching_correction: (array) the edges included in the min weight solution
+            :return comp_matching_correction: (array) the edges in the solution to complementary solution
+            :return pred_min: (bool) whether the min weight decoder solution flipped a logical
+            :return pred_picked: (int) whether the solution is connected to boundaries(no boundaries) - 1(0)
         """
         
         comp_matching = Matching()
@@ -683,14 +685,17 @@ class CorrelatedDecoder:
         edges_in_pred0 = np.array(comp_matching.decode_to_edges_array(det0))
         edges_in_pred1 = np.array(comp_matching.decode_to_edges_array(det1))
 
+
         # signed gap
         if W_reg == W0: # MWPM picked pred0 solution
+            pred_picked = 0
             W_min = W0
             pred_min = pred0
             W_comp = W1
             edges_in_correction = np.where(np.logical_or((edges_in_pred0 == b1) ,(edges_in_pred0 == b2)), -1, edges_in_pred0)
             edges_in_comp_correction = np.where(np.logical_or((edges_in_pred1 == b1), (edges_in_pred1 == b2)), -1, edges_in_pred1)
         else: # MWPM picked pred 1 solution 
+            pred_picked = 1
             W_min = W1
             pred_min = pred1
             W_comp = W0
@@ -698,16 +703,18 @@ class CorrelatedDecoder:
             edges_in_comp_correction = np.where(np.logical_or((edges_in_pred0 == b1), (edges_in_pred0 == b2)), -1, edges_in_pred0)
         
 
-        if pred_min == observable_flip: # MWPM was successful 
-            signed_gap = W_comp - W_min
-        else:
-            signed_gap = W_min - W_comp
+        # if pred_min == observable_flip: # MWPM was successful 
+        #     signed_gap = W_comp - W_min
+        # else:
+        #     signed_gap = W_min - W_comp
+
+        unsigned_gap = W_comp - W_min
 
 
         if return_predictions:
-            return signed_gap, edges_in_correction, edges_in_comp_correction, pred_min
+            return unsigned_gap, edges_in_correction, edges_in_comp_correction, pred_min, pred_picked
         else:
-            return signed_gap, edges_in_correction, edges_in_comp_correction
+            return unsigned_gap, edges_in_correction, edges_in_comp_correction
 
 
 
@@ -1249,6 +1256,8 @@ class CorrelatedDecoder:
 
         corrections = np.zeros((shots, 2)) # largest fault id is 1, len of correction = 2
         for i in range(shots):
+            # first check if original matching was good
+
             # print(syndrome[i].shape)
             edges_in_correction = matchgraph.decode_to_edges_array(syndrome[i])
             # print("edges in correction inside function from mycorr", edges_in_correction)
