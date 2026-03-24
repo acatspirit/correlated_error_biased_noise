@@ -1011,13 +1011,13 @@ class CorrelatedDecoder:
                     continue 
 
                 joint_p = joint_prob_dict.get(edge_1, {}).get(edge_2,0)
-                # edge_check_type = self.edge_type_d[edge_2] # have to make sure this is populated by the time I populate
+                edge_check_type = self.edge_type_d[edge_2] # have to make sure this is populated by the time I populate
 
                 scale = 1
-                # if edge_check_type == "X": # edge_2 is a Z error since it's checks are X type.
-                #     scale = self.eta/(self.eta + 1)
-                # elif edge_check_type == "Z": # edge_2 is an X error
-                #     scale = 1/2*(self.eta + 1)
+                if edge_check_type == "X": # edge_2 is a Z error since it's checks are X type.
+                    scale = self.eta/(self.eta + 1)
+                elif edge_check_type == "Z": # edge_2 is an X error
+                    scale = 1/2*(self.eta + 1)
 
 
                 # conditional probability calculation. Min taken because weights cannot be negative, and eta=0.5 represents a full erasure channel
@@ -1125,7 +1125,7 @@ class CorrelatedDecoder:
             # fix the boundary nodes comparison because pymatching is inconsistent
             edge = tuple([u if (v is not None) else -1, v if (v is not None) else u])
             
-            if np.abs(edge_weight_dB_scale*unsigned_gap) < cutoff: # when the confidence is low choose the complementary path
+            if np.abs(edge_weight_dB_scale*unsigned_gap) <= cutoff: # when the confidence is low choose the complementary path
                 if edge in mwpm_correction:
                     weights[(u,v)] = 1e6
                 else:
@@ -1987,7 +1987,7 @@ def get_data_DCC(circuit_data, corr_decoding, noise_model, d_list, l_list, eta_l
         print("l,eta,cd_type", l,eta, cd_type)
         corr_type = "None"
         if p_th_init_d is not None:
-            p_th_init = p_th_init_d[(l, eta, cd_type,noise_model)] # add the mem type somehow
+            p_th_init = p_th_init_d[(l, eta, "TOTAL_MEM_PY", cd_type,noise_model)] # add the mem type somehow
             p_list = np.linspace(p_th_init - 0.001, p_th_init + 0.001, 40)
         write_data(num_shots, d_list, l, p_list, eta, task_id, corr_type, circuit_data=circuit_data, noise_model=noise_model, cd_type=cd_type, corr_decoding=corr_decoding, pymatch_corr=pymatch_corr)
     
