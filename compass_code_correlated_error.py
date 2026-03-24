@@ -2493,20 +2493,20 @@ if __name__ == "__main__":
 
 
     # params to plot
-    eta = 50
-    l = 6
-    curr_num_shots = 52631.0
-    noise_model = "circuit_level"
-    CD_type = "ZXXZonSqu"
-    py_corr = True # whether to use pymatching correlated decoder for circuit data
-    corr_decoding = False # whether to get data for correlated decoding using my decoder
-    error_type = "TOTAL_MEM" # which type of error to plot, choose from ['X_MEM', 'Z_MEM', 'TOTAL_MEM', 'TOTAL_PY_MEM', 'TOTAL_MEM_PY_CORR']
-    p_range = 0.001
+    # eta = 50
+    # l = 6
+    # curr_num_shots = 52631.0
+    # noise_model = "circuit_level"
+    # CD_type = "ZXXZonSqu"
+    # py_corr = True # whether to use pymatching correlated decoder for circuit data
+    # corr_decoding = False # whether to get data for correlated decoding using my decoder
+    # error_type = "TOTAL_MEM" # which type of error to plot, choose from ['X_MEM', 'Z_MEM', 'TOTAL_MEM', 'TOTAL_PY_MEM', 'TOTAL_MEM_PY_CORR']
+    # p_range = 0.001
 
 
-    df = pd.read_csv(output_file)
+    # df = pd.read_csv(output_file)
 
-    full_error_plot(df,eta,l,curr_num_shots,noise_model, CD_type, output_file,corr_decoding=corr_decoding, py_corr=py_corr, circuit_level=circuit_data)
+    # full_error_plot(df,eta,l,curr_num_shots,noise_model, CD_type, output_file,corr_decoding=corr_decoding, py_corr=py_corr, circuit_level=circuit_data)
 
 
     # make a plot for specific thresholds
