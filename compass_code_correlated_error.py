@@ -983,7 +983,7 @@ class CorrelatedDecoder:
                 
         return joint_probs, fault_ids 
     
-    def get_conditional_prob(self, joint_prob_dict):
+    def get_conditional_prob(self, joint_prob_dict, decompose_biased):
         """ Given a joint probability dictionary, calculates the conditional probabilities for each hyperedge. The conditional probability is given by 
             P(A|B) = P(A^B)/P(A)
             Where A and B are edges from decomposed hyperedges. The marginal probability is P(A), and the joint probability is P(A^B). The maximum conditional probability is 0.5
@@ -1012,12 +1012,14 @@ class CorrelatedDecoder:
 
                 joint_p = joint_prob_dict.get(edge_1, {}).get(edge_2,0)
                 edge_check_type = self.edge_type_d[edge_2] # have to make sure this is populated by the time I populate
+                # print(edge_check_type, edge_2)
 
                 scale = 1
-                if edge_check_type == "X": # edge_2 is a Z error since it's checks are X type.
-                    scale = self.eta/(self.eta + 1)
-                elif edge_check_type == "Z": # edge_2 is an X error
-                    scale = 1/2*(self.eta + 1)
+                if decompose_biased:
+                    if edge_check_type == "X": # edge_2 is a Z error since it's checks are X type.
+                        scale = self.eta/(self.eta + 1)
+                    elif edge_check_type == "Z": # edge_2 is an X error
+                        scale = 1/2*(self.eta + 1)
 
 
                 # conditional probability calculation. Min taken because weights cannot be negative, and eta=0.5 represents a full erasure channel
@@ -1206,13 +1208,16 @@ class CorrelatedDecoder:
     # Decoding
     #
 
-    def decoding_failures_correlated_circuit_level(self, circuit, shots, mem_type, CD_type):
+    def decoding_failures_correlated_circuit_level(self, circuit, shots, mem_type, CD_type, decompose_biased=True):
         """
         Finds the number of logical errors given a circuit using correlated decoding. Uses pymatching's correlated decoding approach, inspired by
         papers cited in the README.
         :param circuit: stim.Circuit object, the circuit to decode
         :param p: physical error rate
         :param shots: number of shots to sample
+        :param memtype: basis to run memory experiment
+        :param CD_type: the clifford deformation type applied to the code
+        :param decompose_biased: whether to decompose hyperedges with bias in mind or give equal weight to X and Z components
         :return: number of logical errors
         """
 
@@ -1229,7 +1234,7 @@ class CorrelatedDecoder:
         joint_prob_dict, fault_ids = self.get_joint_prob(dem)
         
         # calculate the conditional probabilities based on joint probablities and marginal probabilities 
-        cond_prob_dict = self.get_conditional_prob(joint_prob_dict)
+        cond_prob_dict = self.get_conditional_prob(joint_prob_dict, decompose_biased)
 
         # instead of performing the first round of error correction and going based on this, create a MWPM graph based on hyperedges in joint_prob_dict
 
