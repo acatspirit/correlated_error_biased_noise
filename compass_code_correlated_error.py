@@ -285,7 +285,7 @@ class CorrelatedDecoder:
     
     def get_edge_type_from_detector(self, edge, mem_type, CD_data_transform) -> int:
         """
-        Returns the edge type (0 or 1) for a given edge in the DEM. Type 0(1) use pauli X(Z) measurements. 
+        Returns the edge type (0 or 1) for a given edge in the DEM. Type 0(1) connect Pauli X(Z) measurements.  
         """
         d1 = edge[0]
         d2 = edge[1]
@@ -1005,7 +1005,7 @@ class CorrelatedDecoder:
             adjacent_edge_dict = joint_prob_dict.get(edge_1, {})
 
             # populate cond_prob dictionary 
-            for edge_2 in adjacent_edge_dict:
+            for edge_2 in adjacent_edge_dict: # in the other function, e1 is edge in correction and e2 is the edge affected. Here it is different
 
                 if edge_1 == edge_2:  
                     continue 
@@ -1289,14 +1289,14 @@ class CorrelatedDecoder:
         # get the hyperedge data + set up original matching
         dem = circuit.detector_error_model(decompose_errors=True, flatten_loops=True, approximate_disjoint_errors=True)
         matchgraph = Matching.from_detector_error_model(dem, enable_correlations=False)
-        
-        # self.edge_type_d = self.get_edge_type_d(dem, mem_type, CD_type) to be implemented??
+        self.edge_type_d = self.get_edge_type_d(dem, mem_type, CD_type)
 
         # get the joint probabilities table of the dem hyperedges
         joint_prob_dict, fault_ids = self.get_joint_prob(dem)
         
         # calculate the conditional probabilities based on joint probablities and marginal probabilities 
-        cond_prob_dict = self.get_conditional_prob(joint_prob_dict)
+        cond_prob_dict = self.get_conditional_prob(joint_prob_dict, decompose_biased=False)
+
 
 
         #
@@ -1314,27 +1314,25 @@ class CorrelatedDecoder:
         for shot in range(shots):
             us_gap, edges_in_correction, edges_in_comp_correction, pred_min, pred_picked = self.get_complementary_correction(dem, detection_events[shot], observable_flips[shot], return_predictions=True)
 
-            # check if mwpm first round was correct
-            # if us_gap > 0:
-            #     corrections[shot] = pred_min
-            #     continue
             
-            # when first pass mwpm is incorrect, reweight with comp_gap
-            comp_weights,comp_fault_ids = self.compute_edge_weights_from_comp_gap(edges_in_correction,edges_in_comp_correction, matchgraph, us_gap, cutoff)
-            comp_matching = self.build_matching_from_weights(comp_weights, comp_fault_ids, matchgraph.num_nodes)
-            # comp_observable = comp_matching.decode(detection_events[shot])
+            # when the first pass of MWPM is not confident, get the complementary graph 
+            if us_gap < cutoff:
+                comp_weights,comp_fault_ids = self.compute_edge_weights_from_comp_gap(edges_in_correction,edges_in_comp_correction, matchgraph, us_gap, cutoff)
+                comp_matching = self.build_matching_from_weights(comp_weights, comp_fault_ids, matchgraph.num_nodes)
 
-            # set the logical observable to the comp one if it was right
-            # if comp_observable == observable_flips[shot]: # comp step was good, stop here
-            #     corrections[shot] = comp_observable
-            #     continue
+                # hyperedge adjustment based on comp correction
+                hyperedge_weights, hyperedge_fault_ids = self.compute_edge_weights_from_conditional_probs(edges_in_comp_correction,
+                                                                                                                comp_matching,
+                                                                                                                cond_prob_dict,
+                                                                                                                comp_fault_ids)
 
-            # mwpm and comp_mwpm were incorrect, reweight hyperedges based on comp_correction
-            hyperedge_weights, hyperedge_fault_ids = self.compute_edge_weights_from_conditional_probs(edges_in_comp_correction,
-                                                                                                            comp_matching,
-                                                                                                            cond_prob_dict,
-                                                                                                            comp_fault_ids)
+            else: # the first correction is confident, just do regular hyperedge decomposition on correction
+                hyperedge_weights, hyperedge_fault_ids = self.compute_edge_weights_from_conditional_probs(edges_in_correction,
+                                                                                                                matchgraph,
+                                                                                                                cond_prob_dict,
+                                                                                                                fault_ids)
             hyperedge_matching = self.build_matching_from_weights(hyperedge_weights, hyperedge_fault_ids,matchgraph.num_nodes)
+            
             corrections[shot] = hyperedge_matching.decode(detection_events[shot])
         
         log_errors_array = np.any(np.array(observable_flips) != np.array(corrections), axis=1)
