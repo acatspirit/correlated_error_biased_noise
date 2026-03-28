@@ -1450,7 +1450,7 @@ class CorrelatedDecoder:
 #
 ############################################
 
-def get_data(num_shots, d_list, l, p_list, eta, corr_type, circuit_data, noise_model="code_cap", cd_type="SC", corr_decoding=False, pymatch_corr=False):
+def get_data(num_shots, d_list, l, p_list, eta, corr_type, circuit_data, noise_model="circuit_level", cd_type="SC", corr_decoding=False, pymatch_corr=False):
     """ Generate logical error rates for x,z, correlatex z, and total errors
         via MC sim in decoding_failures_correlated and add it to a shared pandas df
         
@@ -1758,6 +1758,7 @@ def threshold_plot(full_df, p_th0, p_range, curr_eta, curr_l, curr_num_shots, co
 
     # Filter the DataFrame based on the input parameters
     filtered_df = full_df[(full_df['p'] > p_th0 - p_range)&(full_df['p'] < p_th0 + p_range)&(full_df['l'] == curr_l) & (full_df['eta'] == curr_eta) & (full_df['num_shots'] == curr_num_shots) & (full_df['noise_model'] == noise_model) & (full_df['CD_type'] == CD_type)]
+    
     if py_corr: 
         filtered_df = filtered_df[filtered_df['error_type'].isin(['X_MEM_PY', 'Z_MEM_PY', 'TOTAL_MEM_PY'])]
     elif corr_decoding:
@@ -1768,7 +1769,7 @@ def threshold_plot(full_df, p_th0, p_range, curr_eta, curr_l, curr_num_shots, co
         else:
             filtered_df = filtered_df[filtered_df['error_type'].isin(['X', 'Z', 'TOTAL', 'CORR_XZ', 'CORR_ZX'])]
     
-
+    
     d_values = filtered_df['d'].unique()
     num_lines = len(d_values)
     cmap = colormaps['Blues_r']
@@ -1809,7 +1810,7 @@ def threshold_plot(full_df, p_th0, p_range, curr_eta, curr_l, curr_num_shots, co
             if loglog:
                 ax.loglog(np.array(p_list)*prob_scale, y_fit, linestyle='--', color='red')
             else:
-                print(p_list, y_fit)
+                # print(p_list, y_fit)
                 ax.plot(np.array(p_list)*prob_scale, y_fit, linestyle='--', color='red')
 
     
@@ -1913,8 +1914,9 @@ def get_threshold(full_df, pth0, p_range, l, eta, error_type, num_shots, CD_type
         in: df - the dataframe containing all data, filtered for one error_type, l eta, and probability range
         out: p_thr - a float, the probability where intersection of different lattice distances occurred
     """
-    print(f"Getting threshold for l = {l}, eta = {eta}, error type = {error_type}, num_shots = {num_shots}")
+    print(f"Getting threshold for l = {l}, eta = {eta}, error type = {error_type}, num_shots = {num_shots}, CD = {CD_type}")
     df = full_df[(full_df['p'] < pth0 + p_range) & ( full_df['p'] > pth0 - p_range) & (full_df['l'] == l) & (full_df['eta'] == eta) & (full_df['error_type'] == error_type) & (full_df['num_shots'] == num_shots) & (full_df['CD_type'] == CD_type)]
+    # print(df.head)
     # df = full_df
     if df.empty:
         return 0, 0
@@ -1990,7 +1992,7 @@ def get_data_DCC(circuit_data, corr_decoding, noise_model, d_list, l_list, eta_l
         print("l,eta,cd_type", l,eta, cd_type)
         corr_type = "None"
         if p_th_init_d is not None:
-            p_th_init = p_th_init_d[(l, eta, "TOTAL_MEM_PY", cd_type,noise_model)] # add the mem type somehow
+            p_th_init = p_th_init_d[(l, eta, "TOTAL_MEM_CORR", cd_type,noise_model)] # add the mem type somehow
             p_list = np.linspace(p_th_init - 0.001, p_th_init + 0.001, 40)
         write_data(num_shots, d_list, l, p_list, eta, task_id, corr_type, circuit_data=circuit_data, noise_model=noise_model, cd_type=cd_type, corr_decoding=corr_decoding, pymatch_corr=pymatch_corr)
     
@@ -2036,6 +2038,7 @@ def get_thresholds_from_data_exactish(num_shots, p_th_init_dict, p_range, output
 
         p_th_init = p_th_init_dict[key]
         pop,pcov = get_threshold(df, p_th_init,p_range, l, eta, corr_type, num_shots, CD_type)
+        print(p_th_init, pop)
         threshold = pop[0]
         std_error = np.sqrt(np.diag(pcov))[0] # should it be np.sqrt(np.trace(pcov)) instead to get the overall error?
         # threshold_d[key] = threshold
@@ -2198,7 +2201,9 @@ if __name__ == "__main__":
                     (5,25,"X_MEM", "ZXXZonSqu","circuit_level"):0.01466, (5,25,"Z_MEM", "ZXXZonSqu","circuit_level"):0.00525, (5,25,"TOTAL_MEM", "ZXXZonSqu","circuit_level"):0.00538,
                     (3,50,"X_MEM","ZXXZonSqu", "circuit_level"):0.01288, (3,50,"Z_MEM", "ZXXZonSqu","circuit_level"):0.00713, (3,50,"TOTAL_MEM", "ZXXZonSqu","circuit_level"):0.00764,
                     (5,50,"X_MEM", "ZXXZonSqu","circuit_level"):0.01502, (5,50,"Z_MEM", "ZXXZonSqu","circuit_level"):0.00529, (5,50,"TOTAL_MEM", "ZXXZonSqu","circuit_level"):0.00538,
-                    # CHAT DATA In the middle
+    }
+                    
+    p_th_init_CL_pycorr = {                # CHAT DATA In the middle
 
                     # ===================== SC =====================
                     # eta = 0.5
@@ -2241,7 +2246,7 @@ if __name__ == "__main__":
                     (5,5,"TOTAL_MEM_PY","SC","circuit_level"):0.00768,
 
                     (6,5,"X_MEM_PY","SC","circuit_level"):0.01226,
-                    (6,5,"Z_MEM_PY","SC","circuit_level"):0.00037,
+                    (6,5,"Z_MEM_PY","SC","circuit_level"):0.00624,
                     (6,5,"TOTAL_MEM_PY","SC","circuit_level"):0.00606,
 
 
@@ -2263,7 +2268,7 @@ if __name__ == "__main__":
                     (5,10,"TOTAL_MEM_PY","SC","circuit_level"):0.00852,
 
                     (6,10,"X_MEM_PY","SC","circuit_level"):0.01285,
-                    (6,10,"Z_MEM_PY","SC","circuit_level"):0.00088,
+                    (6,10,"Z_MEM_PY","SC","circuit_level"):0.00669,
                     (6,10,"TOTAL_MEM_PY","SC","circuit_level"):0.00732,
 
 
@@ -2313,7 +2318,7 @@ if __name__ == "__main__":
 
                     # eta = 10 
 
-                    (2,10,"X_MEM_PY","ZXXZonSqu","circuit_level"):0.01638,
+                    (2,10,"X_MEM_PY","ZXXZonSqu","circuit_level"):0.01038,
                     (2,10,"Z_MEM_PY","ZXXZonSqu","circuit_level"):0.01038,
                     (2,10,"TOTAL_MEM_PY","ZXXZonSqu","circuit_level"):0.01052,
 
@@ -2432,7 +2437,7 @@ if __name__ == "__main__":
 
 
     circuit_data = True # whether circuit level or code cap data is desired
-    corr_decoding = False # whether to get data for correlated decoding (corrxz or corrzx), or circuit level (X/Z mem or X/Z mem py)
+    corr_decoding = True # whether to get data for correlated decoding (corrxz or corrzx), or circuit level (X/Z mem or X/Z mem py)
         
 
     # simulation
@@ -2443,21 +2448,21 @@ if __name__ == "__main__":
     # p_list = np.linspace(p_th_init-0.03, p_th_init + 0.03, 40)
 
     # otherwise p_list is range of probabilities
-    # p_list = np.logspace(-2.5, -1.5, 40)
-    p_list = None
+    p_list = np.logspace(-2.5, -1.5, 40)
+    # p_list = None
 
-    l_list = [2,3,4,5,6] # elongation params
+    l_list = [2,4,6] # elongation params, do 3 and 5 in another batch
     d_list = [11,13,15,17,19] # code distances
-    eta_list = [0.5,5,10,25,50] # noise bias , removed 5,50 for my corr 
+    eta_list = [0.5,5,10,25,50] # noise bias
     cd_list = ["SC", "ZXXZonSqu"] # clifford deformation types
     total_num_shots = 1e6 # number of shots 
-    corr_type = "TOTAL_MEM" # which type of correlation to use, depending on the type of decoder. Choose from ['CORR_XZ', 'CORR_ZX', 'TOTAL', 'TOTAL_MEM', 'TOTAL_PY_CORR', 'TOTAL_MEM_CORR']
-    error_type = "TOTAL_MEM" # which type of error to plot
+    corr_type = "TOTAL_MEM_CORR" # which type of correlation to use, depending on the type of decoder. Choose from ['CORR_XZ', 'CORR_ZX', 'TOTAL', 'TOTAL_MEM', 'TOTAL_PY_CORR', 'TOTAL_MEM_CORR']
+    error_type = "TOTAL_MEM_CORR" # which type of error to plot
     # num_shots = 66666
     corr_list = ['CORR_XZ', 'CORR_ZX']
-    corr_type_list = ['X_MEM', 'Z_MEM', 'TOTAL_MEM']  
+    corr_type_list = ['X_MEM_CORR', 'Z_MEM_CORR', 'TOTAL_MEM_CORR']  
     noise_model = "circuit_level"
-    py_corr = True # whether to use pymatching correlated decoder for circuit data
+    py_corr = False # whether to use pymatching correlated decoder for circuit data
 
     if circuit_data:
         folder_path = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/circuit_data/'
@@ -2478,7 +2483,7 @@ if __name__ == "__main__":
 
 
     # run this to get data from the dcc
-    # get_data_DCC(circuit_data, corr_decoding, noise_model, d_list, l_list, eta_list, cd_list, corr_list, total_num_shots, p_list=None, p_th_init_d=p_th_init_CL, pymatch_corr=py_corr)
+    get_data_DCC(circuit_data, corr_decoding, noise_model, d_list, l_list, eta_list, cd_list, corr_list, total_num_shots, p_list=p_list, p_th_init_d=None, pymatch_corr=py_corr)
 
     # run this once you have data and want to combo it to one csv
     # concat_csv(folder_path, circuit_data)
@@ -2496,15 +2501,18 @@ if __name__ == "__main__":
 
 
     # params to plot
-    # eta = 50
+    # eta = 10
     # l = 6
-    # curr_num_shots = 52631.0
+    # curr_num_shots = 52631.0 # the file has 20408 for the 3,5 and 30303 for the 2,4,6
     # noise_model = "circuit_level"
-    # CD_type = "ZXXZonSqu"
+    # CD_type = "SC"
     # py_corr = True # whether to use pymatching correlated decoder for circuit data
     # corr_decoding = False # whether to get data for correlated decoding using my decoder
-    # error_type = "TOTAL_MEM" # which type of error to plot, choose from ['X_MEM', 'Z_MEM', 'TOTAL_MEM', 'TOTAL_PY_MEM', 'TOTAL_MEM_PY_CORR']
+    # error_type = "Z_MEM_PY" # which type of error to plot, choose from ['X_MEM', 'Z_MEM', 'TOTAL_MEM', 'TOTAL_PY_MEM', 'TOTAL_MEM_PY_CORR']
     # p_range = 0.001
+
+    
+
 
 
     # df = pd.read_csv(output_file)
@@ -2513,15 +2521,16 @@ if __name__ == "__main__":
 
 
     # make a plot for specific thresholds
-    # pth0 = p_th_init_CL[(l, eta, error_type, CD_type, noise_model)]
+    # pth0 = p_th_init_CL_pycorr[(l, eta, error_type, CD_type, noise_model)]
     # popt, pcov = get_threshold(df, pth0, p_range, l, eta, error_type, curr_num_shots, CD_type)
     # p_th = popt[0]
     # pth_error = np.sqrt(pcov[0][0])
     # print(p_th, pth_error)
-    # get_thresholds_from_data_exactish(curr_num_shots, p_th_init_CL,p_range, output_file)
+    # get_thresholds_from_data_exactish(curr_num_shots, p_th_init_CL_pycorr,p_range, output_file)
     # eta_df = pd.read_csv("/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/threshold_exactish_per_eta.csv")
-    # p_range_df = df[(df['p'] <= p_th + p_range) & (df["p"] >= p_th - p_range)]
-    # threshold_plot(df, pth0, p_range, eta, l, curr_num_shots, error_type, CD_type, noise_model, file=output_file, circuit_level=True, py_corr = False, corr_decoding=False, loglog=False, averaging=True, show_threshold=True, show_fit=True)
+    # p_range_df = df[(df['p'] <= pth0 + p_range) & (df["p"] >= pth0 - p_range)]
+    # print(len(p_range_df))
+    # threshold_plot(df, pth0, p_range, eta, l, curr_num_shots, error_type, CD_type, noise_model, file=output_file, circuit_level=True, py_corr = py_corr, corr_decoding=corr_decoding, loglog=False, averaging=True, show_threshold=True, show_fit=True)
     # eta_threshold_plot(eta_df, CD_type,corr_type_list, noise_model)
     # get_thresholds_from_data_exactish(curr_num_shots, p_th_init_CL,p_range, output_file)
     # make eta plot

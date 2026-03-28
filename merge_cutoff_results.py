@@ -28,7 +28,7 @@ for file in csv_files:
     merged_df.loc[len(merged_df)] = row_dict
 
 # Optional: sort results nicely
-merged_df = merged_df.sort_values(by=["d", "eta", "p"]).reset_index(drop=True)
+merged_df = merged_df.sort_values(by=["d", "eta", "p", "cutoff"]).reset_index(drop=True)
 
 merged_df.to_csv("cutoff_results.csv", index=False)
 
