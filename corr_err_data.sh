@@ -10,4 +10,4 @@
 #SBATCH --time=48:00:00            # Time limit hrs:min:sec
 #SBATCH --job-name=circuit_thresholds_corr.out                # How is your output is called, you n$
 
-python3 compass_code_correlated_error.py 
+python -u compass_code_correlated_error.py 
