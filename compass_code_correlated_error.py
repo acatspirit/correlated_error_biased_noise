@@ -2858,7 +2858,7 @@ if __name__ == "__main__":
     d_list = [11,13,15,17,19] # code distances
     eta_list = [0.5,5,10,25,50] # noise bias
     cd_list = ["SC", "ZXXZonSqu"] # clifford deformation types
-    total_num_shots = 1e6 # number of shots 
+    total_num_shots = 1000 # number of shots 
     corr_type = "TOTAL_MEM_CORR" # which type of correlation to use, depending on the type of decoder. Choose from ['CORR_XZ', 'CORR_ZX', 'TOTAL', 'TOTAL_MEM', 'TOTAL_PY_CORR', 'TOTAL_MEM_CORR']
     error_type = "TOTAL_MEM_CORR" # which type of error to plot
     # num_shots = 66666
@@ -2904,15 +2904,15 @@ if __name__ == "__main__":
 
 
     # params to plot
-    eta = 0.5
-    l = 2
-    curr_num_shots = 52631.0 # the file has 20408 for the 3,5 and 30303 for the 2,4,6
-    noise_model = "circuit_level"
-    CD_type = "ZXXZonSqu"
-    py_corr = True # whether to use pymatching correlated decoder for circuit data
-    corr_decoding = False # whether to get data for correlated decoding using my decoder
-    error_type = "Z_MEM_PY" # which type of error to plot, choose from ['X_MEM', 'Z_MEM', 'TOTAL_MEM', 'TOTAL_PY_MEM', 'TOTAL_MEM_PY_CORR']
-    p_range = 0.001
+    # eta = 0.5
+    # l = 2
+    # curr_num_shots = 52631.0 # the file has 20408 for the 3,5 and 30303 for the 2,4,6
+    # noise_model = "circuit_level"
+    # CD_type = "ZXXZonSqu"
+    # py_corr = True # whether to use pymatching correlated decoder for circuit data
+    # corr_decoding = False # whether to get data for correlated decoding using my decoder
+    # error_type = "Z_MEM_PY" # which type of error to plot, choose from ['X_MEM', 'Z_MEM', 'TOTAL_MEM', 'TOTAL_PY_MEM', 'TOTAL_MEM_PY_CORR']
+    # p_range = 0.001
 
     
 
@@ -2930,7 +2930,7 @@ if __name__ == "__main__":
     # pth_error = np.sqrt(pcov[0][0])
     # print(p_th, pth_error)
     # get_thresholds_from_data_exactish(curr_num_shots, p_th_init_CL_pycorr,p_range, output_file)
-    eta_df = pd.read_csv("/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/threshold_exactish_per_eta.csv")
+    # eta_df = pd.read_csv("/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/threshold_exactish_per_eta.csv")
     # p_range_df = df[(df['p'] <= pth0 + p_range) & (df["p"] >= pth0 - p_range)]
     # print(len(p_range_df))
     # threshold_plot(df, pth0, p_range, eta, l, curr_num_shots, error_type, CD_type, noise_model, file=output_file, circuit_level=True, py_corr = py_corr, corr_decoding=corr_decoding, loglog=False, averaging=True, show_threshold=True, show_fit=True)
