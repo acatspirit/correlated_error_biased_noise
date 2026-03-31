@@ -1784,7 +1784,7 @@ def write_data(
     cd_type="SC",
     corr_decoding=False,
     pymatch_corr=False,
-    chunk_size=500,
+    chunk_size=5000,
     overwrite=True,
 ):
     """Write data incrementally to CSV while the job runs.
