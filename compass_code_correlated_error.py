@@ -2332,7 +2332,7 @@ def get_data_DCC(circuit_data, corr_decoding, noise_model, d_list, l_list, eta_l
     print(f"SLURM Array Size: {slurm_array_size}")
 
 
-    if circuit_data and not (corr_decoding and pymatch_corr): # change this to get different data for circuit level plot
+    if circuit_data and not (corr_decoding or pymatch_corr): # change this to get different data for circuit level plot
         l_eta_cd_type_arr = list(itertools.product(l_list,eta_list,cd_list))
         reps = slurm_array_size//len(l_eta_cd_type_arr) # how many times to run file, num_shots each time
         ind = task_id%len(l_eta_cd_type_arr) # get the index of the task_id in the l_eta__corr_type_arr
@@ -2934,7 +2934,7 @@ if __name__ == "__main__":
     # p_range_df = df[(df['p'] <= pth0 + p_range) & (df["p"] >= pth0 - p_range)]
     # print(len(p_range_df))
     # threshold_plot(df, pth0, p_range, eta, l, curr_num_shots, error_type, CD_type, noise_model, file=output_file, circuit_level=True, py_corr = py_corr, corr_decoding=corr_decoding, loglog=False, averaging=True, show_threshold=True, show_fit=True)
-    eta_threshold_plot(eta_df, CD_type,corr_type_list, noise_model)
+    # eta_threshold_plot(eta_df, CD_type,corr_type_list, noise_model)
     # get_thresholds_from_data_exactish(curr_num_shots, p_th_init_CL,p_range, output_file)
     # make eta plot
     # eta_df = pd.read_csv("/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/all_thresholds_per_eta_elongated.csv")
