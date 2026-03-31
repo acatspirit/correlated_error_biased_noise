@@ -1450,142 +1450,385 @@ class CorrelatedDecoder:
 #
 ############################################
 
-def get_data(num_shots, d_list, l, p_list, eta, corr_type, circuit_data, noise_model="circuit_level", cd_type="SC", corr_decoding=False, pymatch_corr=False):
-    """ Generate logical error rates for x,z, correlatex z, and total errors
-        via MC sim in decoding_failures_correlated and add it to a shared pandas df
+# def get_data(num_shots, d_list, l, p_list, eta, corr_type, circuit_data, noise_model="circuit_level", cd_type="SC", corr_decoding=False, pymatch_corr=False):
+#     """ Generate logical error rates for x,z, correlatex z, and total errors
+#         via MC sim in decoding_failures_correlated and add it to a shared pandas df
         
-        in: num_shots - the number of MC iterations
-            l - the integer repition of the compass code
-            eta - the float bias ratio of the error model
-            p_list - array of probabilities to scan
-            d_list - the distances of compass code to scan
+#         in: num_shots - the number of MC iterations
+#             l - the integer repition of the compass code
+#             eta - the float bias ratio of the error model
+#             p_list - array of probabilities to scan
+#             d_list - the distances of compass code to scan
         
-        out: a pandas df recording the logical error rate with all corresponding params
+#         out: a pandas df recording the logical error rate with all corresponding params
 
-    """
-    # print(f"in get data,  l = {l}, eta = {eta}, corr_type = {corr_type}, num_shots = {num_shots}, noise_model = {noise_model}, cd_type = {cd_type}")
-    err_type = {0:"X", 1:"Z", 2:corr_type, 3:"TOTAL"}
-    if circuit_data:
-        data_dict = {"d":[], "num_shots":[], "p":[], "l": [], "eta":[], "error_type":[], "noise_model": [], "CD_type":[], "num_log_errors":[], "time_stamp":[]}
-    else:
-        data_dict = {"d":[], "num_shots":[], "p":[], "l": [], "eta":[], "error_type":[], "num_log_errors":[], "time_stamp":[]}
-    data = pd.DataFrame(data_dict)
+#     """
+#     # print(f"in get data,  l = {l}, eta = {eta}, corr_type = {corr_type}, num_shots = {num_shots}, noise_model = {noise_model}, cd_type = {cd_type}")
+#     err_type = {0:"X", 1:"Z", 2:corr_type, 3:"TOTAL"}
+#     if circuit_data:
+#         data_dict = {"d":[], "num_shots":[], "p":[], "l": [], "eta":[], "error_type":[], "noise_model": [], "CD_type":[], "num_log_errors":[], "time_stamp":[]}
+#     else:
+#         data_dict = {"d":[], "num_shots":[], "p":[], "l": [], "eta":[], "error_type":[], "num_log_errors":[], "time_stamp":[]}
+#     data = pd.DataFrame(data_dict)
 
-    for d in d_list:
-        if circuit_data:
-            # print("running circuit data")
+#     for d in d_list:
+#         if circuit_data:
+#             # print("running circuit data")
             
-                # circuit_x = cc_circuit.CDCompassCodeCircuit(d, l, eta, [0.003, 0.001, p], "X")
-                # circuit_z = cc_circuit.CDCompassCodeCircuit(d, l, eta, [0.003, 0.001, p], "Z")
+#                 # circuit_x = cc_circuit.CDCompassCodeCircuit(d, l, eta, [0.003, 0.001, p], "X")
+#                 # circuit_z = cc_circuit.CDCompassCodeCircuit(d, l, eta, [0.003, 0.001, p], "Z")
     
-            decoder = CorrelatedDecoder(eta, d, l, corr_type)
-            log_errors_z_array = decoder.get_log_error_circuit_level(p_list, "Z", num_shots, noise_model, cd_type, corr_decoding, pymatch_corr) # get the Z logical errors from Z memory experiment, X errors
-            log_errors_x_array = decoder.get_log_error_circuit_level(p_list, "X", num_shots, noise_model, cd_type, corr_decoding, pymatch_corr) # get the X logical errors from X memory experiment, Z errors
-            log_errors_z = np.sum(log_errors_z_array, axis=1) # double counting fs fs
-            log_errors_x = np.sum(log_errors_x_array, axis=1)        
-            log_errors_total = np.sum(np.logical_or(log_errors_x_array, log_errors_z_array), axis=1)
+#             decoder = CorrelatedDecoder(eta, d, l, corr_type)
+#             log_errors_z_array = decoder.get_log_error_circuit_level(p_list, "Z", num_shots, noise_model, cd_type, corr_decoding, pymatch_corr) # get the Z logical errors from Z memory experiment, X errors
+#             log_errors_x_array = decoder.get_log_error_circuit_level(p_list, "X", num_shots, noise_model, cd_type, corr_decoding, pymatch_corr) # get the X logical errors from X memory experiment, Z errors
+#             log_errors_z = np.sum(log_errors_z_array, axis=1) # double counting fs fs
+#             log_errors_x = np.sum(log_errors_x_array, axis=1)        
+#             log_errors_total = np.sum(np.logical_or(log_errors_x_array, log_errors_z_array), axis=1)
 
 
 
-            for i,log_error in enumerate(log_errors_x):
-                if pymatch_corr:
-                    curr_row = {"d":d, "num_shots":num_shots, "p":p_list[i], "l": l, "eta":eta, "error_type":"X_MEM_PY", "noise_model": noise_model, "CD_type":cd_type, "num_log_errors":log_error/num_shots, "time_stamp":datetime.now()}
-                elif corr_decoding:
-                    curr_row = {"d":d, "num_shots":num_shots, "p":p_list[i], "l": l, "eta":eta, "error_type":"X_MEM_CORR", "noise_model": noise_model, "CD_type":cd_type, "num_log_errors":log_error/num_shots, "time_stamp":datetime.now()}
-                else:
-                    curr_row = {"d":d, "num_shots":num_shots, "p":p_list[i], "l": l, "eta":eta, "error_type":"X_MEM", "noise_model": noise_model, "CD_type":cd_type, "num_log_errors":log_error/num_shots, "time_stamp":datetime.now()}
+#             for i,log_error in enumerate(log_errors_x):
+#                 if pymatch_corr:
+#                     curr_row = {"d":d, "num_shots":num_shots, "p":p_list[i], "l": l, "eta":eta, "error_type":"X_MEM_PY", "noise_model": noise_model, "CD_type":cd_type, "num_log_errors":log_error/num_shots, "time_stamp":datetime.now()}
+#                 elif corr_decoding:
+#                     curr_row = {"d":d, "num_shots":num_shots, "p":p_list[i], "l": l, "eta":eta, "error_type":"X_MEM_CORR", "noise_model": noise_model, "CD_type":cd_type, "num_log_errors":log_error/num_shots, "time_stamp":datetime.now()}
+#                 else:
+#                     curr_row = {"d":d, "num_shots":num_shots, "p":p_list[i], "l": l, "eta":eta, "error_type":"X_MEM", "noise_model": noise_model, "CD_type":cd_type, "num_log_errors":log_error/num_shots, "time_stamp":datetime.now()}
                 
-                data = pd.concat([data, pd.DataFrame([curr_row])], ignore_index=True)
+#                 data = pd.concat([data, pd.DataFrame([curr_row])], ignore_index=True)
 
-            for i,log_error in enumerate(log_errors_z):
-                if pymatch_corr:
-                    curr_row = {"d":d, "num_shots":num_shots, "p":p_list[i], "l": l, "eta":eta, "error_type":"Z_MEM_PY", "noise_model": noise_model, "CD_type":cd_type, "num_log_errors":log_error/num_shots, "time_stamp":datetime.now()}
-                elif corr_decoding:
-                    curr_row = {"d":d, "num_shots":num_shots, "p":p_list[i], "l": l, "eta":eta, "error_type":"Z_MEM_CORR", "noise_model": noise_model, "CD_type":cd_type, "num_log_errors":log_error/num_shots, "time_stamp":datetime.now()}
-                else:
-                    curr_row = {"d":d, "num_shots":num_shots, "p":p_list[i], "l": l, "eta":eta, "error_type":"Z_MEM", "noise_model": noise_model, "CD_type":cd_type, "num_log_errors":log_error/num_shots, "time_stamp":datetime.now()}
-                data = pd.concat([data, pd.DataFrame([curr_row])], ignore_index=True)
+#             for i,log_error in enumerate(log_errors_z):
+#                 if pymatch_corr:
+#                     curr_row = {"d":d, "num_shots":num_shots, "p":p_list[i], "l": l, "eta":eta, "error_type":"Z_MEM_PY", "noise_model": noise_model, "CD_type":cd_type, "num_log_errors":log_error/num_shots, "time_stamp":datetime.now()}
+#                 elif corr_decoding:
+#                     curr_row = {"d":d, "num_shots":num_shots, "p":p_list[i], "l": l, "eta":eta, "error_type":"Z_MEM_CORR", "noise_model": noise_model, "CD_type":cd_type, "num_log_errors":log_error/num_shots, "time_stamp":datetime.now()}
+#                 else:
+#                     curr_row = {"d":d, "num_shots":num_shots, "p":p_list[i], "l": l, "eta":eta, "error_type":"Z_MEM", "noise_model": noise_model, "CD_type":cd_type, "num_log_errors":log_error/num_shots, "time_stamp":datetime.now()}
+#                 data = pd.concat([data, pd.DataFrame([curr_row])], ignore_index=True)
 
-            for i,log_error in enumerate(log_errors_total):
-                if pymatch_corr:
-                    curr_row = {"d":d, "num_shots":num_shots, "p":p_list[i], "l": l, "eta":eta, "error_type":"TOTAL_MEM_PY", "noise_model": noise_model, "CD_type":cd_type, "num_log_errors":log_error/num_shots, "time_stamp":datetime.now()}
-                elif corr_decoding:
-                    curr_row = {"d":d, "num_shots":num_shots, "p":p_list[i], "l": l, "eta":eta, "error_type":"TOTAL_MEM_CORR", "noise_model": noise_model, "CD_type":cd_type, "num_log_errors":log_error/num_shots, "time_stamp":datetime.now()}
-                else:
-                    curr_row = {"d":d, "num_shots":num_shots, "p":p_list[i], "l": l, "eta":eta, "error_type":"TOTAL_MEM", "noise_model": noise_model, "CD_type":cd_type, "num_log_errors":log_error/num_shots, "time_stamp":datetime.now()}
+#             for i,log_error in enumerate(log_errors_total):
+#                 if pymatch_corr:
+#                     curr_row = {"d":d, "num_shots":num_shots, "p":p_list[i], "l": l, "eta":eta, "error_type":"TOTAL_MEM_PY", "noise_model": noise_model, "CD_type":cd_type, "num_log_errors":log_error/num_shots, "time_stamp":datetime.now()}
+#                 elif corr_decoding:
+#                     curr_row = {"d":d, "num_shots":num_shots, "p":p_list[i], "l": l, "eta":eta, "error_type":"TOTAL_MEM_CORR", "noise_model": noise_model, "CD_type":cd_type, "num_log_errors":log_error/num_shots, "time_stamp":datetime.now()}
+#                 else:
+#                     curr_row = {"d":d, "num_shots":num_shots, "p":p_list[i], "l": l, "eta":eta, "error_type":"TOTAL_MEM", "noise_model": noise_model, "CD_type":cd_type, "num_log_errors":log_error/num_shots, "time_stamp":datetime.now()}
                 
-                data = pd.concat([data, pd.DataFrame([curr_row])], ignore_index=True)
+#                 data = pd.concat([data, pd.DataFrame([curr_row])], ignore_index=True)
             
             
 
-        else:
-            decoder = CorrelatedDecoder(eta, d, l, corr_type)
+#         else:
+#             decoder = CorrelatedDecoder(eta, d, l, corr_type)
 
-            for p in p_list:
-                errors = decoder.decoding_failures_correlated(p, num_shots)
-                for i in range(len(errors)):
-                    curr_row = {"d":d, "num_shots":num_shots, "p":p, "l": l, "eta":eta, "error_type":err_type[i], "num_log_errors":errors[i]/num_shots, "time_stamp":datetime.now()}
-                    data = pd.concat([data, pd.DataFrame([curr_row])], ignore_index=True)
-    return data
-
-
-def shots_averaging(num_shots, l, eta, err_type, in_df, CD_type, file):
-    """For the inputted number of shots, averages those shots over the array length run on computing cluster.  
-        in: num_shots - int, the number of monte carlo shots in the original simulation
-            arr_len -  int, the number of jobs / averaging interval desired
-            l - int, elongation parameter
-            eta - float, noise bias
-            err_type - the type of error to average
-            df - the dataframe of interest. If None, read from the CSV file
-    """
-    if in_df is None:
-        in_data = pd.read_csv(file)
-        data = in_data[(in_data['num_shots'] == num_shots) & (in_data['l'] == l) &(in_data['eta'] == eta) & (in_data['error_type'] == err_type) & (in_data['CD_type'] == CD_type)]
-    else:
-        data = in_df
-    data_mean = data.groupby('p', as_index=False)['num_log_errors'].mean()
-    return data_mean
+#             for p in p_list:
+#                 errors = decoder.decoding_failures_correlated(p, num_shots)
+#                 for i in range(len(errors)):
+#                     curr_row = {"d":d, "num_shots":num_shots, "p":p, "l": l, "eta":eta, "error_type":err_type[i], "num_log_errors":errors[i]/num_shots, "time_stamp":datetime.now()}
+#                     data = pd.concat([data, pd.DataFrame([curr_row])], ignore_index=True)
+#     return data
 
 
+# def shots_averaging(num_shots, l, eta, err_type, in_df, CD_type, file):
+#     """For the inputted number of shots, averages those shots over the array length run on computing cluster.  
+#         in: num_shots - int, the number of monte carlo shots in the original simulation
+#             arr_len -  int, the number of jobs / averaging interval desired
+#             l - int, elongation parameter
+#             eta - float, noise bias
+#             err_type - the type of error to average
+#             df - the dataframe of interest. If None, read from the CSV file
+#     """
+#     if in_df is None:
+#         in_data = pd.read_csv(file)
+#         data = in_data[(in_data['num_shots'] == num_shots) & (in_data['l'] == l) &(in_data['eta'] == eta) & (in_data['error_type'] == err_type) & (in_data['CD_type'] == CD_type)]
+#     else:
+#         data = in_df
+#     data_mean = data.groupby('p', as_index=False)['num_log_errors'].mean()
+#     return data_mean
 
-def write_data(num_shots, d_list, l, p_list, eta, ID, corr_type, circuit_data, noise_model="code_cap", cd_type="SC", corr_decoding=False, pymatch_corr=False):
-    """ Writes data from pandas df to a csv file, for use with SLURM arrays. Generates data for each slurm output on a CSV
-        in: num_shots - the number of MC iterations
-            l - the integer repition of the compass code
-            eta - the float bias ratio of the error model
-            p_list - array of probabilities to scan
-            d_list - the distances of compass code to scan
-            ID - SLURM input task_ID number, corresponds to which array element we run
-    """
-    # print(f"in write data, ID = {ID}, l = {l}, eta = {eta}, corr_type = {corr_type}, num_shots = {num_shots}, noise_model = {noise_model}, cd_type = {cd_type}")
-    data = get_data(num_shots, d_list, l, p_list, eta, corr_type, circuit_data, noise_model=noise_model, cd_type=cd_type, corr_decoding=corr_decoding, pymatch_corr=pymatch_corr)
-    if circuit_data:
-        if pymatch_corr:
-            data_file = f'circuit_data/py_corr_{ID}.csv'
-            if not os.path.exists('circuit_data/'):
-                os.mkdir('circuit_data')
-        else:
-            data_file = f'circuit_data/circuit_level_{ID}.csv'
-            if not os.path.exists('circuit_data/'):
-                os.mkdir('circuit_data')
-    else:
-        data_file = f'corr_err_data/code_cap_{ID}.csv'
-        if not os.path.exists('corr_err_data/'):
-            os.mkdir('corr_err_data')
+
+
+# def write_data(num_shots, d_list, l, p_list, eta, ID, corr_type, circuit_data, noise_model="code_cap", cd_type="SC", corr_decoding=False, pymatch_corr=False):
+#     """ Writes data from pandas df to a csv file, for use with SLURM arrays. Generates data for each slurm output on a CSV
+#         in: num_shots - the number of MC iterations
+#             l - the integer repition of the compass code
+#             eta - the float bias ratio of the error model
+#             p_list - array of probabilities to scan
+#             d_list - the distances of compass code to scan
+#             ID - SLURM input task_ID number, corresponds to which array element we run
+#     """
+#     # print(f"in write data, ID = {ID}, l = {l}, eta = {eta}, corr_type = {corr_type}, num_shots = {num_shots}, noise_model = {noise_model}, cd_type = {cd_type}")
+#     data = get_data(num_shots, d_list, l, p_list, eta, corr_type, circuit_data, noise_model=noise_model, cd_type=cd_type, corr_decoding=corr_decoding, pymatch_corr=pymatch_corr)
+#     if circuit_data:
+#         if pymatch_corr:
+#             data_file = f'circuit_data/py_corr_{ID}.csv'
+#             if not os.path.exists('circuit_data/'):
+#                 os.mkdir('circuit_data')
+#         else:
+#             data_file = f'circuit_data/circuit_level_{ID}.csv'
+#             if not os.path.exists('circuit_data/'):
+#                 os.mkdir('circuit_data')
+#     else:
+#         data_file = f'corr_err_data/code_cap_{ID}.csv'
+#         if not os.path.exists('corr_err_data/'):
+#             os.mkdir('corr_err_data')
    
     
 
-    # Check if the CSV file exists
-    if os.path.isfile(data_file):
-        # If it exists, load the existing data
-        past_data = pd.read_csv(data_file)
-        # Append the new data
-        all_data = pd.concat([past_data, data], ignore_index=True)
+#     # Check if the CSV file exists
+#     if os.path.isfile(data_file):
+#         # If it exists, load the existing data
+#         past_data = pd.read_csv(data_file)
+#         # Append the new data
+#         all_data = pd.concat([past_data, data], ignore_index=True)
+#     else:
+#         # If it doesn't exist, the new data will be the combined data
+#         all_data = data
+#     # Save the combined data to the CSV file
+#     all_data.to_csv(data_file, index=False)
+
+def get_data(
+    total_num_shots,
+    d_list,
+    l,
+    p_list,
+    eta,
+    corr_type,
+    circuit_data,
+    noise_model="circuit_level",
+    cd_type="SC",
+    corr_decoding=False,
+    pymatch_corr=False,
+    data_file=None,
+    append=False,
+    chunk_size=5000,
+):
+    """Generate logical error-rate data in chunks.
+
+    For each (d, p), run in chunks of size `chunk_size`, append each chunk's
+    result to CSV immediately, and return a dataframe of all rows generated.
+
+    Note:
+        The `num_log_errors` column is preserved as the logical error RATE
+        within each chunk, matching your existing files.
+    """
+    err_type = {0: "X", 1: "Z", 2: corr_type, 3: "TOTAL"}
+
+    if circuit_data:
+        columns = [
+            "d", "num_shots", "p", "l", "eta", "error_type",
+            "noise_model", "CD_type", "num_log_errors", "time_stamp"
+        ]
     else:
-        # If it doesn't exist, the new data will be the combined data
-        all_data = data
-    # Save the combined data to the CSV file
-    all_data.to_csv(data_file, index=False)
+        columns = [
+            "d", "num_shots", "p", "l", "eta", "error_type",
+            "num_log_errors", "time_stamp"
+        ]
+
+    all_rows = []
+
+    def flush_rows(rows_to_write):
+        """Append rows to CSV immediately and force flush to disk."""
+        if not rows_to_write:
+            return
+
+        if append and data_file is not None:
+            chunk_df = pd.DataFrame(rows_to_write, columns=columns)
+            file_exists = os.path.isfile(data_file)
+            chunk_df.to_csv(
+                data_file,
+                mode="a",
+                header=not file_exists,
+                index=False,
+            )
+
+            # Force the OS buffer to flush as much as possible
+            with open(data_file, "a") as f:
+                f.flush()
+                os.fsync(f.fileno())
+
+    for d in d_list:
+        decoder = CorrelatedDecoder(eta, d, l, corr_type)
+
+        for p in p_list:
+            shots_done = 0
+
+            while shots_done < total_num_shots:
+                curr_num_shots = min(chunk_size, total_num_shots - shots_done)
+
+                print(
+                    f"Running d={d}, p={p}, eta={eta}, l={l}, "
+                    f"shots {shots_done} -> {shots_done + curr_num_shots}"
+                )
+
+                if circuit_data:
+                    # Run one p at a time, one chunk at a time
+                    log_errors_z_array = decoder.get_log_error_circuit_level(
+                        np.array([p]),
+                        "Z",
+                        curr_num_shots,
+                        noise_model,
+                        cd_type,
+                        corr_decoding,
+                        pymatch_corr,
+                    )
+                    log_errors_x_array = decoder.get_log_error_circuit_level(
+                        np.array([p]),
+                        "X",
+                        curr_num_shots,
+                        noise_model,
+                        cd_type,
+                        corr_decoding,
+                        pymatch_corr,
+                    )
+
+                    log_errors_z = np.sum(log_errors_z_array, axis=1)[0]
+                    log_errors_x = np.sum(log_errors_x_array, axis=1)[0]
+                    log_errors_total = np.sum(
+                        np.logical_or(log_errors_x_array, log_errors_z_array),
+                        axis=1,
+                    )[0]
+
+                    if pymatch_corr:
+                        x_err_type = "X_MEM_PY"
+                        z_err_type = "Z_MEM_PY"
+                        total_err_type = "TOTAL_MEM_PY"
+                    elif corr_decoding:
+                        x_err_type = "X_MEM_CORR"
+                        z_err_type = "Z_MEM_CORR"
+                        total_err_type = "TOTAL_MEM_CORR"
+                    else:
+                        x_err_type = "X_MEM"
+                        z_err_type = "Z_MEM"
+                        total_err_type = "TOTAL_MEM"
+
+                    rows_for_chunk = [
+                        {
+                            "d": d,
+                            "num_shots": curr_num_shots,
+                            "p": p,
+                            "l": l,
+                            "eta": eta,
+                            "error_type": x_err_type,
+                            "noise_model": noise_model,
+                            "CD_type": cd_type,
+                            "num_log_errors": log_errors_x / curr_num_shots,
+                            "time_stamp": datetime.now(),
+                        },
+                        {
+                            "d": d,
+                            "num_shots": curr_num_shots,
+                            "p": p,
+                            "l": l,
+                            "eta": eta,
+                            "error_type": z_err_type,
+                            "noise_model": noise_model,
+                            "CD_type": cd_type,
+                            "num_log_errors": log_errors_z / curr_num_shots,
+                            "time_stamp": datetime.now(),
+                        },
+                        {
+                            "d": d,
+                            "num_shots": curr_num_shots,
+                            "p": p,
+                            "l": l,
+                            "eta": eta,
+                            "error_type": total_err_type,
+                            "noise_model": noise_model,
+                            "CD_type": cd_type,
+                            "num_log_errors": log_errors_total / curr_num_shots,
+                            "time_stamp": datetime.now(),
+                        },
+                    ]
+
+                else:
+                    # Code-capacity: one p at a time, one chunk at a time
+                    errors = decoder.decoding_failures_correlated(p, curr_num_shots)
+
+                    rows_for_chunk = []
+                    for i in range(len(errors)):
+                        rows_for_chunk.append({
+                            "d": d,
+                            "num_shots": curr_num_shots,
+                            "p": p,
+                            "l": l,
+                            "eta": eta,
+                            "error_type": err_type[i],
+                            "num_log_errors": errors[i] / curr_num_shots,
+                            "time_stamp": datetime.now(),
+                        })
+
+                all_rows.extend(rows_for_chunk)
+                flush_rows(rows_for_chunk)
+
+                shots_done += curr_num_shots
+
+                print(
+                    f"Saved d={d}, p={p}, eta={eta}, l={l}, "
+                    f"chunk_shots={curr_num_shots}, total_done={shots_done}/{total_num_shots}"
+                )
+
+    return pd.DataFrame(all_rows, columns=columns)
+
+
+def write_data(
+    total_num_shots,
+    d_list,
+    l,
+    p_list,
+    eta,
+    ID,
+    corr_type,
+    circuit_data,
+    noise_model="code_cap",
+    cd_type="SC",
+    corr_decoding=False,
+    pymatch_corr=False,
+    chunk_size=5000,
+    overwrite=True,
+):
+    """Write data incrementally to CSV while the job runs.
+
+    Parameters
+    ----------
+    total_num_shots : int
+        Total number of shots desired for each (d, p).
+    chunk_size : int
+        Number of shots to run before checkpointing to CSV.
+    overwrite : bool
+        If True, delete an existing file with the same ID before starting.
+    """
+    if circuit_data:
+        os.makedirs("circuit_data", exist_ok=True)
+        if pymatch_corr:
+            data_file = f"circuit_data/py_corr_{ID}.csv"
+        else:
+            data_file = f"circuit_data/circuit_level_{ID}.csv"
+    else:
+        os.makedirs("corr_err_data", exist_ok=True)
+        data_file = f"corr_err_data/code_cap_{ID}.csv"
+
+    if overwrite and os.path.isfile(data_file):
+        os.remove(data_file)
+
+    data = get_data(
+        total_num_shots=total_num_shots,
+        d_list=d_list,
+        l=l,
+        p_list=p_list,
+        eta=eta,
+        corr_type=corr_type,
+        circuit_data=circuit_data,
+        noise_model=noise_model,
+        cd_type=cd_type,
+        corr_decoding=corr_decoding,
+        pymatch_corr=pymatch_corr,
+        data_file=data_file,
+        append=True,
+        chunk_size=chunk_size,
+    )
+
+    return data
 
 
 def concat_csv(folder_path, circuit_data):
@@ -2620,7 +2863,7 @@ if __name__ == "__main__":
     error_type = "TOTAL_MEM_CORR" # which type of error to plot
     # num_shots = 66666
     corr_list = ['CORR_XZ', 'CORR_ZX']
-    corr_type_list = ['X_MEM_PY', 'Z_MEM_PY', 'TOTAL_MEM_PY']  
+    corr_type_list = ['X_MEM_CORR', 'Z_MEM_CORR', 'TOTAL_MEM_CORR']  
     noise_model = "circuit_level"
     py_corr = False # whether to use pymatching correlated decoder for circuit data
 
@@ -2643,7 +2886,7 @@ if __name__ == "__main__":
 
 
     # run this to get data from the dcc
-    # get_data_DCC(circuit_data, corr_decoding, noise_model, d_list, l_list, eta_list, cd_list, corr_list, total_num_shots, p_list=p_list, p_th_init_d=None, pymatch_corr=py_corr)
+    get_data_DCC(circuit_data, corr_decoding, noise_model, d_list, l_list, eta_list, cd_list, corr_list, total_num_shots, p_list=None, p_th_init_d=p_th_init_CL_pycorr, pymatch_corr=py_corr)
 
     # run this once you have data and want to combo it to one csv
     # concat_csv(folder_path, circuit_data)
