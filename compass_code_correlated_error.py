@@ -1545,22 +1545,22 @@ class CorrelatedDecoder:
 #     return data
 
 
-# def shots_averaging(num_shots, l, eta, err_type, in_df, CD_type, file):
-#     """For the inputted number of shots, averages those shots over the array length run on computing cluster.  
-#         in: num_shots - int, the number of monte carlo shots in the original simulation
-#             arr_len -  int, the number of jobs / averaging interval desired
-#             l - int, elongation parameter
-#             eta - float, noise bias
-#             err_type - the type of error to average
-#             df - the dataframe of interest. If None, read from the CSV file
-#     """
-#     if in_df is None:
-#         in_data = pd.read_csv(file)
-#         data = in_data[(in_data['num_shots'] == num_shots) & (in_data['l'] == l) &(in_data['eta'] == eta) & (in_data['error_type'] == err_type) & (in_data['CD_type'] == CD_type)]
-#     else:
-#         data = in_df
-#     data_mean = data.groupby('p', as_index=False)['num_log_errors'].mean()
-#     return data_mean
+def shots_averaging(num_shots, l, eta, err_type, in_df, CD_type, file):
+    """For the inputted number of shots, averages those shots over the array length run on computing cluster.  
+        in: num_shots - int, the number of monte carlo shots in the original simulation
+            arr_len -  int, the number of jobs / averaging interval desired
+            l - int, elongation parameter
+            eta - float, noise bias
+            err_type - the type of error to average
+            df - the dataframe of interest. If None, read from the CSV file
+    """
+    if in_df is None:
+        in_data = pd.read_csv(file)
+        data = in_data[(in_data['num_shots'] == num_shots) & (in_data['l'] == l) &(in_data['eta'] == eta) & (in_data['error_type'] == err_type) & (in_data['CD_type'] == CD_type)]
+    else:
+        data = in_df
+    data_mean = data.groupby('p', as_index=False)['num_log_errors'].mean()
+    return data_mean
 
 def shots_averaging(num_shots, l, eta, err_type, in_df, CD_type, file):
     """Weighted average of chunked data."""
@@ -1586,47 +1586,6 @@ def shots_averaging(num_shots, l, eta, err_type, in_df, CD_type, file):
     data_mean['num_log_errors'] = data_mean['weighted_errors'] / data_mean['num_shots']
     data_mean = data_mean.drop(columns='weighted_errors')
     return data_mean
-
-
-
-# def write_data(num_shots, d_list, l, p_list, eta, ID, corr_type, circuit_data, noise_model="code_cap", cd_type="SC", corr_decoding=False, pymatch_corr=False):
-#     """ Writes data from pandas df to a csv file, for use with SLURM arrays. Generates data for each slurm output on a CSV
-#         in: num_shots - the number of MC iterations
-#             l - the integer repition of the compass code
-#             eta - the float bias ratio of the error model
-#             p_list - array of probabilities to scan
-#             d_list - the distances of compass code to scan
-#             ID - SLURM input task_ID number, corresponds to which array element we run
-#     """
-#     # print(f"in write data, ID = {ID}, l = {l}, eta = {eta}, corr_type = {corr_type}, num_shots = {num_shots}, noise_model = {noise_model}, cd_type = {cd_type}")
-#     data = get_data(num_shots, d_list, l, p_list, eta, corr_type, circuit_data, noise_model=noise_model, cd_type=cd_type, corr_decoding=corr_decoding, pymatch_corr=pymatch_corr)
-#     if circuit_data:
-#         if pymatch_corr:
-#             data_file = f'circuit_data/py_corr_{ID}.csv'
-#             if not os.path.exists('circuit_data/'):
-#                 os.mkdir('circuit_data')
-#         else:
-#             data_file = f'circuit_data/circuit_level_{ID}.csv'
-#             if not os.path.exists('circuit_data/'):
-#                 os.mkdir('circuit_data')
-#     else:
-#         data_file = f'corr_err_data/code_cap_{ID}.csv'
-#         if not os.path.exists('corr_err_data/'):
-#             os.mkdir('corr_err_data')
-   
-    
-
-#     # Check if the CSV file exists
-#     if os.path.isfile(data_file):
-#         # If it exists, load the existing data
-#         past_data = pd.read_csv(data_file)
-#         # Append the new data
-#         all_data = pd.concat([past_data, data], ignore_index=True)
-#     else:
-#         # If it doesn't exist, the new data will be the combined data
-#         all_data = data
-#     # Save the combined data to the CSV file
-#     all_data.to_csv(data_file, index=False)
 
 def get_data(
     total_num_shots,
@@ -1839,7 +1798,6 @@ def get_data(
 
     return pd.DataFrame(all_rows, columns=columns)
 
-
 def write_data(
     total_num_shots,
     d_list,
@@ -1900,7 +1858,6 @@ def write_data(
     )
 
     return data
-
 
 def concat_csv(folder_path, circuit_data):
     """Combines all CSV files is in folder 'folder_path' and writes them to one common 
@@ -1980,7 +1937,6 @@ def concat_csv(folder_path, circuit_data):
     for file in data_files:
         os.remove(file)
 
-
 def load_and_concat_csvs(folder, pattern="*.csv"):
     files = glob.glob(f"{folder}/{pattern}")
     
@@ -2032,7 +1988,6 @@ def load_and_combine(folder, pattern="*.csv"):
     df = load_and_concat_csvs(folder, pattern)
     combined_df = combine_chunked_data(df)
     return combined_df
-
 
 def load_and_combine_into_master(
     folder,
@@ -2135,7 +2090,6 @@ def load_and_combine_into_master(
     return combined_df
 
 
-
 def _get_expected_error_types(corr_type, circuit_data, corr_decoding=False, pymatch_corr=False):
     """Return the list of error_type strings expected for one completed chunk."""
     if circuit_data:
@@ -2214,6 +2168,134 @@ def _get_completed_shots_for_point(
     # completed_p = max(df["p"].unique()) if not df.empty else None
     return completed_shots#, completed_p
 
+def get_data_DCC(
+        circuit_data, 
+        corr_decoding, 
+        noise_model, 
+        d_list, 
+        l_list, 
+        eta_list, 
+        cd_list, 
+        corr_list, 
+        total_num_shots, 
+        p_list=None, 
+        p_th_init_d=None, 
+        p_range = 0.001,
+        pymatch_corr=False,
+        chunk_size=5000,
+        overwrite=False,
+        resume=True,
+    ):
+    """ Function to get the data from the DCC using parallel SLURM arrays. Each array task will get data for a specific (l, eta, corr_type) or (l, eta, cd_type) combo.
+        The total number of shots will be split evenly across the array tasks so that the total number of shots is reached upon averaging. 
+        in: circuit_data - boolean, whether to get data from circuit or vector code cap
+            corr_decoding - boolean, whether to get data from correlated decoding or not
+            noise_model - string, the noise model to use for circuit data, either "code_cap", "phenom", or "circuit_level"
+            d_list - list of distances to run
+            l_list - list of elongations to run
+            eta_list - list of noise biases to run
+            cd_list - list of clifford deformations to run, either "SC", "XZZXonSqu", or "ZXXZonSqu". Not to be used if corr_decoding is True and circuit_data is False.
+            corr_list - list of correlation types to run, either "CORR_XZ" or "CORR_ZX". Only to be used if corr_decoding is True and circuit_data is False.
+            total_num_shots - int, the total number of shots after averaging. Each SLURM array task will run total_num_shots/reps shots.
+            p_list - list of physical error rates to scan over. If None, will be set based on p_th_init_d
+            p_th_init_d - dictionary with keys (l, eta, corr_type) or (l, eta, cd_type) and values the initial guess for the threshold. If None, will use a default value based on eta
+            pymatch_corr - boolean, whether to use pymatching correlated decoder for circuit data
+        out: no output, but will write data to a CSV file for each SLURM array task. Run concat_csv after all tasks are complete to combine the CSV files into output_file.
+    """
+
+
+    task_id = int(os.environ['SLURM_ARRAY_TASK_ID']) # will iter over the total slurm array size and points to where you are 
+    slurm_array_size = int(os.environ['SLURM_ARRAY_TASK_MAX']) # the size of the slurm array, used to determine how many tasks to run, currently 1000
+
+    print(f"Task ID: {task_id}")
+    print(f"SLURM Array Size: {slurm_array_size}")
+
+
+    if circuit_data and not (corr_decoding or pymatch_corr): # change this to get different data for circuit level plot
+        l_eta_cd_type_arr = list(itertools.product(l_list,eta_list,cd_list))
+        reps = slurm_array_size//len(l_eta_cd_type_arr) # how many times to run file, num_shots each time
+        ind = task_id%len(l_eta_cd_type_arr) # get the index of the task_id in the l_eta__corr_type_arr
+        l, eta, cd_type = l_eta_cd_type_arr[ind] # get the l and eta from the task_id
+        num_shots = int(total_num_shots//reps) # number of shots to sample
+        print("l,eta,cd_type", l,eta, cd_type)
+        corr_type = "None"
+        if p_th_init_d is not None:
+            p_th_init = p_th_init_d[(l, eta, "TOTAL_MEM", cd_type, noise_model)]
+            p_list = np.linspace(max(p_th_init - p_range, 0.0), min(p_th_init + p_range, 1.0), 40)
+        
+        write_data(total_num_shots=num_shots, 
+                   d_list=d_list, 
+                   l=l, 
+                   p_list=p_list, 
+                   eta=eta, 
+                   ID=task_id, 
+                   corr_type=corr_type, 
+                   circuit_data=circuit_data, 
+                   noise_model=noise_model, 
+                   cd_type=cd_type, 
+                   corr_decoding=corr_decoding, 
+                   pymatch_corr=pymatch_corr,
+                   chunk_size=chunk_size,
+                   overwrite=overwrite,
+                   resume=resume)
+    if circuit_data and (pymatch_corr or corr_decoding):
+        l_eta_cd_type_arr = list(itertools.product(l_list,eta_list,cd_list))
+        reps = slurm_array_size//len(l_eta_cd_type_arr) # how many times to run file, num_shots each time
+        ind = task_id%len(l_eta_cd_type_arr) # get the index of the task_id in the l_eta__corr_type_arr
+        l, eta, cd_type = l_eta_cd_type_arr[ind] # get the l and eta from the task_id, pymatching corr should be doing an erasure channel this whole time, see what happens
+        num_shots = int(total_num_shots//reps) # number of shots to sample
+        print("l,eta,cd_type", l,eta, cd_type)
+        corr_type = "None"
+        if p_th_init_d is not None:
+            p_th_init = p_th_init_d[(l, eta, "TOTAL_MEM_PY", cd_type,noise_model)] # add the mem type somehow
+            p_list = np.linspace(p_th_init - p_range, p_th_init + p_range, 40)
+        write_data(total_num_shots=num_shots, 
+                   d_list=d_list, 
+                   l=l, 
+                   p_list=p_list, 
+                   eta=eta, 
+                   ID=task_id, 
+                   corr_type=corr_type, 
+                   circuit_data=circuit_data, 
+                   noise_model=noise_model, 
+                   cd_type=cd_type, 
+                   corr_decoding=corr_decoding, 
+                   pymatch_corr=pymatch_corr,
+                   chunk_size=chunk_size,
+                   overwrite=overwrite,
+                   resume=resume)
+
+    if corr_decoding and not circuit_data: # change this to get different data for eta plot
+        l_eta_corr_type_arr = list(itertools.product(l_list, eta_list, corr_list)) # list of tuples (l, eta, corr_type), currently 40
+        reps = slurm_array_size//len(l_eta_corr_type_arr) # how many times to run file, num_shots each time
+        ind = task_id%len(l_eta_corr_type_arr) # get the index of the task_id in the l_eta__corr_type_arr
+        l, eta, corr_type = l_eta_corr_type_arr[ind] # get the l and eta from the task_id
+        if p_th_init_d is not None:
+            p_th_init = p_th_init_d[(l, eta, corr_type)]
+            p_list = np.linspace(p_th_init - 0.03, p_th_init + 0.03, 40)
+        num_shots = int(total_num_shots//reps) # number of shots to sample
+        cd_type = "SC"
+        noise_model = "code_cap"
+        print("l,eta,corr_type", l,eta, corr_type)
+        write_data(total_num_shots=num_shots, 
+                   d_list=d_list, 
+                   l=l, 
+                   p_list=p_list, 
+                   eta=eta, 
+                   ID=task_id, 
+                   corr_type=corr_type, 
+                   circuit_data=circuit_data, 
+                   noise_model=noise_model, 
+                   cd_type=cd_type, 
+                   corr_decoding=corr_decoding, 
+                   pymatch_corr=pymatch_corr,
+                   chunk_size=chunk_size,
+                   overwrite=overwrite,
+                   resume=resume)
+
+    print("reps", reps)
+    print("ind", ind)
+    print("num_shots", num_shots)
 
 
 
@@ -2380,80 +2462,6 @@ def threshold_plot(full_df, p_th0, p_range, curr_eta, curr_l, curr_num_shots, co
     fig.suptitle(f'Logical Error Rates for eta = {curr_eta} and l = {curr_l}')
     plt.tight_layout()
     plt.show()
-
-
-# def eta_threshold_plot(eta_df, cd_type, corr_type_list, noise_model):
-#     """Make a single figure with a 2-column grid of subplots.
-#     Each row corresponds to a different `l`, with CORR_XZ on left and CORR_ZX on right.
-#     """
-#     # print(eta_df)
-#     # print("Unique cd_type in df:", eta_df['cd_type'].unique())
-#     # print("cd_type being filtered for:", repr(cd_type))
-#     # print("Unique noise_model in df:", eta_df['noise_model'].unique())
-#     # print("noise_model being filtered for:", repr(noise_model))
-#     eta_df['CD_type'] = eta_df['CD_type'].astype(str).str.strip()
-#     eta_df['noise_model'] = eta_df['noise_model'].astype(str).str.strip()
-
-#     cd_type = cd_type.strip()
-#     noise_model = noise_model.strip()
-#     # print(cd_type, noise_model)
-#     df = eta_df[(eta_df['CD_type'] == cd_type) &
-#                 (eta_df['noise_model'] == noise_model)]
-#     # print(df)
-#     l_values = sorted(df['l'].unique())
-#     num_rows = len(l_values)
-#     num_cols = len(corr_type_list)
-
-#     # Set up colors
-#     cmap = colormaps['Blues_r']
-#     color_values = np.linspace(0.1, 0.8, num_rows)
-#     l_colors = [cmap(val) for val in color_values]
-
-#     # Create figure and 2-column grid
-#     # Create figure and subplot grid
-#     fig, axes = plt.subplots(num_rows, num_cols, figsize=(6 * num_cols, 2.5 * num_rows), sharex=True, sharey=True)
-
-#     # Make axes 2D for consistent indexing
-#     if num_rows == 1 and num_cols == 1:
-#         axes = np.array([[axes]])
-#     elif num_rows == 1:
-#         axes = axes[np.newaxis, :]
-#     elif num_cols == 1:
-#         axes = axes[:, np.newaxis]
-
-#     for row_idx, l in enumerate(l_values):
-#         for col_idx, error_type in enumerate(corr_type_list):
-#             ax = axes[row_idx, col_idx]
-#             mask = (
-#                 (df['l'] == l) &
-#                 (df['error_type'] == error_type)
-#             )
-#             df_filtered = df[mask].sort_values(by='eta')
-
-#             eta_vals = df_filtered['eta'].to_numpy()
-#             pth_list = df_filtered['pth'].to_numpy()
-#             pth_error_list = df_filtered['stderr'].to_numpy()
-
-#             ax.errorbar(
-#                 eta_vals, pth_list, yerr=pth_error_list,
-#                 label=f'l = {l}', color=l_colors[row_idx],
-#                 marker='o', capsize=5
-#             )
-
-#             if row_idx == 0:
-#                 ax.set_title(f"{error_type}, Deformation {cd_type}", fontsize=16)
-
-#             if col_idx == 0:
-#                 ax.set_ylabel(f"l = {l}\nThreshold $p_{{th}}$", fontsize=12)
-
-#             if row_idx == num_rows - 1:
-#                 ax.set_xlabel("Noise Bias (η)", fontsize=12)
-
-#             ax.grid(True)
-#             ax.legend()
-
-#     plt.tight_layout()
-#     plt.show()
 
 def eta_threshold_plot(eta_df, cd_type, corr_type_list, noise_model):
     """One subplot per corr_type, all l values overlaid, shaded error bands,
@@ -2694,12 +2702,6 @@ def eta_threshold_plot_totalmem_compare_deformations(
 
     plt.show()
 
-
-# def threshold_fit(x, pth, nu, a, b, c):
-#     p,d = x
-#     X = (d**(1/nu))*(p-pth)
-#     return c + b*X + a*X**2
-
 def threshold_fit(x, pth, nu, a,b,c):
     p,d = x
     X = (d**(1/nu))*(p-pth)
@@ -2733,144 +2735,11 @@ def get_threshold(full_df, pth0, p_range, l, eta, error_type, num_shots, CD_type
     # print(f"diag of covariance matrix: {np.diag(pcov)}")
     return popt, pcov
 
-
 def get_prob_scale(corr_type, eta):
     """ extract the amount to be scaled by given a noise bias and the type of error
     """
     prob_scale = {'X': 0.5/(1+eta), 'Z': (1+2*eta)/(2*(1+eta)), 'CORR_XZ': 1, 'CORR_ZX':1, 'TOTAL':1, 'TOTAL_MEM':1, 'X_MEM':  1, 'Z_MEM': 1, 'TOTAL_MEM_PY':1, 'X_MEM_PY':1, 'Z_MEM_PY':1,'TOTAL_MEM_CORR':1, 'X_MEM_CORR':1, 'Z_MEM_CORR':1} # TOTAL_MEM 4/3 factor of total mem is due to code_cap pauli channel scalling factor in stim, remove this?
     return prob_scale[corr_type]
-
-
-def get_data_DCC(
-        circuit_data, 
-        corr_decoding, 
-        noise_model, 
-        d_list, 
-        l_list, 
-        eta_list, 
-        cd_list, 
-        corr_list, 
-        total_num_shots, 
-        p_list=None, 
-        p_th_init_d=None, 
-        p_range = 0.001,
-        pymatch_corr=False,
-        chunk_size=5000,
-        overwrite=False,
-        resume=True,
-    ):
-    """ Function to get the data from the DCC using parallel SLURM arrays. Each array task will get data for a specific (l, eta, corr_type) or (l, eta, cd_type) combo.
-        The total number of shots will be split evenly across the array tasks so that the total number of shots is reached upon averaging. 
-        in: circuit_data - boolean, whether to get data from circuit or vector code cap
-            corr_decoding - boolean, whether to get data from correlated decoding or not
-            noise_model - string, the noise model to use for circuit data, either "code_cap", "phenom", or "circuit_level"
-            d_list - list of distances to run
-            l_list - list of elongations to run
-            eta_list - list of noise biases to run
-            cd_list - list of clifford deformations to run, either "SC", "XZZXonSqu", or "ZXXZonSqu". Not to be used if corr_decoding is True and circuit_data is False.
-            corr_list - list of correlation types to run, either "CORR_XZ" or "CORR_ZX". Only to be used if corr_decoding is True and circuit_data is False.
-            total_num_shots - int, the total number of shots after averaging. Each SLURM array task will run total_num_shots/reps shots.
-            p_list - list of physical error rates to scan over. If None, will be set based on p_th_init_d
-            p_th_init_d - dictionary with keys (l, eta, corr_type) or (l, eta, cd_type) and values the initial guess for the threshold. If None, will use a default value based on eta
-            pymatch_corr - boolean, whether to use pymatching correlated decoder for circuit data
-        out: no output, but will write data to a CSV file for each SLURM array task. Run concat_csv after all tasks are complete to combine the CSV files into output_file.
-    """
-
-
-    task_id = int(os.environ['SLURM_ARRAY_TASK_ID']) # will iter over the total slurm array size and points to where you are 
-    slurm_array_size = int(os.environ['SLURM_ARRAY_TASK_MAX']) # the size of the slurm array, used to determine how many tasks to run, currently 1000
-
-    print(f"Task ID: {task_id}")
-    print(f"SLURM Array Size: {slurm_array_size}")
-
-
-    if circuit_data and not (corr_decoding or pymatch_corr): # change this to get different data for circuit level plot
-        l_eta_cd_type_arr = list(itertools.product(l_list,eta_list,cd_list))
-        reps = slurm_array_size//len(l_eta_cd_type_arr) # how many times to run file, num_shots each time
-        ind = task_id%len(l_eta_cd_type_arr) # get the index of the task_id in the l_eta__corr_type_arr
-        l, eta, cd_type = l_eta_cd_type_arr[ind] # get the l and eta from the task_id
-        num_shots = int(total_num_shots//reps) # number of shots to sample
-        print("l,eta,cd_type", l,eta, cd_type)
-        corr_type = "None"
-        if p_th_init_d is not None:
-            p_th_init = p_th_init_d[(l, eta, "TOTAL_MEM", cd_type, noise_model)]
-            p_list = np.linspace(max(p_th_init - p_range, 0.0), min(p_th_init + p_range, 1.0), 40)
-        
-        write_data(total_num_shots=num_shots, 
-                   d_list=d_list, 
-                   l=l, 
-                   p_list=p_list, 
-                   eta=eta, 
-                   ID=task_id, 
-                   corr_type=corr_type, 
-                   circuit_data=circuit_data, 
-                   noise_model=noise_model, 
-                   cd_type=cd_type, 
-                   corr_decoding=corr_decoding, 
-                   pymatch_corr=pymatch_corr,
-                   chunk_size=chunk_size,
-                   overwrite=overwrite,
-                   resume=resume)
-    if circuit_data and (pymatch_corr or corr_decoding):
-        l_eta_cd_type_arr = list(itertools.product(l_list,eta_list,cd_list))
-        reps = slurm_array_size//len(l_eta_cd_type_arr) # how many times to run file, num_shots each time
-        ind = task_id%len(l_eta_cd_type_arr) # get the index of the task_id in the l_eta__corr_type_arr
-        l, eta, cd_type = l_eta_cd_type_arr[ind] # get the l and eta from the task_id, pymatching corr should be doing an erasure channel this whole time, see what happens
-        num_shots = int(total_num_shots//reps) # number of shots to sample
-        print("l,eta,cd_type", l,eta, cd_type)
-        corr_type = "None"
-        if p_th_init_d is not None:
-            p_th_init = p_th_init_d[(l, eta, "TOTAL_MEM_PY", cd_type,noise_model)] # add the mem type somehow
-            p_list = np.linspace(p_th_init - p_range, p_th_init + p_range, 40)
-        write_data(total_num_shots=num_shots, 
-                   d_list=d_list, 
-                   l=l, 
-                   p_list=p_list, 
-                   eta=eta, 
-                   ID=task_id, 
-                   corr_type=corr_type, 
-                   circuit_data=circuit_data, 
-                   noise_model=noise_model, 
-                   cd_type=cd_type, 
-                   corr_decoding=corr_decoding, 
-                   pymatch_corr=pymatch_corr,
-                   chunk_size=chunk_size,
-                   overwrite=overwrite,
-                   resume=resume)
-
-    if corr_decoding and not circuit_data: # change this to get different data for eta plot
-        l_eta_corr_type_arr = list(itertools.product(l_list, eta_list, corr_list)) # list of tuples (l, eta, corr_type), currently 40
-        reps = slurm_array_size//len(l_eta_corr_type_arr) # how many times to run file, num_shots each time
-        ind = task_id%len(l_eta_corr_type_arr) # get the index of the task_id in the l_eta__corr_type_arr
-        l, eta, corr_type = l_eta_corr_type_arr[ind] # get the l and eta from the task_id
-        if p_th_init_d is not None:
-            p_th_init = p_th_init_d[(l, eta, corr_type)]
-            p_list = np.linspace(p_th_init - 0.03, p_th_init + 0.03, 40)
-        num_shots = int(total_num_shots//reps) # number of shots to sample
-        cd_type = "SC"
-        noise_model = "code_cap"
-        print("l,eta,corr_type", l,eta, corr_type)
-        write_data(total_num_shots=num_shots, 
-                   d_list=d_list, 
-                   l=l, 
-                   p_list=p_list, 
-                   eta=eta, 
-                   ID=task_id, 
-                   corr_type=corr_type, 
-                   circuit_data=circuit_data, 
-                   noise_model=noise_model, 
-                   cd_type=cd_type, 
-                   corr_decoding=corr_decoding, 
-                   pymatch_corr=pymatch_corr,
-                   chunk_size=chunk_size,
-                   overwrite=overwrite,
-                   resume=resume)
-
-    print("reps", reps)
-    print("ind", ind)
-    print("num_shots", num_shots)
-
-
 
 def get_thresholds_from_data_exactish(num_shots, p_th_init_dict, p_range, output_file):
     """
