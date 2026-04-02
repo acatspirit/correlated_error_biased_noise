@@ -435,7 +435,7 @@ class CorrelatedDecoder:
     # Complementary Gap
     #
 
-    def get_complementary_gap(self,dem,syndrome,obs_flips):
+    def get_complementary_gap(self,circuit,syndrome,obs_flips, decoder_type="MWPM"):
         '''
         Credit: Eva Takou for code backbone. Minor style changes have been made. The original function
         calculates the complementary gap (MWPM soft information) in the style of arxiv:2312.04522
@@ -454,7 +454,7 @@ class CorrelatedDecoder:
         
         
         '''    
-        
+        dem = circuit.detector_error_model(decompose_errors=True, flatten_loops=True, approximate_disjoint_errors=True)
         num_shots = np.shape(syndrome)[0]
         comp_matching = Matching()
         matching = Matching.from_detector_error_model(dem)
@@ -521,9 +521,12 @@ class CorrelatedDecoder:
         det1      = np.hstack((syndrome,new_array))
 
         # the I_L / ERR_L complementary matchings. Return the total weights of the solutions for each shot
-        pred0, W0 = comp_matching.decode_batch(det0,return_weights=True)
-        pred1, W1 = comp_matching.decode_batch(det1,return_weights=True)
-
+        if decoder_type == "MWPM":
+            pred0, W0 = comp_matching.decode_batch(det0,return_weights=True)
+            pred1, W1 = comp_matching.decode_batch(det1,return_weights=True)
+        elif decoder_type == "MY_CORR":
+            pred0, W0 = self.decoding_failures_correlated_circuit_level(circuit, shots=num_shots, mem_type=self.mem_type, CD_type=self.corr_type, decompose_biased=True, return_weights=True, input_syndrome=det0, input_obs_flips=obs_flips)
+            pred1, W1 = self.decoding_failures_correlated_circuit_level(circuit, shots=num_shots, mem_type=self.mem_type, CD_type=self.corr_type, decompose_biased=True, return_weights=True, input_syndrome=det1, input_obs_flips=obs_flips)
 
         # scale by edge weight, get dB. Why do we do this? also do we assume all edges normalized by the weight of the first
         edge = next(iter(matching.to_networkx().edges.values()))
@@ -1208,7 +1211,7 @@ class CorrelatedDecoder:
     # Decoding
     #
 
-    def decoding_failures_correlated_circuit_level(self, circuit, shots, mem_type, CD_type, decompose_biased=True):
+    def decoding_failures_correlated_circuit_level(self, circuit, shots, mem_type, CD_type, decompose_biased=True, return_weights=False, input_syndrome=None, input_obs_flips=None):
         """
         Finds the number of logical errors given a circuit using correlated decoding. Uses pymatching's correlated decoding approach, inspired by
         papers cited in the README.
@@ -1218,6 +1221,7 @@ class CorrelatedDecoder:
         :param memtype: basis to run memory experiment
         :param CD_type: the clifford deformation type applied to the code
         :param decompose_biased: whether to decompose hyperedges with bias in mind or give equal weight to X and Z components
+        :param return_weights: whether to return the weights of the total path
         :return: number of logical errors
         """
 
@@ -1248,15 +1252,21 @@ class CorrelatedDecoder:
         
         # first round of decoding
         # get the syndromes and observable flips
-        seed = np.random.randint(0, 2**32 - 1)
-        sampler = circuit.compile_detector_sampler(seed=seed)
-        syndrome, observable_flips = sampler.sample(shots, separate_observables=True)
+        if np.all(input_syndrome==None) and np.all(input_obs_flips == None):
+            seed = np.random.randint(0, 2**32 - 1)
+            sampler = circuit.compile_detector_sampler(seed=seed)
+            syndrome, observable_flips = sampler.sample(shots, separate_observables=True)
+            print(syndrome.shape, observable_flips.shape)
+        else: 
+            syndrome, observable_flips = input_syndrome, input_obs_flips
+            print(syndrome.shape, observable_flips.shape)
         # print("syndrome inside function:", syndrome )
 
         # from eva
         # change the logicals so that there is an observable for each qubit, change back to the code cap case to check whether the real logical flipped
 
         corrections = np.zeros((shots, 2)) # largest fault id is 1, len of correction = 2
+        weights = np.zeros(shots)
         for i in range(shots):
 
             # print(syndrome[i].shape)
@@ -1273,12 +1283,18 @@ class CorrelatedDecoder:
             matching_corr = self.build_matching_from_weights(updated_weights, fault_ids_dict, matchgraph.num_nodes)
             # print("updated edges inside function from mycorr", matching_corr.edges())
             # print(matching_corr.decode(syndrome[i]).shape, matching_corr.decode(syndrome[i]))
-            corrections[i] = matching_corr.decode(syndrome[i]) #usual code
+            if return_weights:
+                corrections[i], weights[i] = matching_corr.decode(syndrome[i], return_weight=True)
+            else:
+                corrections[i] = matching_corr.decode(syndrome[i])
 
         
         # calculate the number of logical errors
         log_errors_array = np.any(np.array(observable_flips) != np.array(corrections), axis=1) # usual code
-        return log_errors_array
+        if return_weights:
+            return log_errors_array, weights
+        else:
+            return log_errors_array
 
 
     def decoding_failures_correlated_gap(self, circuit, shots, mem_type, CD_type, cutoff=1):
@@ -1546,6 +1562,31 @@ class CorrelatedDecoder:
 #     data_mean = data.groupby('p', as_index=False)['num_log_errors'].mean()
 #     return data_mean
 
+def shots_averaging(num_shots, l, eta, err_type, in_df, CD_type, file):
+    """Weighted average of chunked data."""
+    if in_df is None:
+        in_data = pd.read_csv(file)
+        data = in_data[
+            (in_data['l'] == l) &
+            (in_data['eta'] == eta) &
+            (in_data['error_type'] == err_type) &
+            (in_data['CD_type'] == CD_type)
+        ]
+    else:
+        data = in_df.copy()
+
+    if num_shots is not None:
+        data = data[data['num_shots'] == num_shots]
+
+    data['weighted_errors'] = data['num_log_errors'] * data['num_shots']
+    data_mean = (
+        data.groupby('p', as_index=False)
+            .agg({'num_shots': 'sum', 'weighted_errors': 'sum'})
+    )
+    data_mean['num_log_errors'] = data_mean['weighted_errors'] / data_mean['num_shots']
+    data_mean = data_mean.drop(columns='weighted_errors')
+    return data_mean
+
 
 
 # def write_data(num_shots, d_list, l, p_list, eta, ID, corr_type, circuit_data, noise_model="code_cap", cd_type="SC", corr_decoding=False, pymatch_corr=False):
@@ -1602,15 +1643,12 @@ def get_data(
     data_file=None,
     append=False,
     chunk_size=5000,
+    resume=True,
 ):
-    """Generate logical error-rate data in chunks.
+    """Generate logical error-rate data in chunks, with resume support.
 
-    For each (d, p), run in chunks of size `chunk_size`, append each chunk's
-    result to CSV immediately, and return a dataframe of all rows generated.
-
-    Note:
-        The `num_log_errors` column is preserved as the logical error RATE
-        within each chunk, matching your existing files.
+    For each (d, p), this function checks `data_file` for previously completed
+    chunks and only runs the remaining shots.
     """
     err_type = {0: "X", 1: "Z", 2: corr_type, 3: "TOTAL"}
 
@@ -1627,6 +1665,15 @@ def get_data(
 
     all_rows = []
 
+    expected_error_types = _get_expected_error_types(
+        corr_type=corr_type,
+        circuit_data=circuit_data,
+        corr_decoding=corr_decoding,
+        pymatch_corr=pymatch_corr,
+    )
+
+    existing_df = _safe_read_csv(data_file) if resume else None
+
     def flush_rows(rows_to_write):
         """Append rows to CSV immediately and force flush to disk."""
         if not rows_to_write:
@@ -1642,7 +1689,6 @@ def get_data(
                 index=False,
             )
 
-            # Force the OS buffer to flush as much as possible
             with open(data_file, "a") as f:
                 f.flush()
                 os.fsync(f.fileno())
@@ -1651,7 +1697,33 @@ def get_data(
         decoder = CorrelatedDecoder(eta, d, l, corr_type)
 
         for p in p_list:
-            shots_done = 0
+            completed_shots = 0
+            if resume:
+                completed_shots = _get_completed_shots_for_point(
+                    existing_df=existing_df,
+                    d=d,
+                    p=p,
+                    l=l,
+                    eta=eta,
+                    expected_error_types=expected_error_types,
+                    circuit_data=circuit_data,
+                    noise_model=noise_model,
+                    cd_type=cd_type,
+                )
+
+            if completed_shots >= total_num_shots:
+                print(
+                    f"Skipping d={d}, p={p}, eta={eta}, l={l} "
+                    f"because {completed_shots}/{total_num_shots} shots already exist."
+                )
+                continue
+
+            shots_done = completed_shots
+
+            print(
+                f"Resuming d={d}, p={p}, eta={eta}, l={l} "
+                f"from {completed_shots}/{total_num_shots} shots."
+            )
 
             while shots_done < total_num_shots:
                 curr_num_shots = min(chunk_size, total_num_shots - shots_done)
@@ -1662,7 +1734,6 @@ def get_data(
                 )
 
                 if circuit_data:
-                    # Run one p at a time, one chunk at a time
                     log_errors_z_array = decoder.get_log_error_circuit_level(
                         np.array([p]),
                         "Z",
@@ -1689,18 +1760,7 @@ def get_data(
                         axis=1,
                     )[0]
 
-                    if pymatch_corr:
-                        x_err_type = "X_MEM_PY"
-                        z_err_type = "Z_MEM_PY"
-                        total_err_type = "TOTAL_MEM_PY"
-                    elif corr_decoding:
-                        x_err_type = "X_MEM_CORR"
-                        z_err_type = "Z_MEM_CORR"
-                        total_err_type = "TOTAL_MEM_CORR"
-                    else:
-                        x_err_type = "X_MEM"
-                        z_err_type = "Z_MEM"
-                        total_err_type = "TOTAL_MEM"
+                    x_err_type, z_err_type, total_err_type = _get_expected_error_types(corr_type, circuit_data=circuit_data, corr_decoding=corr_decoding, pymatch_corr=pymatch_corr)
 
                     rows_for_chunk = [
                         {
@@ -1742,7 +1802,6 @@ def get_data(
                     ]
 
                 else:
-                    # Code-capacity: one p at a time, one chunk at a time
                     errors = decoder.decoding_failures_correlated(p, curr_num_shots)
 
                     rows_for_chunk = []
@@ -1768,6 +1827,16 @@ def get_data(
                     f"chunk_shots={curr_num_shots}, total_done={shots_done}/{total_num_shots}"
                 )
 
+                # keep in-memory state updated too, so repeated points in one run
+                # see the latest completed shots without rereading the file
+                if existing_df is None:
+                    existing_df = pd.DataFrame(rows_for_chunk, columns=columns)
+                else:
+                    existing_df = pd.concat(
+                        [existing_df, pd.DataFrame(rows_for_chunk, columns=columns)],
+                        ignore_index=True
+                    )
+
     return pd.DataFrame(all_rows, columns=columns)
 
 
@@ -1785,7 +1854,8 @@ def write_data(
     corr_decoding=False,
     pymatch_corr=False,
     chunk_size=5000,
-    overwrite=True,
+    overwrite=False,
+    resume=True,
 ):
     """Write data incrementally to CSV while the job runs.
 
@@ -1826,6 +1896,7 @@ def write_data(
         data_file=data_file,
         append=True,
         chunk_size=chunk_size,
+        resume=resume,
     )
 
     return data
@@ -1908,6 +1979,250 @@ def concat_csv(folder_path, circuit_data):
     
     for file in data_files:
         os.remove(file)
+
+
+def load_and_concat_csvs(folder, pattern="*.csv"):
+    files = glob.glob(f"{folder}/{pattern}")
+    
+    if len(files) == 0:
+        raise ValueError(f"No CSV files found in {folder}")
+    
+    df_list = []
+    for f in files:
+        try:
+            df = pd.read_csv(f)
+            df_list.append(df)
+        except Exception as e:
+            print(f"Skipping {f}: {e}")
+
+    full_df = pd.concat(df_list, ignore_index=True)
+    return full_df
+
+def combine_chunked_data(df):
+    df = df.copy()
+
+    # Convert rate → total errors (temporarily)
+    df["weighted_errors"] = df["num_log_errors"] * df["num_shots"]
+
+    # Define grouping columns depending on data type
+    group_cols = ["d", "p", "l", "eta", "error_type"]
+
+    if "noise_model" in df.columns:
+        group_cols += ["noise_model", "CD_type"]
+
+    # Aggregate
+    combined = (
+        df.groupby(group_cols, as_index=False)
+          .agg({
+              "num_shots": "sum",
+              "weighted_errors": "sum"
+          })
+    )
+
+    # Convert back to rate
+    combined["num_log_errors"] = (
+        combined["weighted_errors"] / combined["num_shots"]
+    )
+
+    combined = combined.drop(columns="weighted_errors")
+
+    return combined
+
+def load_and_combine(folder, pattern="*.csv"):
+    df = load_and_concat_csvs(folder, pattern)
+    combined_df = combine_chunked_data(df)
+    return combined_df
+
+
+def load_and_combine_into_master(
+    folder,
+    master_file="circuit_data.csv",
+    pattern="*.csv",
+    deduplicate=False,
+    save=True,
+):
+    """
+    Load chunked CSVs, combine them correctly, and append into a master CSV.
+
+    Parameters
+    ----------
+    folder : str
+        Folder containing SLURM output CSVs (e.g. "circuit_data")
+    master_file : str
+        Path to your master dataset
+    pattern : str
+        File pattern to match
+    deduplicate : bool
+        Whether to drop duplicate rows when merging
+    save : bool
+        Whether to overwrite master_file with updated data
+    """
+
+    # -------------------------
+    # 1. Load all new CSVs
+    # -------------------------
+    files = glob.glob(f"{folder}/{pattern}")
+    
+    if len(files) == 0:
+        raise ValueError(f"No CSV files found in {folder}")
+
+    df_list = []
+    for f in files:
+        try:
+            df = pd.read_csv(f)
+            df_list.append(df)
+        except Exception as e:
+            print(f"Skipping {f}: {e}")
+
+    new_df_raw = pd.concat(df_list, ignore_index=True)
+
+    # -------------------------
+    # 2. Combine chunked data
+    # -------------------------
+    new_df = new_df_raw.copy()
+    new_df["weighted_errors"] = new_df["num_log_errors"] * new_df["num_shots"]
+
+    group_cols = ["d", "p", "l", "eta", "error_type"]
+
+    if "noise_model" in new_df.columns:
+        group_cols += ["noise_model", "CD_type"]
+
+    new_df = (
+        new_df.groupby(group_cols, as_index=False)
+              .agg({
+                  "num_shots": "sum",
+                  "weighted_errors": "sum"
+              })
+    )
+
+    new_df["num_log_errors"] = (
+        new_df["weighted_errors"] / new_df["num_shots"]
+    )
+
+    new_df = new_df.drop(columns="weighted_errors")
+
+    # -------------------------
+    # 3. Load existing master
+    # -------------------------
+    if os.path.isfile(master_file):
+        master_df = pd.read_csv(master_file)
+    else:
+        master_df = pd.DataFrame(columns=new_df.columns)
+
+    # -------------------------
+    # 4. Merge new + old
+    # -------------------------
+    combined_df = pd.concat([master_df, new_df], ignore_index=True)
+
+    if deduplicate:
+        # Drop exact duplicates (safe if rerunning jobs)
+        combined_df = combined_df.drop_duplicates()
+
+        # Optional: keep the LAST entry for same experiment
+        combined_df = combined_df.sort_values("num_shots").drop_duplicates(
+            subset=group_cols,
+            keep="last"
+        )
+
+    # -------------------------
+    # 5. Save back to master
+    # -------------------------
+    if save:
+        combined_df.to_csv(master_file, index=False)
+
+    print(f"Master dataset now has {len(combined_df)} rows")
+
+    return combined_df
+
+
+
+def _get_expected_error_types(corr_type, circuit_data, corr_decoding=False, pymatch_corr=False):
+    """Return the list of error_type strings expected for one completed chunk."""
+    if circuit_data:
+        if pymatch_corr:
+            return ["X_MEM_PY", "Z_MEM_PY", "TOTAL_MEM_PY"]
+        elif corr_decoding:
+            return ["X_MEM_CORR", "Z_MEM_CORR", "TOTAL_MEM_CORR"]
+        else:
+            return ["X_MEM", "Z_MEM", "TOTAL_MEM"]
+    else:
+        return ["X", "Z", corr_type, "TOTAL"]
+
+
+def _safe_read_csv(csv_file):
+    """Read CSV if it exists and is nonempty; otherwise return None."""
+    if csv_file is None or (not os.path.isfile(csv_file)):
+        return None
+    try:
+        df = pd.read_csv(csv_file)
+        if df.empty:
+            return None
+        return df
+    except Exception as e:
+        print(f"Warning: could not read {csv_file}: {e}")
+        return None
+
+
+def _get_completed_shots_for_point(
+    existing_df,
+    d,
+    p,
+    l,
+    eta,
+    expected_error_types,
+    circuit_data,
+    noise_model=None,
+    cd_type=None,
+):
+    """
+    Return the number of shots already safely completed for one (d,p,l,eta,...)
+    point in an existing per-task CSV.
+
+    We sum num_shots separately for each expected error_type and take the minimum.
+    That way, if the last write was partial/corrupted, we only count the shots that
+    are present for all required error types.
+    """
+    if existing_df is None or existing_df.empty:
+        return 0
+
+    df = existing_df.copy()
+
+    mask = (
+        (df["d"] == d) &
+        (df["p"] == p) &
+        (df["l"] == l) &
+        (df["eta"] == eta)
+    )
+
+    if circuit_data:
+        mask = mask & (df["noise_model"] == noise_model) & (df["CD_type"] == cd_type)
+
+    df = df[mask]
+
+    if df.empty:
+        return 0
+
+    completed_per_err = []
+    for err in expected_error_types:
+        err_df = df[df["error_type"] == err]
+        if err_df.empty:
+            completed_per_err.append(0)
+        else:
+            completed_per_err.append(int(err_df["num_shots"].sum()))
+
+    completed_shots = min(completed_per_err) if completed_per_err else 0
+    # completed_p = max(df["p"].unique()) if not df.empty else None
+    return completed_shots#, completed_p
+
+
+
+
+######################
+#
+# plotting functions
+#
+######################
+
 
 def full_error_plot(full_df, curr_eta, curr_l, curr_num_shots, noise_model, CD_type, file, corr_decoding=False, py_corr=False, loglog=False, averaging=True, circuit_level=False, plot_by_l=False):
     """Make a plot of all errors given a df with unedited contents of an entire CSV.
@@ -2260,6 +2575,126 @@ def eta_threshold_plot(eta_df, cd_type, corr_type_list, noise_model):
 
     plt.show()
 
+def eta_threshold_plot_totalmem_compare_deformations(
+    eta_df,
+    cd_type_list,
+    noise_model,
+    error_type="TOTAL_MEM"
+):
+    """
+    Compare TOTAL_MEM threshold vs bias for multiple deformation types.
+    One subplot per deformation type, all l values overlaid, shaded error bands,
+    with one shared legend.
+    """
+
+    eta_df = eta_df.copy()
+
+    eta_df['CD_type'] = eta_df['CD_type'].astype(str).str.strip()
+    eta_df['noise_model'] = eta_df['noise_model'].astype(str).str.strip()
+    eta_df['error_type'] = eta_df['error_type'].astype(str).str.strip()
+
+    cd_type_list = [cd.strip() for cd in cd_type_list]
+    noise_model = noise_model.strip()
+    error_type = error_type.strip()
+
+    df = eta_df[
+        (eta_df['CD_type'].isin(cd_type_list)) &
+        (eta_df['noise_model'] == noise_model) &
+        (eta_df['error_type'] == error_type)
+    ]
+
+    l_values = sorted(df['l'].unique())
+    num_cols = len(cd_type_list)
+
+    # Colors for different l values
+    cmap = colormaps['Blues_r']
+    color_values = np.linspace(0.1, 0.8, len(l_values))
+    l_colors = [cmap(val) for val in color_values]
+
+    fig, axes = plt.subplots(
+        1, num_cols,
+        figsize=(7 * num_cols, 5),
+        sharex=True,
+        sharey=True
+    )
+
+    if num_cols == 1:
+        axes = [axes]
+
+    legend_handles = []
+    legend_labels = []
+
+    # Pretty subplot titles
+    title_map = {
+        "SC": "SC",
+        "ZXXZonSqu": "ZXXZ\u2610"
+    }
+
+    for col_idx, cd_type in enumerate(cd_type_list):
+        ax = axes[col_idx]
+
+        df_cd = df[df['CD_type'] == cd_type]
+
+        for l_idx, l in enumerate(l_values):
+            df_filtered = df_cd[df_cd['l'] == l].sort_values(by='eta')
+
+            if df_filtered.empty:
+                continue
+
+            eta_vals = df_filtered['eta'].to_numpy()
+            pth = df_filtered['pth'].to_numpy()
+            err = df_filtered['stderr'].to_numpy()
+
+            color = l_colors[l_idx]
+
+            line, = ax.plot(
+                eta_vals,
+                pth,
+                label=rf"$\ell = {l}$",
+                color=color,
+                marker='o'
+            )
+
+            ax.fill_between(
+                eta_vals,
+                pth - err,
+                pth + err,
+                color=color,
+                alpha=0.2
+            )
+
+            if col_idx == 0:
+                legend_handles.append(line)
+                legend_labels.append(rf"$\ell = {l}$")
+
+        subplot_title = title_map.get(cd_type, cd_type)
+        ax.set_title(subplot_title, fontsize=16)
+        ax.set_xlabel("Noise Bias ($\\eta$)", fontsize=12)
+        ax.grid(True)
+
+    axes[0].set_ylabel("Threshold $p_{th}$", fontsize=12)
+
+    fig.suptitle(
+        "Threshold vs Bias V Memory",
+        fontsize=18,
+        y=0.98
+    )
+
+    fig.legend(
+        legend_handles,
+        legend_labels,
+        loc="upper center",
+        bbox_to_anchor=(0.5, 0.90),
+        ncol=len(l_values),
+        fontsize=11,
+        frameon=False
+    )
+
+    fig.subplots_adjust(top=0.78, wspace=0.12)
+
+    plt.show()
+
+
 # def threshold_fit(x, pth, nu, a, b, c):
 #     p,d = x
 #     X = (d**(1/nu))*(p-pth)
@@ -2306,7 +2741,24 @@ def get_prob_scale(corr_type, eta):
     return prob_scale[corr_type]
 
 
-def get_data_DCC(circuit_data, corr_decoding, noise_model, d_list, l_list, eta_list, cd_list, corr_list, total_num_shots, p_list=None, p_th_init_d=None, pymatch_corr=False):
+def get_data_DCC(
+        circuit_data, 
+        corr_decoding, 
+        noise_model, 
+        d_list, 
+        l_list, 
+        eta_list, 
+        cd_list, 
+        corr_list, 
+        total_num_shots, 
+        p_list=None, 
+        p_th_init_d=None, 
+        p_range = 0.001,
+        pymatch_corr=False,
+        chunk_size=5000,
+        overwrite=False,
+        resume=True,
+    ):
     """ Function to get the data from the DCC using parallel SLURM arrays. Each array task will get data for a specific (l, eta, corr_type) or (l, eta, cd_type) combo.
         The total number of shots will be split evenly across the array tasks so that the total number of shots is reached upon averaging. 
         in: circuit_data - boolean, whether to get data from circuit or vector code cap
@@ -2342,8 +2794,23 @@ def get_data_DCC(circuit_data, corr_decoding, noise_model, d_list, l_list, eta_l
         corr_type = "None"
         if p_th_init_d is not None:
             p_th_init = p_th_init_d[(l, eta, "TOTAL_MEM", cd_type, noise_model)]
-            p_list = np.linspace(max(p_th_init - 0.001, 0.0), min(p_th_init + 0.001, 1.0), 40)
-        write_data(num_shots, d_list, l, p_list, eta, task_id, corr_type, circuit_data=circuit_data, noise_model=noise_model, cd_type=cd_type, corr_decoding=corr_decoding, pymatch_corr=pymatch_corr)
+            p_list = np.linspace(max(p_th_init - p_range, 0.0), min(p_th_init + p_range, 1.0), 40)
+        
+        write_data(total_num_shots=num_shots, 
+                   d_list=d_list, 
+                   l=l, 
+                   p_list=p_list, 
+                   eta=eta, 
+                   ID=task_id, 
+                   corr_type=corr_type, 
+                   circuit_data=circuit_data, 
+                   noise_model=noise_model, 
+                   cd_type=cd_type, 
+                   corr_decoding=corr_decoding, 
+                   pymatch_corr=pymatch_corr,
+                   chunk_size=chunk_size,
+                   overwrite=overwrite,
+                   resume=resume)
     if circuit_data and (pymatch_corr or corr_decoding):
         l_eta_cd_type_arr = list(itertools.product(l_list,eta_list,cd_list))
         reps = slurm_array_size//len(l_eta_cd_type_arr) # how many times to run file, num_shots each time
@@ -2354,9 +2821,22 @@ def get_data_DCC(circuit_data, corr_decoding, noise_model, d_list, l_list, eta_l
         corr_type = "None"
         if p_th_init_d is not None:
             p_th_init = p_th_init_d[(l, eta, "TOTAL_MEM_PY", cd_type,noise_model)] # add the mem type somehow
-            p_list = np.linspace(p_th_init - 0.001, p_th_init + 0.001, 40)
-        write_data(num_shots, d_list, l, p_list, eta, task_id, corr_type, circuit_data=circuit_data, noise_model=noise_model, cd_type=cd_type, corr_decoding=corr_decoding, pymatch_corr=pymatch_corr)
-    
+            p_list = np.linspace(p_th_init - p_range, p_th_init + p_range, 40)
+        write_data(total_num_shots=num_shots, 
+                   d_list=d_list, 
+                   l=l, 
+                   p_list=p_list, 
+                   eta=eta, 
+                   ID=task_id, 
+                   corr_type=corr_type, 
+                   circuit_data=circuit_data, 
+                   noise_model=noise_model, 
+                   cd_type=cd_type, 
+                   corr_decoding=corr_decoding, 
+                   pymatch_corr=pymatch_corr,
+                   chunk_size=chunk_size,
+                   overwrite=overwrite,
+                   resume=resume)
 
     if corr_decoding and not circuit_data: # change this to get different data for eta plot
         l_eta_corr_type_arr = list(itertools.product(l_list, eta_list, corr_list)) # list of tuples (l, eta, corr_type), currently 40
@@ -2370,8 +2850,22 @@ def get_data_DCC(circuit_data, corr_decoding, noise_model, d_list, l_list, eta_l
         cd_type = "SC"
         noise_model = "code_cap"
         print("l,eta,corr_type", l,eta, corr_type)
-        write_data(num_shots, d_list, l, p_list, eta, task_id, corr_type, circuit_data=circuit_data, noise_model=noise_model, cd_type=cd_type,  corr_decoding=corr_decoding, pymatch_corr=pymatch_corr)
-    
+        write_data(total_num_shots=num_shots, 
+                   d_list=d_list, 
+                   l=l, 
+                   p_list=p_list, 
+                   eta=eta, 
+                   ID=task_id, 
+                   corr_type=corr_type, 
+                   circuit_data=circuit_data, 
+                   noise_model=noise_model, 
+                   cd_type=cd_type, 
+                   corr_decoding=corr_decoding, 
+                   pymatch_corr=pymatch_corr,
+                   chunk_size=chunk_size,
+                   overwrite=overwrite,
+                   resume=resume)
+
     print("reps", reps)
     print("ind", ind)
     print("num_shots", num_shots)
@@ -2886,7 +3380,7 @@ if __name__ == "__main__":
 
 
     # run this to get data from the dcc
-    get_data_DCC(circuit_data, corr_decoding, noise_model, d_list, l_list, eta_list, cd_list, corr_list, total_num_shots, p_list=None, p_th_init_d=p_th_init_CL_pycorr, pymatch_corr=py_corr)
+    # get_data_DCC(circuit_data, corr_decoding, noise_model, d_list, l_list, eta_list, cd_list, corr_list, total_num_shots, p_list=None, p_th_init_d=p_th_init_CL_pycorr, pymatch_corr=py_corr)
 
     # run this once you have data and want to combo it to one csv
     # concat_csv(folder_path, circuit_data)
@@ -2904,12 +3398,12 @@ if __name__ == "__main__":
 
 
     # params to plot
-    # eta = 0.5
-    # l = 2
-    # curr_num_shots = 52631.0 # the file has 20408 for the 3,5 and 30303 for the 2,4,6
+    # eta = 50
+    # l = 3
+    # curr_num_shots = 20408.0 # the file has 20408 for the 3,5 and 30303 for the 2,4,6
     # noise_model = "circuit_level"
-    # CD_type = "ZXXZonSqu"
-    # py_corr = True # whether to use pymatching correlated decoder for circuit data
+    # CD_type = "SC"
+    # py_corr = False # whether to use pymatching correlated decoder for circuit data
     # corr_decoding = False # whether to get data for correlated decoding using my decoder
     # error_type = "Z_MEM_PY" # which type of error to plot, choose from ['X_MEM', 'Z_MEM', 'TOTAL_MEM', 'TOTAL_PY_MEM', 'TOTAL_MEM_PY_CORR']
     # p_range = 0.001
@@ -2930,7 +3424,16 @@ if __name__ == "__main__":
     # pth_error = np.sqrt(pcov[0][0])
     # print(p_th, pth_error)
     # get_thresholds_from_data_exactish(curr_num_shots, p_th_init_CL_pycorr,p_range, output_file)
-    # eta_df = pd.read_csv("/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/threshold_exactish_per_eta.csv")
+    eta_df = pd.read_csv("/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/threshold_exactish_per_eta.csv")
+    
+    eta_threshold_plot_totalmem_compare_deformations(
+    eta_df,
+    cd_type_list=["SC", "ZXXZonSqu"],
+    noise_model="circuit_level",
+    error_type = "Z_MEM"
+)
+    
+    
     # p_range_df = df[(df['p'] <= pth0 + p_range) & (df["p"] >= pth0 - p_range)]
     # print(len(p_range_df))
     # threshold_plot(df, pth0, p_range, eta, l, curr_num_shots, error_type, CD_type, noise_model, file=output_file, circuit_level=True, py_corr = py_corr, corr_decoding=corr_decoding, loglog=False, averaging=True, show_threshold=True, show_fit=True)
