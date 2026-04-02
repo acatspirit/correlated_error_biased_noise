@@ -512,11 +512,11 @@ class CorrelatedDecoder:
         pred_reg, W_reg = matching.decode_batch(syndrome,return_weights=True) #This is the regular matching
 
 
-        # don't fire the b1
+        # don't fire the b2
         new_array = np.zeros((num_shots,1),dtype=int)
         det0      = np.hstack((syndrome,new_array))
         
-        # do fire b1
+        # do fire b2
         new_array = np.ones((num_shots,1),dtype=int)
         det1      = np.hstack((syndrome,new_array))
 
@@ -525,8 +525,32 @@ class CorrelatedDecoder:
             pred0, W0 = comp_matching.decode_batch(det0,return_weights=True)
             pred1, W1 = comp_matching.decode_batch(det1,return_weights=True)
         elif decoder_type == "MY_CORR":
-            pred0, W0 = self.decoding_failures_correlated_circuit_level(circuit, shots=num_shots, mem_type=self.mem_type, CD_type=self.corr_type, decompose_biased=True, return_weights=True, input_syndrome=det0, input_obs_flips=obs_flips)
-            pred1, W1 = self.decoding_failures_correlated_circuit_level(circuit, shots=num_shots, mem_type=self.mem_type, CD_type=self.corr_type, decompose_biased=True, return_weights=True, input_syndrome=det1, input_obs_flips=obs_flips)
+            pred0, W0 = self.decoding_failures_correlated_circuit_level(
+                circuit, 
+                shots=num_shots, 
+                mem_type=self.mem_type, 
+                CD_type=self.corr_type, 
+                decompose_biased=True, 
+                return_weights=True, 
+                input_syndrome=det0, 
+                # input_syndrome=None, 
+                input_obs_flips=obs_flips,
+                # input_obs_flips=None,
+                comp_matching = comp_matching,
+                b_extra = b2, # this is the node we want to fire for the complementary matching
+                )
+            pred1, W1 = self.decoding_failures_correlated_circuit_level(
+                circuit, 
+                shots=num_shots, 
+                mem_type=self.mem_type, 
+                CD_type=self.corr_type, 
+                decompose_biased=True, 
+                return_weights=True, 
+                input_syndrome=det1, 
+                input_obs_flips=obs_flips,
+                comp_matching = comp_matching,
+                b_extra = b2,
+                )
 
         # scale by edge weight, get dB. Why do we do this? also do we assume all edges normalized by the weight of the first
         edge = next(iter(matching.to_networkx().edges.values()))
@@ -836,8 +860,6 @@ class CorrelatedDecoder:
             "observables": edge_observables
         }
 
-
-
     def decompose_dem_instruction_pairwise(self, inst):
         """ Decomposes a stim DEM instruction into its component detectors and probability. Uses pairwise decomposition to determine hyperedge decomposition.
             Decomposed edge is in the form {probability: [detector1, detector2, ...]}. Logical operators are omitted, and single detector errors are merged to a pair if decomposed.
@@ -1032,7 +1054,7 @@ class CorrelatedDecoder:
         return cond_prob_dict
 
     #
-    # Graph construction and DEM editing
+    # Graph construction
     #
 
     def edit_dem(self, edges_in_correction, dem, cond_prob_dict):
@@ -1176,8 +1198,7 @@ class CorrelatedDecoder:
 
         return weights, fault_ids
 
-
-    def build_matching_from_weights(self, weights_dict, fault_ids_dict, original_num_nodes):
+    def build_matching_from_weights(self, weights_dict, fault_ids_dict, original_num_nodes, b_extra=None):
         match = Matching()
         for (u, v), weight in weights_dict.items():
             # fault_id = fault_ids_dict.get(tuple([u if v is not None else -1, v if v is not None else u]), None)
@@ -1204,6 +1225,9 @@ class CorrelatedDecoder:
             # Use an extremely high weight to ensure these edges are not used
             match.add_boundary_edge(node, weight=1e6)
         
+        if b_extra is not None:
+            match.set_boundary_nodes({b_extra})
+
         return match
 
 
@@ -1211,7 +1235,19 @@ class CorrelatedDecoder:
     # Decoding
     #
 
-    def decoding_failures_correlated_circuit_level(self, circuit, shots, mem_type, CD_type, decompose_biased=True, return_weights=False, input_syndrome=None, input_obs_flips=None):
+    def decoding_failures_correlated_circuit_level(
+            self, 
+            circuit, 
+            shots, 
+            mem_type, 
+            CD_type, 
+            decompose_biased=True, 
+            return_weights=False, 
+            input_syndrome=None, 
+            input_obs_flips=None, 
+            comp_matching=None,
+            b_extra=None,
+            ):
         """
         Finds the number of logical errors given a circuit using correlated decoding. Uses pymatching's correlated decoding approach, inspired by
         papers cited in the README.
@@ -1231,7 +1267,11 @@ class CorrelatedDecoder:
 
         # get the DEM get the matching graph
         dem = circuit.detector_error_model(decompose_errors=True, flatten_loops=True, approximate_disjoint_errors=True)
-        matchgraph = Matching.from_detector_error_model(dem, enable_correlations=False)
+        if comp_matching is not None:
+            matchgraph = comp_matching
+        else:
+            matchgraph = Matching.from_detector_error_model(dem, enable_correlations=False)
+        
         self.edge_type_d = self.get_edge_type_d(dem, mem_type, CD_type)
 
         # get the joint probabilities table of the dem hyperedges
@@ -1280,7 +1320,7 @@ class CorrelatedDecoder:
             # second round of decoding with updated weights
             # matching_corr = Matching.from_detector_error_model(updated_dem, enable_correlations=False)
             updated_weights, fault_ids_dict = self.compute_edge_weights_from_conditional_probs(edges_in_correction, matchgraph, cond_prob_dict, fault_ids)
-            matching_corr = self.build_matching_from_weights(updated_weights, fault_ids_dict, matchgraph.num_nodes)
+            matching_corr = self.build_matching_from_weights(updated_weights, fault_ids_dict, matchgraph.num_nodes, b_extra=b_extra)
             # print("updated edges inside function from mycorr", matching_corr.edges())
             # print(matching_corr.decode(syndrome[i]).shape, matching_corr.decode(syndrome[i]))
             if return_weights:
@@ -1462,105 +1502,9 @@ class CorrelatedDecoder:
 
 ############################################
 #
-# Functions for getting data from DCC
+# Functions for getting data (from DCC too)
 #
 ############################################
-
-# def get_data(num_shots, d_list, l, p_list, eta, corr_type, circuit_data, noise_model="circuit_level", cd_type="SC", corr_decoding=False, pymatch_corr=False):
-#     """ Generate logical error rates for x,z, correlatex z, and total errors
-#         via MC sim in decoding_failures_correlated and add it to a shared pandas df
-        
-#         in: num_shots - the number of MC iterations
-#             l - the integer repition of the compass code
-#             eta - the float bias ratio of the error model
-#             p_list - array of probabilities to scan
-#             d_list - the distances of compass code to scan
-        
-#         out: a pandas df recording the logical error rate with all corresponding params
-
-#     """
-#     # print(f"in get data,  l = {l}, eta = {eta}, corr_type = {corr_type}, num_shots = {num_shots}, noise_model = {noise_model}, cd_type = {cd_type}")
-#     err_type = {0:"X", 1:"Z", 2:corr_type, 3:"TOTAL"}
-#     if circuit_data:
-#         data_dict = {"d":[], "num_shots":[], "p":[], "l": [], "eta":[], "error_type":[], "noise_model": [], "CD_type":[], "num_log_errors":[], "time_stamp":[]}
-#     else:
-#         data_dict = {"d":[], "num_shots":[], "p":[], "l": [], "eta":[], "error_type":[], "num_log_errors":[], "time_stamp":[]}
-#     data = pd.DataFrame(data_dict)
-
-#     for d in d_list:
-#         if circuit_data:
-#             # print("running circuit data")
-            
-#                 # circuit_x = cc_circuit.CDCompassCodeCircuit(d, l, eta, [0.003, 0.001, p], "X")
-#                 # circuit_z = cc_circuit.CDCompassCodeCircuit(d, l, eta, [0.003, 0.001, p], "Z")
-    
-#             decoder = CorrelatedDecoder(eta, d, l, corr_type)
-#             log_errors_z_array = decoder.get_log_error_circuit_level(p_list, "Z", num_shots, noise_model, cd_type, corr_decoding, pymatch_corr) # get the Z logical errors from Z memory experiment, X errors
-#             log_errors_x_array = decoder.get_log_error_circuit_level(p_list, "X", num_shots, noise_model, cd_type, corr_decoding, pymatch_corr) # get the X logical errors from X memory experiment, Z errors
-#             log_errors_z = np.sum(log_errors_z_array, axis=1) # double counting fs fs
-#             log_errors_x = np.sum(log_errors_x_array, axis=1)        
-#             log_errors_total = np.sum(np.logical_or(log_errors_x_array, log_errors_z_array), axis=1)
-
-
-
-#             for i,log_error in enumerate(log_errors_x):
-#                 if pymatch_corr:
-#                     curr_row = {"d":d, "num_shots":num_shots, "p":p_list[i], "l": l, "eta":eta, "error_type":"X_MEM_PY", "noise_model": noise_model, "CD_type":cd_type, "num_log_errors":log_error/num_shots, "time_stamp":datetime.now()}
-#                 elif corr_decoding:
-#                     curr_row = {"d":d, "num_shots":num_shots, "p":p_list[i], "l": l, "eta":eta, "error_type":"X_MEM_CORR", "noise_model": noise_model, "CD_type":cd_type, "num_log_errors":log_error/num_shots, "time_stamp":datetime.now()}
-#                 else:
-#                     curr_row = {"d":d, "num_shots":num_shots, "p":p_list[i], "l": l, "eta":eta, "error_type":"X_MEM", "noise_model": noise_model, "CD_type":cd_type, "num_log_errors":log_error/num_shots, "time_stamp":datetime.now()}
-                
-#                 data = pd.concat([data, pd.DataFrame([curr_row])], ignore_index=True)
-
-#             for i,log_error in enumerate(log_errors_z):
-#                 if pymatch_corr:
-#                     curr_row = {"d":d, "num_shots":num_shots, "p":p_list[i], "l": l, "eta":eta, "error_type":"Z_MEM_PY", "noise_model": noise_model, "CD_type":cd_type, "num_log_errors":log_error/num_shots, "time_stamp":datetime.now()}
-#                 elif corr_decoding:
-#                     curr_row = {"d":d, "num_shots":num_shots, "p":p_list[i], "l": l, "eta":eta, "error_type":"Z_MEM_CORR", "noise_model": noise_model, "CD_type":cd_type, "num_log_errors":log_error/num_shots, "time_stamp":datetime.now()}
-#                 else:
-#                     curr_row = {"d":d, "num_shots":num_shots, "p":p_list[i], "l": l, "eta":eta, "error_type":"Z_MEM", "noise_model": noise_model, "CD_type":cd_type, "num_log_errors":log_error/num_shots, "time_stamp":datetime.now()}
-#                 data = pd.concat([data, pd.DataFrame([curr_row])], ignore_index=True)
-
-#             for i,log_error in enumerate(log_errors_total):
-#                 if pymatch_corr:
-#                     curr_row = {"d":d, "num_shots":num_shots, "p":p_list[i], "l": l, "eta":eta, "error_type":"TOTAL_MEM_PY", "noise_model": noise_model, "CD_type":cd_type, "num_log_errors":log_error/num_shots, "time_stamp":datetime.now()}
-#                 elif corr_decoding:
-#                     curr_row = {"d":d, "num_shots":num_shots, "p":p_list[i], "l": l, "eta":eta, "error_type":"TOTAL_MEM_CORR", "noise_model": noise_model, "CD_type":cd_type, "num_log_errors":log_error/num_shots, "time_stamp":datetime.now()}
-#                 else:
-#                     curr_row = {"d":d, "num_shots":num_shots, "p":p_list[i], "l": l, "eta":eta, "error_type":"TOTAL_MEM", "noise_model": noise_model, "CD_type":cd_type, "num_log_errors":log_error/num_shots, "time_stamp":datetime.now()}
-                
-#                 data = pd.concat([data, pd.DataFrame([curr_row])], ignore_index=True)
-            
-            
-
-#         else:
-#             decoder = CorrelatedDecoder(eta, d, l, corr_type)
-
-#             for p in p_list:
-#                 errors = decoder.decoding_failures_correlated(p, num_shots)
-#                 for i in range(len(errors)):
-#                     curr_row = {"d":d, "num_shots":num_shots, "p":p, "l": l, "eta":eta, "error_type":err_type[i], "num_log_errors":errors[i]/num_shots, "time_stamp":datetime.now()}
-#                     data = pd.concat([data, pd.DataFrame([curr_row])], ignore_index=True)
-#     return data
-
-
-def shots_averaging(num_shots, l, eta, err_type, in_df, CD_type, file):
-    """For the inputted number of shots, averages those shots over the array length run on computing cluster.  
-        in: num_shots - int, the number of monte carlo shots in the original simulation
-            arr_len -  int, the number of jobs / averaging interval desired
-            l - int, elongation parameter
-            eta - float, noise bias
-            err_type - the type of error to average
-            df - the dataframe of interest. If None, read from the CSV file
-    """
-    if in_df is None:
-        in_data = pd.read_csv(file)
-        data = in_data[(in_data['num_shots'] == num_shots) & (in_data['l'] == l) &(in_data['eta'] == eta) & (in_data['error_type'] == err_type) & (in_data['CD_type'] == CD_type)]
-    else:
-        data = in_df
-    data_mean = data.groupby('p', as_index=False)['num_log_errors'].mean()
-    return data_mean
 
 def shots_averaging(num_shots, l, eta, err_type, in_df, CD_type, file):
     """Weighted average of chunked data."""
