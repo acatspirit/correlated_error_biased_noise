@@ -1849,7 +1849,7 @@ def write_data(
     ID,
     corr_type,
     circuit_data,
-    noise_model="code_cap",
+    noise_model="circuit_level",
     cd_type="SC",
     corr_decoding=False,
     pymatch_corr=False,
