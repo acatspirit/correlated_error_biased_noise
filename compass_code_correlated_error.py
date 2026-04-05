@@ -128,7 +128,6 @@ class CorrelatedDecoder:
         num_errors = np.sum((correction+err_vec)@L%2)
         return num_errors
 
-
     def decoding_failures_correlated(self, p, shots):
         """ Finds the number of logical errors after decoding.
             p - probability of error
@@ -281,8 +280,7 @@ class CorrelatedDecoder:
         qubits_in_edge = qubits_stab1.multiply(qubits_stab2).indices
 
         return qubits_in_edge
-
-    
+ 
     def get_edge_type_from_detector(self, edge, mem_type, CD_data_transform) -> int:
         """
         Returns the edge type (0 or 1) for a given edge in the DEM. Type 0(1) connect Pauli X(Z) measurements.  
@@ -454,10 +452,11 @@ class CorrelatedDecoder:
         
         
         '''    
+        # print(obs_flips.shape)
         dem = circuit.detector_error_model(decompose_errors=True, flatten_loops=True, approximate_disjoint_errors=True)
         num_shots = np.shape(syndrome)[0]
-        comp_matching = Matching()
-        matching = Matching.from_detector_error_model(dem)
+        comp_matching = Matching(enable_correlations=True)
+        matching = Matching.from_detector_error_model(dem, enable_correlations=True)
 
         xlb_nodes, xrb_nodes, ztb_nodes, zbb_nodes = self.get_LB_RB_nodes(dem)
 
@@ -507,9 +506,6 @@ class CorrelatedDecoder:
                 
         
         comp_matching.set_boundary_nodes({b2})     
-                
-        # decode to obtain the original matching
-        pred_reg, W_reg = matching.decode_batch(syndrome,return_weights=True) #This is the regular matching
 
 
         # don't fire the b2
@@ -522,9 +518,28 @@ class CorrelatedDecoder:
 
         # the I_L / ERR_L complementary matchings. Return the total weights of the solutions for each shot
         if decoder_type == "MWPM":
+            # decode to obtain the original matching
+            pred_reg, W_reg = matching.decode_batch(syndrome,return_weights=True) #This is the regular matching
+
+            # the node fixed matching
             pred0, W0 = comp_matching.decode_batch(det0,return_weights=True)
             pred1, W1 = comp_matching.decode_batch(det1,return_weights=True)
         elif decoder_type == "MY_CORR":
+            # regular matching
+            pred_reg, W_reg = self.decoding_failures_correlated_circuit_level(
+                circuit, 
+                shots=num_shots, 
+                mem_type=self.mem_type, 
+                CD_type=self.corr_type, 
+                decompose_biased=True, 
+                return_weights=True, 
+                input_syndrome=syndrome, 
+                input_obs_flips=obs_flips,
+                comp_matching = matching,
+                b_extra = None,
+                )
+
+            # node fixed matching
             pred0, W0 = self.decoding_failures_correlated_circuit_level(
                 circuit, 
                 shots=num_shots, 
@@ -551,7 +566,15 @@ class CorrelatedDecoder:
                 comp_matching = comp_matching,
                 b_extra = b2,
                 )
+        elif decoder_type == "PY_CORR":
+            pred_reg, W_reg = matching.decode_batch(syndrome, enable_correlations=True, return_weights=True) #This is the regular matching
+            pred0, W0 = comp_matching.decode_batch(det0, enable_correlations=True, return_weights=True)
+            pred1, W1 = comp_matching.decode_batch(det1, enable_correlations=True, return_weights=True)
 
+        # print(f"w0 {W0}, w1 {W1}, wreg {W_reg}")
+        # print(f"pred0 {pred0}, pred1 {pred1}, pred_reg {pred_reg}")
+        # print(pred0, W0)
+        # print("now for the regular", pred_reg, W_reg)
         # scale by edge weight, get dB. Why do we do this? also do we assume all edges normalized by the weight of the first
         edge = next(iter(matching.to_networkx().edges.values()))
         edge_w = edge['weight']
@@ -575,18 +598,24 @@ class CorrelatedDecoder:
 
 
         for k in range(num_shots):
-            if W_reg[k] == W0[k]: 
+            # if W_reg[k] == W0[k]: # not always the case for correlated matching ... haven't yet figured out why
+            if pred_reg[k] == pred0[k]: # if the regular matching is the same as the node fixed one, then we know that the node fixed one is the min weight solution
+                # print(f"running eq wreg and w0, shot {k}")
                 W_min[k] = W0[k]
                 pred_min[k] = pred0[k]
                 W_comp[k] = W1[k]
-            elif W_reg[k] == W1[k]:
+            # elif W_reg[k] == W1[k]:
+            elif pred_reg[k] == pred1[k]:
+                # print(f"running eq wreg and w1, shot {k}")
                 W_min[k] = W1[k]
                 pred_min[k] = pred1[k]
                 W_comp[k] = W0[k]
 
             if pred_min[k]==obs_flips[k]: 
+                # print(f"appending signed gap for shot {k} positive")
                 Signed_Gap.append( (W_comp[k]-W_min[k]) * decibels_per_w) 
             else:
+                # print(f"appending signed gap for shot {k} negative")
                 Signed_Gap.append( (W_min[k]-W_comp[k]) * decibels_per_w) 
 
 
@@ -1296,16 +1325,16 @@ class CorrelatedDecoder:
             seed = np.random.randint(0, 2**32 - 1)
             sampler = circuit.compile_detector_sampler(seed=seed)
             syndrome, observable_flips = sampler.sample(shots, separate_observables=True)
-            print(syndrome.shape, observable_flips.shape)
+            # print(syndrome.shape, observable_flips.shape)
         else: 
             syndrome, observable_flips = input_syndrome, input_obs_flips
-            print(syndrome.shape, observable_flips.shape)
+            # print(syndrome.shape, observable_flips.shape)
         # print("syndrome inside function:", syndrome )
 
         # from eva
         # change the logicals so that there is an observable for each qubit, change back to the code cap case to check whether the real logical flipped
 
-        corrections = np.zeros((shots, 2)) # largest fault id is 1, len of correction = 2
+        corrections = np.zeros((shots, 1)) # largest fault id is 1, len of correction = 2 .... i changed this to 1 bc i have no clue why it was 2
         weights = np.zeros(shots)
         for i in range(shots):
 
@@ -1332,10 +1361,9 @@ class CorrelatedDecoder:
         # calculate the number of logical errors
         log_errors_array = np.any(np.array(observable_flips) != np.array(corrections), axis=1) # usual code
         if return_weights:
-            return log_errors_array, weights
+            return corrections, weights
         else:
             return log_errors_array
-
 
     def decoding_failures_correlated_gap(self, circuit, shots, mem_type, CD_type, cutoff=1):
         """
@@ -2033,7 +2061,6 @@ def load_and_combine_into_master(
 
     return combined_df
 
-
 def _get_expected_error_types(corr_type, circuit_data, corr_decoding=False, pymatch_corr=False):
     """Return the list of error_type strings expected for one completed chunk."""
     if circuit_data:
@@ -2045,7 +2072,6 @@ def _get_expected_error_types(corr_type, circuit_data, corr_decoding=False, pyma
             return ["X_MEM", "Z_MEM", "TOTAL_MEM"]
     else:
         return ["X", "Z", corr_type, "TOTAL"]
-
 
 def _safe_read_csv(csv_file):
     """Read CSV if it exists and is nonempty; otherwise return None."""
@@ -2059,7 +2085,6 @@ def _safe_read_csv(csv_file):
     except Exception as e:
         print(f"Warning: could not read {csv_file}: {e}")
         return None
-
 
 def _get_completed_shots_for_point(
     existing_df,
@@ -2192,7 +2217,7 @@ def get_data_DCC(
         corr_type = "None"
         if p_th_init_d is not None:
             p_th_init = p_th_init_d[(l, eta, "TOTAL_MEM_PY", cd_type,noise_model)] # add the mem type somehow
-            p_list = np.linspace(p_th_init - p_range, p_th_init + p_range, 40)
+            p_list = np.linspace(p_th_init - p_range, p_th_init + p_range, 18)
         write_data(total_num_shots=num_shots, 
                    d_list=d_list, 
                    l=l, 
@@ -2559,9 +2584,19 @@ def eta_threshold_plot_totalmem_compare_deformations(
     num_cols = len(cd_type_list)
 
     # Colors for different l values
-    cmap = colormaps['Blues_r']
-    color_values = np.linspace(0.1, 0.8, len(l_values))
-    l_colors = [cmap(val) for val in color_values]
+    cmap = plt.get_cmap("Paired")
+
+    # Each ℓ gets a pair: (light, dark)
+    num_l = len(l_values)
+
+    # Paired has 12 colors → 6 pairs
+    if num_l > 6:
+        raise ValueError("Paired colormap supports up to 6 ℓ values (12 colors total).")
+
+    l_color_pairs = [
+        (cmap(2*i), cmap(2*i + 1))  # (light, dark)
+        for i in range(num_l)
+]
 
     fig, axes = plt.subplots(
         1, num_cols,
@@ -2579,7 +2614,9 @@ def eta_threshold_plot_totalmem_compare_deformations(
     # Pretty subplot titles
     title_map = {
         "SC": "SC",
-        "ZXXZonSqu": "ZXXZ\u2610"
+        "ZXXZonSqu": "ZXXZ\u2610",
+        "Z": "V",
+        "X": "H",
     }
 
     for col_idx, cd_type in enumerate(cd_type_list):
@@ -2597,13 +2634,13 @@ def eta_threshold_plot_totalmem_compare_deformations(
             pth = df_filtered['pth'].to_numpy()
             err = df_filtered['stderr'].to_numpy()
 
-            color = l_colors[l_idx]
+            light_color, dark_color = l_color_pairs[l_idx]
 
             line, = ax.plot(
                 eta_vals,
                 pth,
                 label=rf"$\ell = {l}$",
-                color=color,
+                color=dark_color,
                 marker='o'
             )
 
@@ -2611,7 +2648,7 @@ def eta_threshold_plot_totalmem_compare_deformations(
                 eta_vals,
                 pth - err,
                 pth + err,
-                color=color,
+                color=dark_color,
                 alpha=0.2
             )
 
@@ -2626,12 +2663,328 @@ def eta_threshold_plot_totalmem_compare_deformations(
 
     axes[0].set_ylabel("Threshold $p_{th}$", fontsize=12)
 
+    mem_type = " " if error_type.startswith("TOTAL") else title_map[error_type[0]]
     fig.suptitle(
-        "Threshold vs Bias V Memory",
+        f"Threshold vs Bias {mem_type} Memory",
         fontsize=18,
         y=0.98
     )
 
+    fig.legend(
+        legend_handles,
+        legend_labels,
+        loc="upper center",
+        bbox_to_anchor=(0.5, 0.90),
+        ncol=len(l_values),
+        fontsize=11,
+        frameon=False
+    )
+
+    fig.subplots_adjust(top=0.78, wspace=0.12)
+
+    plt.show()
+
+def eta_threshold_plot_compare_error_types(
+    eta_df,
+    cd_type,
+    error_type_list,
+    noise_model
+):
+    """
+    Compare threshold vs bias across multiple error types for one deformation type.
+    One subplot per error_type, with all l values overlaid and shaded error bands.
+    Uses one shared legend across all subplots.
+    """
+
+    eta_df = eta_df.copy()
+
+    # Be robust to either 'cd_type' or 'CD_type'
+    if 'CD_type' in eta_df.columns:
+        cd_col = 'CD_type'
+    elif 'cd_type' in eta_df.columns:
+        cd_col = 'cd_type'
+    else:
+        raise ValueError("DataFrame must contain either 'CD_type' or 'cd_type'.")
+
+    eta_df[cd_col] = eta_df[cd_col].astype(str).str.strip()
+    eta_df['noise_model'] = eta_df['noise_model'].astype(str).str.strip()
+    eta_df['error_type'] = eta_df['error_type'].astype(str).str.strip()
+
+    cd_type = cd_type.strip()
+    noise_model = noise_model.strip()
+    error_type_list = [et.strip() for et in error_type_list]
+
+    df = eta_df[
+        (eta_df[cd_col] == cd_type) &
+        (eta_df['noise_model'] == noise_model) &
+        (eta_df['error_type'].isin(error_type_list))
+    ]
+
+    l_values = sorted(df['l'].unique())
+    num_cols = len(error_type_list)
+
+    # Paired colormap: one pair per ell, use dark color for the main line
+    cmap = plt.get_cmap("Paired")
+    num_l = len(l_values)
+
+    if num_l > 6:
+        raise ValueError("Paired colormap supports up to 6 ℓ values (12 colors total).")
+
+    l_color_pairs = [
+        (cmap(2 * i), cmap(2 * i + 1))   # (light, dark)
+        for i in range(num_l)
+    ]
+
+    fig, axes = plt.subplots(
+        1, num_cols,
+        figsize=(7 * num_cols, 5),
+        sharex=True,
+        sharey=True
+    )
+
+    if num_cols == 1:
+        axes = [axes]
+
+    legend_handles = []
+    legend_labels = []
+
+    # Pretty titles
+    title_map = {
+        "CORR_XZ": r"$\mathrm{CORR}_{XZ}$",
+        "CORR_ZX": r"$\mathrm{CORR}_{ZX}$",
+        "TOTAL": r"$\mathrm{MWPM}$",
+        "TOTAL_MEM": r"$\mathrm{TOTAL}_{MEM}$",
+        "X_MEM": r"$X_{MEM}$",
+        "Z_MEM": r"$Z_{MEM}$",
+        "TOTAL_MEM_CORR": r"$\mathrm{TOTAL}_{MEM,CORR}$",
+    }
+
+    for col_idx, error_type in enumerate(error_type_list):
+        ax = axes[col_idx]
+
+        df_err = df[df['error_type'] == error_type]
+
+        for l_idx, l in enumerate(l_values):
+            df_filtered = df_err[df_err['l'] == l].sort_values(by='eta')
+
+            if df_filtered.empty:
+                continue
+
+            eta_vals = df_filtered['eta'].to_numpy()
+            pth = df_filtered['pth'].to_numpy()
+            err = df_filtered['stderr'].to_numpy()
+
+            light_color, dark_color = l_color_pairs[l_idx]
+
+            line, = ax.plot(
+                eta_vals,
+                pth,
+                label=rf"$\ell = {l}$",
+                color=dark_color,
+                marker='o'
+            )
+
+            ax.fill_between(
+                eta_vals,
+                pth - err,
+                pth + err,
+                color=dark_color,
+                alpha=0.2
+            )
+
+            if col_idx == 0:
+                legend_handles.append(line)
+                legend_labels.append(rf"$\ell = {l}$")
+
+        subplot_title = title_map.get(error_type, error_type)
+        ax.set_title(subplot_title, fontsize=16)
+        ax.set_xlabel(r"Noise Bias ($\eta$)", fontsize=12)
+        ax.grid(True)
+
+    axes[0].set_ylabel(r"Threshold $p_{th}$", fontsize=12)
+
+    fig.suptitle(
+        f"Threshold vs Bias ({cd_type})",
+        fontsize=18,
+        y=0.98
+    )
+
+    fig.legend(
+        legend_handles,
+        legend_labels,
+        loc="upper center",
+        bbox_to_anchor=(0.5, 0.90),
+        ncol=len(l_values),
+        fontsize=11,
+        frameon=False
+    )
+
+    fig.subplots_adjust(top=0.78, wspace=0.12)
+
+    plt.show()
+
+def eta_threshold_plot_compare_deformations_and_decoder(
+    eta_df,
+    cd_type_list,
+    noise_model,
+    error_type="TOTAL_MEM_PY",
+    suffix_to_remove="_PY"
+):
+    """
+    Compare threshold vs bias for multiple deformation types.
+    One subplot per deformation type, all l values overlaid.
+
+    For each l:
+      - solid line: error_type
+      - dashed line: baseline error type with '{suffix_to_remove}' removed
+
+    Example:
+      error_type='TOTAL_MEM_CORR'  -> dashed comparison is 'TOTAL_MEM'
+    """
+
+    eta_df = eta_df.copy()
+
+    eta_df['CD_type'] = eta_df['CD_type'].astype(str).str.strip()
+    eta_df['noise_model'] = eta_df['noise_model'].astype(str).str.strip()
+    eta_df['error_type'] = eta_df['error_type'].astype(str).str.strip()
+
+    cd_type_list = [cd.strip() for cd in cd_type_list]
+    noise_model = noise_model.strip()
+    error_type = error_type.strip()
+
+    if error_type.endswith(suffix_to_remove):
+        baseline_error_type = error_type[:-len(suffix_to_remove)]   # removes the suffix
+    else:
+        raise ValueError(f"error_type must end with '{suffix_to_remove}', got {error_type}")
+
+    df = eta_df[
+        (eta_df['CD_type'].isin(cd_type_list)) &
+        (eta_df['noise_model'] == noise_model) &
+        (eta_df['error_type'].isin([error_type, baseline_error_type]))
+    ]
+
+    l_values = sorted(df['l'].unique())
+    num_cols = len(cd_type_list)
+
+    # Colors for different l values
+    cmap = plt.get_cmap("Paired")
+
+    # Each ℓ gets a pair: (light, dark)
+    num_l = len(l_values)
+
+    # Paired has 12 colors → 6 pairs
+    if num_l > 6:
+        raise ValueError("Paired colormap supports up to 6 ℓ values (12 colors total).")
+
+    l_color_pairs = [
+        (cmap(2*i), cmap(2*i + 1))  # (light, dark)
+        for i in range(num_l)
+    ]
+
+    fig, axes = plt.subplots(
+        1, num_cols,
+        figsize=(7 * num_cols, 5),
+        sharex=True,
+        sharey=True
+    )
+
+    if num_cols == 1:
+        axes = [axes]
+
+    legend_handles = []
+    legend_labels = []
+
+    # Pretty subplot titles
+    title_map = {
+        "SC": "SC",
+        "ZXXZonSqu": "ZXXZ\u2610",
+        "Z": "V",
+        "X": "H",
+    }
+
+    for col_idx, cd_type in enumerate(cd_type_list):
+        ax = axes[col_idx]
+
+        df_cd = df[df['CD_type'] == cd_type]
+
+        for l_idx, l in enumerate(l_values):
+            light_color, dark_color = l_color_pairs[l_idx]
+
+            # Main solid line: error_type
+            df_main = df_cd[
+                (df_cd['l'] == l) &
+                (df_cd['error_type'] == error_type)
+            ].sort_values(by='eta')
+
+            if not df_main.empty:
+                eta_vals = df_main['eta'].to_numpy()
+                pth = df_main['pth'].to_numpy()
+                err = df_main['stderr'].to_numpy()
+
+                line, = ax.plot(
+                    eta_vals,
+                    pth,
+                    label=rf"$\ell = {l}$",
+                    color=dark_color,
+                    marker='o',
+                    linestyle='-'
+                )
+
+                ax.fill_between(
+                    eta_vals,
+                    pth - err,
+                    pth + err,
+                    color=dark_color,
+                    alpha=0.2
+                )
+
+                if col_idx == 0:
+                    legend_handles.append(line)
+                    legend_labels.append(rf"$\ell = {l}$")
+
+            # Comparison dashed line: baseline_error_type
+            df_base = df_cd[
+                (df_cd['l'] == l) &
+                (df_cd['error_type'] == baseline_error_type)
+            ].sort_values(by='eta')
+
+            if not df_base.empty:
+                eta_vals_base = df_base['eta'].to_numpy()
+                pth_base = df_base['pth'].to_numpy()
+                err_base = df_base['stderr'].to_numpy()
+
+                ax.plot(
+                    eta_vals_base,
+                    pth_base,
+                    color=light_color,
+                    marker='o',
+                    linestyle='--',
+                    linewidth=1.8
+                )
+
+                ax.fill_between(
+                    eta_vals_base,
+                    pth_base - err_base,
+                    pth_base + err_base,
+                    color=light_color,
+                    alpha=0.10
+                )
+
+        subplot_title = title_map.get(cd_type, cd_type)
+        ax.set_title(subplot_title, fontsize=16)
+        ax.set_xlabel("Noise Bias ($\\eta$)", fontsize=12)
+        ax.grid(True)
+
+    axes[0].set_ylabel("Threshold $p_{th}$", fontsize=12)
+
+    mem_type = "" if baseline_error_type.startswith("TOTAL") else title_map[baseline_error_type[0]] + " Memory"
+    fig.suptitle(
+        f"Threshold vs Bias {mem_type}",
+        fontsize=18,
+        y=0.98
+    )
+
+    # Shared l legend
     fig.legend(
         legend_handles,
         legend_labels,
@@ -3162,7 +3515,7 @@ if __name__ == "__main__":
     # p_list = None
 
     l_list = [2,4,6] # elongation params, do 3 and 5 in another batch
-    d_list = [11,13,15,17,19] # code distances
+    d_list = [11,13,15] # code distances
     eta_list = [0.5,5,10,25,50] # noise bias
     cd_list = ["SC", "ZXXZonSqu"] # clifford deformation types
     total_num_shots = 1000000 # number of shots 
@@ -3211,12 +3564,12 @@ if __name__ == "__main__":
 
 
     # params to plot
-    # eta = 50
-    # l = 3
-    # curr_num_shots = 20408.0 # the file has 20408 for the 3,5 and 30303 for the 2,4,6
+    # eta = 0.5
+    # l = 2
+    # curr_num_shots = 52631.0 # the file has 20408 for the 3,5 and 30303 for the 2,4,6 and 52631 for pycorr
     # noise_model = "circuit_level"
     # CD_type = "SC"
-    # py_corr = False # whether to use pymatching correlated decoder for circuit data
+    # py_corr = True # whether to use pymatching correlated decoder for circuit data
     # corr_decoding = False # whether to get data for correlated decoding using my decoder
     # error_type = "Z_MEM_PY" # which type of error to plot, choose from ['X_MEM', 'Z_MEM', 'TOTAL_MEM', 'TOTAL_PY_MEM', 'TOTAL_MEM_PY_CORR']
     # p_range = 0.001
@@ -3238,13 +3591,27 @@ if __name__ == "__main__":
     # print(p_th, pth_error)
     # get_thresholds_from_data_exactish(curr_num_shots, p_th_init_CL_pycorr,p_range, output_file)
     eta_df = pd.read_csv("/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/threshold_exactish_per_eta.csv")
-    
-    eta_threshold_plot_totalmem_compare_deformations(
-    eta_df,
-    cd_type_list=["SC", "ZXXZonSqu"],
-    noise_model="circuit_level",
-    error_type = "Z_MEM"
-)
+    eta_df_code_cap = pd.read_csv("/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/all_thresholds_per_eta_elongated.csv")
+#     eta_threshold_plot_totalmem_compare_deformations(
+#     eta_df,
+#     cd_type_list=["SC", "ZXXZonSqu"],
+#     noise_model="circuit_level",
+#     error_type = "TOTAL_MEM_PY"
+# )
+    # eta_threshold_plot_compare_deformations_and_decoder(
+    # eta_df,
+    # cd_type_list=["SC", "ZXXZonSqu"],
+    # noise_model="circuit_level",
+    # error_type = "Z_MEM_PY",
+    # suffix_to_remove="_PY"
+    # )
+
+    eta_threshold_plot_compare_error_types(
+    eta_df_code_cap,
+    cd_type="SC",
+    error_type_list=["CORR_XZ", "CORR_ZX", "TOTAL"],
+    noise_model="code_cap"
+    )
     
     
     # p_range_df = df[(df['p'] <= pth0 + p_range) & (df["p"] >= pth0 - p_range)]
