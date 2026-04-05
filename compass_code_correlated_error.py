@@ -1534,7 +1534,7 @@ class CorrelatedDecoder:
 #
 ############################################
 
-def shots_averaging(num_shots, l, eta, err_type, in_df, CD_type, file):
+def shots_averaging(num_shots, l, eta, err_type, in_df, CD_type, file, d=None, noise_model=None):
     """Weighted average of chunked data."""
     if in_df is None:
         in_data = pd.read_csv(file)
@@ -1544,6 +1544,10 @@ def shots_averaging(num_shots, l, eta, err_type, in_df, CD_type, file):
             (in_data['error_type'] == err_type) &
             (in_data['CD_type'] == CD_type)
         ]
+        if d is not None:
+            data = data[data['d'] == d]
+        if noise_model is not None and 'noise_model' in data.columns:
+            data = data[data['noise_model'] == noise_model]
     else:
         data = in_df.copy()
 
@@ -1978,36 +1982,27 @@ def load_and_combine(folder, pattern="*.csv"):
     df = load_and_concat_csvs(folder, pattern)
     combined_df = combine_chunked_data(df)
     return combined_df
-
-def load_and_combine_into_master(
-    folder,
-    master_file="circuit_data.csv",
+def append_task_csvs_into_master(
+    folder="circuit_data",
+    master_file="circuit_data_mycorr.csv",
     pattern="*.csv",
-    deduplicate=False,
-    save=True,
+    delete_after_merge=False,
 ):
     """
-    Load chunked CSVs, combine them correctly, and append into a master CSV.
+    Append raw task CSV rows into the master CSV without touching existing rows.
 
-    Parameters
-    ----------
-    folder : str
-        Folder containing SLURM output CSVs (e.g. "circuit_data")
-    master_file : str
-        Path to your master dataset
-    pattern : str
-        File pattern to match
-    deduplicate : bool
-        Whether to drop duplicate rows when merging
-    save : bool
-        Whether to overwrite master_file with updated data
+    - Old master contents are left untouched.
+    - New task rows are reordered to match the master header before appending.
+    - Keeps time_stamp.
+    - Does NOT combine shots.
     """
 
-    # -------------------------
-    # 1. Load all new CSVs
-    # -------------------------
-    files = glob.glob(f"{folder}/{pattern}")
-    
+    files = glob.glob(os.path.join(folder, pattern))
+
+    # Exclude the master file itself if it lives in the same folder
+    master_abs = os.path.abspath(master_file)
+    files = [f for f in files if os.path.abspath(f) != master_abs]
+
     if len(files) == 0:
         raise ValueError(f"No CSV files found in {folder}")
 
@@ -2019,65 +2014,44 @@ def load_and_combine_into_master(
         except Exception as e:
             print(f"Skipping {f}: {e}")
 
-    new_df_raw = pd.concat(df_list, ignore_index=True)
+    if len(df_list) == 0:
+        raise ValueError("No readable task CSV files found.")
 
-    # -------------------------
-    # 2. Combine chunked data
-    # -------------------------
-    new_df = new_df_raw.copy()
-    new_df["weighted_errors"] = new_df["num_log_errors"] * new_df["num_shots"]
+    new_df = pd.concat(df_list, ignore_index=True)
 
-    group_cols = ["d", "p", "l", "eta", "error_type"]
-
-    if "noise_model" in new_df.columns:
-        group_cols += ["noise_model", "CD_type"]
-
-    new_df = (
-        new_df.groupby(group_cols, as_index=False)
-              .agg({
-                  "num_shots": "sum",
-                  "weighted_errors": "sum"
-              })
-    )
-
-    new_df["num_log_errors"] = (
-        new_df["weighted_errors"] / new_df["num_shots"]
-    )
-
-    new_df = new_df.drop(columns="weighted_errors")
-
-    # -------------------------
-    # 3. Load existing master
-    # -------------------------
+    # If master exists, match its exact column order
     if os.path.isfile(master_file):
-        master_df = pd.read_csv(master_file)
+        master_header = pd.read_csv(master_file, nrows=0).columns.tolist()
+
+        # Add any missing columns to new_df
+        for col in master_header:
+            if col not in new_df.columns:
+                new_df[col] = np.nan
+
+        # Keep only the master columns, in master order
+        new_df = new_df[master_header]
+
+        # Append only new rows; do not rewrite old rows
+        new_df.to_csv(master_file, mode="a", header=False, index=False)
+
     else:
-        master_df = pd.DataFrame(columns=new_df.columns)
+        # If master does not exist yet, create it using a canonical order
+        preferred_cols = [
+            "d", "num_shots", "p", "l", "eta",
+            "error_type", "num_log_errors", "time_stamp",
+            "noise_model", "CD_type"
+        ]
+        existing_cols = [c for c in preferred_cols if c in new_df.columns]
+        remaining_cols = [c for c in new_df.columns if c not in existing_cols]
+        new_df = new_df[existing_cols + remaining_cols]
 
-    # -------------------------
-    # 4. Merge new + old
-    # -------------------------
-    combined_df = pd.concat([master_df, new_df], ignore_index=True)
+        new_df.to_csv(master_file, index=False)
 
-    if deduplicate:
-        # Drop exact duplicates (safe if rerunning jobs)
-        combined_df = combined_df.drop_duplicates()
+    if delete_after_merge:
+        for f in files:
+            os.remove(f)
 
-        # Optional: keep the LAST entry for same experiment
-        combined_df = combined_df.sort_values("num_shots").drop_duplicates(
-            subset=group_cols,
-            keep="last"
-        )
-
-    # -------------------------
-    # 5. Save back to master
-    # -------------------------
-    if save:
-        combined_df.to_csv(master_file, index=False)
-
-    print(f"Master dataset now has {len(combined_df)} rows")
-
-    return combined_df
+    return new_df
 
 def _get_expected_error_types(corr_type, circuit_data, corr_decoding=False, pymatch_corr=False):
     """Return the list of error_type strings expected for one completed chunk."""
@@ -3735,11 +3709,10 @@ if __name__ == "__main__":
         elif corr_type == "CORR_XZ":
             output_file = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/xz_corr_err_data.csv'
 
-    num_points = len(l_list) * len(eta_list) * len(cd_list) * len(d_list) * n_p
-    repeats_per_submission = 1000 // num_points
-    shots_added_per_submission = repeats_per_submission * shots_per_task
-    
-
+    # num_points = len(l_list) * len(eta_list) * len(cd_list) * len(d_list) * n_p
+    # repeats_per_submission = 1000 // num_points
+    # shots_added_per_submission = repeats_per_submission * shots_per_task
+    # append_task_csvs_into_master(master_file="circuit_data.csv")
     # run this to get data from the dcc
     get_data_DCC_chat(circuit_data=circuit_data,
                     corr_decoding=corr_decoding,
