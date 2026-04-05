@@ -3693,8 +3693,8 @@ if __name__ == "__main__":
 
     l_list = [2,4,6] # elongation params, do 3 and 5 in another batch
     d_list = [11,13,15] # code distances
-    eta_list = [0.5,5,10,25,50] # noise bias
-    cd_list = ["ZXXZonSqu"] # clifford deformation types
+    eta_list = [0.5,5,10,50] # noise bias
+    cd_list = ["SC", "ZXXZonSqu"] # clifford deformation types
     total_num_shots = 1_000_000 # number of shots 
     corr_type = "TOTAL_MEM_CORR" # which type of correlation to use, depending on the type of decoder. Choose from ['CORR_XZ', 'CORR_ZX', 'TOTAL', 'TOTAL_MEM', 'TOTAL_PY_CORR', 'TOTAL_MEM_CORR']
     error_type = "TOTAL_MEM_CORR" # which type of error to plot
@@ -3703,8 +3703,8 @@ if __name__ == "__main__":
     corr_type_list = ['X_MEM_CORR', 'Z_MEM_CORR', 'TOTAL_MEM_CORR']  
     noise_model = "circuit_level"
     py_corr = False # whether to use pymatching correlated decoder for circuit data
-    shots_per_task = 10
-    n_p = 15
+    shots_per_task = 10**5
+    n_p = 13
     p_range=0.001
 
     if circuit_data:
@@ -3727,29 +3727,31 @@ if __name__ == "__main__":
     # num_points = len(l_list) * len(eta_list) * len(cd_list) * len(d_list) * n_p
     # repeats_per_submission = 1000 // num_points
     # shots_added_per_submission = repeats_per_submission * shots_per_task
-    # append_task_csvs_into_master(master_file="circuit_data.csv")
+    
     # run this to get data from the dcc
-    # get_data_DCC_chat(circuit_data=circuit_data,
-    #                 corr_decoding=corr_decoding,
-    #                 noise_model=noise_model,
-    #                 d_list=d_list,
-    #                 l_list=l_list,
-    #                 eta_list=eta_list,
-    #                 cd_list=cd_list,
-    #                 corr_list=corr_list,
-    #                 total_num_shots=total_num_shots,
-    #                 p_list=None,
-    #                 p_th_init_d=p_th_init_CL_pycorr,
-    #                 pymatch_corr=py_corr,
-    #                 n_p = n_p,
-    #                 p_range=p_range,
-    #                 chunk_size=100,
-    #                 resume=True,
-    #                 shots_per_task=shots_per_task,
-    #                 )
+    get_data_DCC_chat(circuit_data=circuit_data,
+                    corr_decoding=corr_decoding,
+                    noise_model=noise_model,
+                    d_list=d_list,
+                    l_list=l_list,
+                    eta_list=eta_list,
+                    cd_list=cd_list,
+                    corr_list=corr_list,
+                    total_num_shots=total_num_shots,
+                    p_list=None,
+                    p_th_init_d=p_th_init_CL_pycorr,
+                    pymatch_corr=py_corr,
+                    n_p = n_p,
+                    p_range=p_range,
+                    chunk_size=100,
+                    resume=True,
+                    shots_per_task=shots_per_task,
+                    )
     # get_data_DCC(circuit_data, corr_decoding, noise_model, d_list, l_list, eta_list, cd_list, corr_list, total_num_shots, p_list=None, p_th_init_d=p_th_init_CL_pycorr, pymatch_corr=py_corr)
 
     # run this once you have data and want to combo it to one csv
+    # append_task_csvs_into_master(master_file="circuit_data.csv")
+
     # concat_csv(folder_path, circuit_data)
 
 
@@ -3770,8 +3772,8 @@ if __name__ == "__main__":
     # curr_num_shots = 52631.0 # the file has 20408 for the 3,5 and 30303 for the 2,4,6 and 52631 for pycorr
     # noise_model = "circuit_level"
     # CD_type = "SC"
-    # py_corr = True # whether to use pymatching correlated decoder for circuit data
-    # corr_decoding = False # whether to get data for correlated decoding using my decoder
+    # py_corr = False # whether to use pymatching correlated decoder for circuit data
+    # corr_decoding = True # whether to get data for correlated decoding using my decoder
     # error_type = "Z_MEM_PY" # which type of error to plot, choose from ['X_MEM', 'Z_MEM', 'TOTAL_MEM', 'TOTAL_PY_MEM', 'TOTAL_MEM_PY_CORR']
     # p_range = 0.001
 
@@ -3781,7 +3783,18 @@ if __name__ == "__main__":
 
     # df = pd.read_csv(output_file)
 
-    # full_error_plot(df,eta,l,curr_num_shots,noise_model, CD_type, output_file,corr_decoding=corr_decoding, py_corr=py_corr, circuit_level=circuit_data)
+    # full_error_plot(
+    #     full_df=df,
+    #     curr_eta=eta,
+    #     curr_l=l,
+    #     curr_num_shots=None,
+    #     noise_model=noise_model,
+    #     CD_type=CD_type,
+    #     file=output_file,
+    #     corr_decoding=corr_decoding,
+    #     py_corr=py_corr,
+    #     circuit_level=circuit_data,
+    # )
 
 
     # make a plot for specific thresholds
