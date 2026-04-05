@@ -1798,15 +1798,33 @@ def write_data(
     overwrite : bool
         If True, delete an existing file with the same ID before starting.
     """
+    # if circuit_data:
+    #     os.makedirs("circuit_data", exist_ok=True)
+    #     if pymatch_corr:
+    #         data_file = f"circuit_data/py_corr_{ID}.csv"
+    #     else:
+    #         data_file = f"circuit_data/circuit_level_{ID}.csv"
+    # else:
+    #     os.makedirs("corr_err_data", exist_ok=True)
+    #     data_file = f"corr_err_data/code_cap_{ID}.csv"
+
     if circuit_data:
         os.makedirs("circuit_data", exist_ok=True)
+
         if pymatch_corr:
-            data_file = f"circuit_data/py_corr_{ID}.csv"
+            prefix = "py_corr"
+        elif corr_decoding:
+            prefix = "corr"
         else:
-            data_file = f"circuit_data/circuit_level_{ID}.csv"
-    else:
-        os.makedirs("corr_err_data", exist_ok=True)
-        data_file = f"corr_err_data/code_cap_{ID}.csv"
+            prefix = "circuit_level"
+
+        d_tag = "_".join(str(d) for d in d_list)
+        p_tag = "_".join(f"{float(p):.8f}" for p in p_list)
+
+        data_file = (
+            f"circuit_data/{prefix}"
+            f"_l{l}_eta{eta}_cd{cd_type}_d{d_tag}_p{p_tag}.csv"
+        )
 
     if overwrite and os.path.isfile(data_file):
         os.remove(data_file)
@@ -2112,7 +2130,7 @@ def _get_completed_shots_for_point(
 
     mask = (
         (df["d"] == d) &
-        (df["p"] == p) &
+        (np.round(df["p"], 12) == round(float(p), 12)) &
         (df["l"] == l) &
         (df["eta"] == eta)
     )
@@ -2136,6 +2154,176 @@ def _get_completed_shots_for_point(
     completed_shots = min(completed_per_err) if completed_per_err else 0
     # completed_p = max(df["p"].unique()) if not df.empty else None
     return completed_shots#, completed_p
+
+def get_data_DCC_chat(
+    circuit_data,
+    corr_decoding,
+    noise_model,
+    d_list,
+    l_list,
+    eta_list,
+    cd_list,
+    corr_list,
+    total_num_shots,
+    p_list=None,
+    p_th_init_d=None,
+    p_range=0.001,
+    n_p=20,
+    pymatch_corr=False,
+    chunk_size=1000,
+    overwrite=False,
+    resume=True,
+    shots_per_task=None,
+):
+    """
+    Smaller-granularity SLURM array launcher.
+
+    Circuit-level:
+        one task = one (l, eta, cd_type, d, p)
+
+    Code-cap correlated:
+        one task = one (l, eta, corr_type, d, p)
+
+    Parameters
+    ----------
+    total_num_shots : int
+        Target total shots you eventually want per point.
+    shots_per_task : int or None
+        If set, each task contributes this many shots to its one point.
+        This is strongly recommended for walltime-limited runs.
+    """
+
+    task_id = int(os.environ["SLURM_ARRAY_TASK_ID"])
+
+    if "SLURM_ARRAY_TASK_COUNT" in os.environ:
+        slurm_array_size = int(os.environ["SLURM_ARRAY_TASK_COUNT"])
+    else:
+        slurm_array_size = int(os.environ["SLURM_ARRAY_TASK_MAX"]) + 1
+
+    print(f"Task ID: {task_id}")
+    print(f"SLURM Array Size: {slurm_array_size}")
+
+    if circuit_data:
+        # Build p-grid first
+        circuit_param_base = list(itertools.product(l_list, eta_list, cd_list, d_list))
+        param_arr = []
+
+        for l, eta, cd_type, d in circuit_param_base:
+            if p_th_init_d is not None:
+                if pymatch_corr:
+                    err_key = "TOTAL_MEM_PY"
+                elif corr_decoding:
+                    err_key = "TOTAL_MEM_CORR"
+                else:
+                    err_key = "TOTAL_MEM"
+
+                p_th_init = p_th_init_d[(l, eta, err_key, cd_type, noise_model)]
+                p_list_local = np.linspace(
+                    max(p_th_init - p_range, 0.0),
+                    min(p_th_init + p_range, 1.0),
+                    n_p,
+                )
+            else:
+                p_list_local = p_list
+
+            for p in p_list_local:
+                param_arr.append((l, eta, cd_type, d, float(p)))
+
+        num_param_points = len(param_arr)
+
+        if task_id >= num_param_points:
+            raise ValueError(
+                f"Task ID {task_id} exceeds number of parameter points {num_param_points}"
+            )
+
+        l, eta, cd_type, d, p = param_arr[task_id]
+        corr_type = "None"
+
+        if shots_per_task is None:
+            # fallback behavior, but not recommended
+            reps = max(1, slurm_array_size // num_param_points)
+            num_shots = int(total_num_shots // reps)
+        else:
+            num_shots = int(shots_per_task)
+
+        print("Running circuit-level point:")
+        print(f"l={l}, eta={eta}, cd_type={cd_type}, d={d}, p={p}")
+        print(f"shots this task = {num_shots}")
+
+        write_data(
+            total_num_shots=num_shots,
+            d_list=[d],
+            l=l,
+            p_list=[p],
+            eta=eta,
+            ID=task_id,
+            corr_type=corr_type,
+            circuit_data=circuit_data,
+            noise_model=noise_model,
+            cd_type=cd_type,
+            corr_decoding=corr_decoding,
+            pymatch_corr=pymatch_corr,
+            chunk_size=chunk_size,
+            overwrite=overwrite,
+            resume=resume,
+        )
+
+    elif corr_decoding and not circuit_data:
+        codecap_param_base = list(itertools.product(l_list, eta_list, corr_list, d_list))
+        param_arr = []
+
+        for l, eta, corr_type, d in codecap_param_base:
+            if p_th_init_d is not None:
+                p_th_init = p_th_init_d[(l, eta, corr_type)]
+                p_list_local = np.linspace(
+                    max(p_th_init - 0.03, 0.0),
+                    min(p_th_init + 0.03, 1.0),
+                    n_p,
+                )
+            else:
+                p_list_local = p_list
+
+            for p in p_list_local:
+                param_arr.append((l, eta, corr_type, d, float(p)))
+
+        num_param_points = len(param_arr)
+
+        if task_id >= num_param_points:
+            raise ValueError(
+                f"Task ID {task_id} exceeds number of parameter points {num_param_points}"
+            )
+
+        l, eta, corr_type, d, p = param_arr[task_id]
+        cd_type = "SC"
+        noise_model_local = "code_cap"
+
+        if shots_per_task is None:
+            reps = max(1, slurm_array_size // num_param_points)
+            num_shots = int(total_num_shots // reps)
+        else:
+            num_shots = int(shots_per_task)
+
+        print("Running code-cap point:")
+        print(f"l={l}, eta={eta}, corr_type={corr_type}, d={d}, p={p}")
+        print(f"shots this task = {num_shots}")
+
+        write_data(
+            total_num_shots=num_shots,
+            d_list=[d],
+            l=l,
+            p_list=[p],
+            eta=eta,
+            ID=task_id,
+            corr_type=corr_type,
+            circuit_data=circuit_data,
+            noise_model=noise_model_local,
+            cd_type=cd_type,
+            corr_decoding=corr_decoding,
+            pymatch_corr=pymatch_corr,
+            chunk_size=chunk_size,
+            overwrite=overwrite,
+            resume=resume,
+        )
 
 def get_data_DCC(
         circuit_data, 
@@ -3511,14 +3699,14 @@ if __name__ == "__main__":
     # p_list = np.linspace(p_th_init-0.03, p_th_init + 0.03, 40)
 
     # otherwise p_list is range of probabilities
-    p_list = np.logspace(-2.5, -1.5, 40)
+    # p_list = np.logspace(-2.5, -1.5, 40)
     # p_list = None
 
     l_list = [2,4,6] # elongation params, do 3 and 5 in another batch
     d_list = [11,13,15] # code distances
     eta_list = [0.5,5,10,25,50] # noise bias
-    cd_list = ["SC", "ZXXZonSqu"] # clifford deformation types
-    total_num_shots = 1000000 # number of shots 
+    cd_list = ["ZXXZonSqu"] # clifford deformation types
+    total_num_shots = 1_000_000 # number of shots 
     corr_type = "TOTAL_MEM_CORR" # which type of correlation to use, depending on the type of decoder. Choose from ['CORR_XZ', 'CORR_ZX', 'TOTAL', 'TOTAL_MEM', 'TOTAL_PY_CORR', 'TOTAL_MEM_CORR']
     error_type = "TOTAL_MEM_CORR" # which type of error to plot
     # num_shots = 66666
@@ -3526,6 +3714,9 @@ if __name__ == "__main__":
     corr_type_list = ['X_MEM_CORR', 'Z_MEM_CORR', 'TOTAL_MEM_CORR']  
     noise_model = "circuit_level"
     py_corr = False # whether to use pymatching correlated decoder for circuit data
+    shots_per_task = 10
+    n_p = 15
+    p_range=0.001
 
     if circuit_data:
         folder_path = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/circuit_data/'
@@ -3544,8 +3735,30 @@ if __name__ == "__main__":
         elif corr_type == "CORR_XZ":
             output_file = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/xz_corr_err_data.csv'
 
+    num_points = len(l_list) * len(eta_list) * len(cd_list) * len(d_list) * n_p
+    repeats_per_submission = 1000 // num_points
+    shots_added_per_submission = repeats_per_submission * shots_per_task
+    
 
     # run this to get data from the dcc
+    get_data_DCC_chat(circuit_data=circuit_data,
+                    corr_decoding=corr_decoding,
+                    noise_model=noise_model,
+                    d_list=d_list,
+                    l_list=l_list,
+                    eta_list=eta_list,
+                    cd_list=cd_list,
+                    corr_list=corr_list,
+                    total_num_shots=total_num_shots,
+                    p_list=None,
+                    p_th_init_d=p_th_init_CL_pycorr,
+                    pymatch_corr=py_corr,
+                    n_p = n_p,
+                    p_range=p_range,
+                    chunk_size=100,
+                    resume=True,
+                    shots_per_task=shots_per_task,
+                    )
     # get_data_DCC(circuit_data, corr_decoding, noise_model, d_list, l_list, eta_list, cd_list, corr_list, total_num_shots, p_list=None, p_th_init_d=p_th_init_CL_pycorr, pymatch_corr=py_corr)
 
     # run this once you have data and want to combo it to one csv
@@ -3590,8 +3803,8 @@ if __name__ == "__main__":
     # pth_error = np.sqrt(pcov[0][0])
     # print(p_th, pth_error)
     # get_thresholds_from_data_exactish(curr_num_shots, p_th_init_CL_pycorr,p_range, output_file)
-    eta_df = pd.read_csv("/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/threshold_exactish_per_eta.csv")
-    eta_df_code_cap = pd.read_csv("/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/all_thresholds_per_eta_elongated.csv")
+    # eta_df = pd.read_csv("/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/threshold_exactish_per_eta.csv")
+    # eta_df_code_cap = pd.read_csv("/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/all_thresholds_per_eta_elongated.csv")
 #     eta_threshold_plot_totalmem_compare_deformations(
 #     eta_df,
 #     cd_type_list=["SC", "ZXXZonSqu"],
@@ -3606,12 +3819,12 @@ if __name__ == "__main__":
     # suffix_to_remove="_PY"
     # )
 
-    eta_threshold_plot_compare_error_types(
-    eta_df_code_cap,
-    cd_type="SC",
-    error_type_list=["CORR_XZ", "CORR_ZX", "TOTAL"],
-    noise_model="code_cap"
-    )
+    # eta_threshold_plot_compare_error_types(
+    # eta_df_code_cap,
+    # cd_type="SC",
+    # error_type_list=["CORR_XZ", "CORR_ZX", "TOTAL"],
+    # noise_model="code_cap"
+    # )
     
     
     # p_range_df = df[(df['p'] <= pth0 + p_range) & (df["p"] >= pth0 - p_range)]
