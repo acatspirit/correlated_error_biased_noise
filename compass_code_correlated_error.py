@@ -2213,7 +2213,7 @@ def get_data_DCC_chat(
                 if pymatch_corr:
                     err_key = "TOTAL_MEM_PY"
                 elif corr_decoding:
-                    err_key = "TOTAL_MEM_CORR"
+                    err_key = "TOTAL_MEM_PY" # CHANGE THIS LATER IF MORE DATA
                 else:
                     err_key = "TOTAL_MEM"
 
