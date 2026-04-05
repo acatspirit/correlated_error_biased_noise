@@ -1982,6 +1982,8 @@ def load_and_combine(folder, pattern="*.csv"):
     df = load_and_concat_csvs(folder, pattern)
     combined_df = combine_chunked_data(df)
     return combined_df
+
+# use this now to merge csvs
 def append_task_csvs_into_master(
     folder="circuit_data",
     master_file="circuit_data_mycorr.csv",
@@ -2461,7 +2463,12 @@ def full_error_plot(full_df, curr_eta, curr_l, curr_num_shots, noise_model, CD_t
     # filtered_df = full_df[(full_df['l'] == curr_l) & (full_df['eta'] == curr_eta) & (full_df['num_shots'] == curr_num_shots)] 
                     # & (df['time_stamp'].apply(lambda x: x[0:10]) == datetime.today().date())
     
-    filtered_df = full_df[(full_df['l'] == curr_l) & (full_df['eta'] == curr_eta) & (full_df['num_shots'] == curr_num_shots) & (full_df['noise_model'] == noise_model) & (full_df['CD_type'] == CD_type)]
+    filtered_df = full_df[
+    (full_df['l'] == curr_l) &
+    (full_df['eta'] == curr_eta) &
+    (full_df['noise_model'] == noise_model) &
+    (full_df['CD_type'] == CD_type)
+    ] # got rid num_shots
 
     if py_corr: 
         filtered_df = filtered_df[filtered_df['error_type'].isin(['X_MEM_PY', 'Z_MEM_PY', 'TOTAL_MEM_PY'])]
@@ -2499,7 +2506,15 @@ def full_error_plot(full_df, curr_eta, curr_l, curr_num_shots, noise_model, CD_t
             d_df = error_type_df[error_type_df['d'] == d]
             if averaging:
                 # to check that this is working, figure out how big this DF is
-                d_df_mean = shots_averaging(curr_num_shots, curr_l, curr_eta, error_type, d_df, CD_type, file)
+                d_df_mean = shots_averaging(
+                                num_shots=None,
+                                l=curr_l,
+                                eta=curr_eta,
+                                err_type=error_type,
+                                in_df=d_df,
+                                CD_type=CD_type,
+                                file=file
+                            )
                 if loglog:
                     ax.loglog(d_df_mean['p']*prob_scale[error_type], d_df_mean['num_log_errors'],  label=f'd={d}')
                     error_bars = 10**(-6)*np.ones(len(d_df_mean['num_log_errors']))
@@ -2528,7 +2543,7 @@ def threshold_plot(full_df, p_th0, p_range, curr_eta, curr_l, curr_num_shots, co
     prob_scale = get_prob_scale(corr_type, curr_eta)
 
     # Filter the DataFrame based on the input parameters
-    filtered_df = full_df[(full_df['p'] > p_th0 - p_range)&(full_df['p'] < p_th0 + p_range)&(full_df['l'] == curr_l) & (full_df['eta'] == curr_eta) & (full_df['num_shots'] == curr_num_shots) & (full_df['noise_model'] == noise_model) & (full_df['CD_type'] == CD_type)]
+    filtered_df = full_df[(full_df['p'] > p_th0 - p_range)&(full_df['p'] < p_th0 + p_range)&(full_df['l'] == curr_l) & (full_df['eta'] == curr_eta) & (full_df['noise_model'] == noise_model) & (full_df['CD_type'] == CD_type)]
     
     if py_corr: 
         filtered_df = filtered_df[filtered_df['error_type'].isin(['X_MEM_PY', 'Z_MEM_PY', 'TOTAL_MEM_PY'])]
@@ -2552,9 +2567,9 @@ def threshold_plot(full_df, p_th0, p_range, curr_eta, curr_l, curr_num_shots, co
     
     # Plot each d value
     for i,d in enumerate(d_values):
-        d_df = full_df[(full_df['d'] == d)&(full_df['error_type'] == corr_type)&(full_df['l'] == curr_l) & (full_df['eta'] == curr_eta) & (full_df['num_shots'] == curr_num_shots)]
+        d_df = full_df[(full_df['d'] == d)&(full_df['error_type'] == corr_type)&(full_df['l'] == curr_l) & (full_df['eta'] == curr_eta)]
         if averaging:
-            d_df_mean = shots_averaging(curr_num_shots, curr_l, curr_eta, corr_type, d_df, CD_type, file)
+            d_df_mean = shots_averaging(None, curr_l, curr_eta, corr_type, d_df, CD_type, file)
             if loglog:
                 ax.loglog(d_df_mean['p']*prob_scale, d_df_mean['num_log_errors'],  label=f'd={d}', color=colors[i])
                 error_bars = 10**(-6)*np.ones(len(d_df_mean['num_log_errors']))
@@ -3714,24 +3729,24 @@ if __name__ == "__main__":
     # shots_added_per_submission = repeats_per_submission * shots_per_task
     # append_task_csvs_into_master(master_file="circuit_data.csv")
     # run this to get data from the dcc
-    get_data_DCC_chat(circuit_data=circuit_data,
-                    corr_decoding=corr_decoding,
-                    noise_model=noise_model,
-                    d_list=d_list,
-                    l_list=l_list,
-                    eta_list=eta_list,
-                    cd_list=cd_list,
-                    corr_list=corr_list,
-                    total_num_shots=total_num_shots,
-                    p_list=None,
-                    p_th_init_d=p_th_init_CL_pycorr,
-                    pymatch_corr=py_corr,
-                    n_p = n_p,
-                    p_range=p_range,
-                    chunk_size=100,
-                    resume=True,
-                    shots_per_task=shots_per_task,
-                    )
+    # get_data_DCC_chat(circuit_data=circuit_data,
+    #                 corr_decoding=corr_decoding,
+    #                 noise_model=noise_model,
+    #                 d_list=d_list,
+    #                 l_list=l_list,
+    #                 eta_list=eta_list,
+    #                 cd_list=cd_list,
+    #                 corr_list=corr_list,
+    #                 total_num_shots=total_num_shots,
+    #                 p_list=None,
+    #                 p_th_init_d=p_th_init_CL_pycorr,
+    #                 pymatch_corr=py_corr,
+    #                 n_p = n_p,
+    #                 p_range=p_range,
+    #                 chunk_size=100,
+    #                 resume=True,
+    #                 shots_per_task=shots_per_task,
+    #                 )
     # get_data_DCC(circuit_data, corr_decoding, noise_model, d_list, l_list, eta_list, cd_list, corr_list, total_num_shots, p_list=None, p_th_init_d=p_th_init_CL_pycorr, pymatch_corr=py_corr)
 
     # run this once you have data and want to combo it to one csv
