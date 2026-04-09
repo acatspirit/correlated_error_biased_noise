@@ -1321,7 +1321,7 @@ class CorrelatedDecoder:
         
         # first round of decoding
         # get the syndromes and observable flips
-        if np.all(input_syndrome==None) and np.all(input_obs_flips == None):
+        if input_syndrome is None and input_obs_flips is None:
             seed = np.random.randint(0, 2**32 - 1)
             sampler = circuit.compile_detector_sampler(seed=seed)
             syndrome, observable_flips = sampler.sample(shots, separate_observables=True)
@@ -2516,8 +2516,8 @@ def full_error_plot(full_df, curr_eta, curr_l, curr_num_shots, noise_model, CD_t
                                 file=file
                             )
                 if loglog:
-                    ax.loglog(d_df_mean['p']*prob_scale[error_type], d_df_mean['num_log_errors'],  label=f'd={d}')
-                    error_bars = 10**(-6)*np.ones(len(d_df_mean['num_log_errors']))
+                    ax.loglog(d_df_mean['p']*prob_scale, d_df_mean['num_log_errors'],  label=f'd={d}')
+                    error_bars = 10**(-6)*np.ones(len(d_df_mean['num_log_errors'])) #error bars are wrong
                     ax.fill_between(d_df_mean['p']*prob_scale, d_df_mean['num_log_errors'] - error_bars, d_df_mean['num_log_errors'] + error_bars, alpha=0.2)
                 else:
                     ax.plot(d_df_mean['p']*prob_scale, d_df_mean['num_log_errors'],  label=f'd={d}')
@@ -2934,6 +2934,7 @@ def eta_threshold_plot_compare_error_types(
         "X_MEM": r"$X_{MEM}$",
         "Z_MEM": r"$Z_{MEM}$",
         "TOTAL_MEM_CORR": r"$\mathrm{TOTAL}_{MEM,CORR}$",
+        "TOTAL_PY_CORR": r"$\mathrm{CORR}_{PY}$",
     }
 
     for col_idx, error_type in enumerate(error_type_list):
@@ -3691,21 +3692,22 @@ if __name__ == "__main__":
     # p_list = np.logspace(-2.5, -1.5, 40)
     # p_list = None
 
-    l_list = [2,4,6] # elongation params, do 3 and 5 in another batch
-    d_list = [11,13,15] # code distances
-    eta_list = [0.5,5,10,50] # noise bias
+    l_list = [2,3,4,5,6] # elongation params, do 3 and 5 in another batch
+    d_list = [11,13,15,17,19] # code distances
+    eta_list = [75,100,500] # noise bias
     cd_list = ["SC", "ZXXZonSqu"] # clifford deformation types
-    total_num_shots = 1_000_000 # number of shots 
-    corr_type = "TOTAL_MEM_CORR" # which type of correlation to use, depending on the type of decoder. Choose from ['CORR_XZ', 'CORR_ZX', 'TOTAL', 'TOTAL_MEM', 'TOTAL_PY_CORR', 'TOTAL_MEM_CORR']
-    error_type = "TOTAL_MEM_CORR" # which type of error to plot
+    corr_type = "TOTAL_MEM" # which type of correlation to use, depending on the type of decoder. Choose from ['CORR_XZ', 'CORR_ZX', 'TOTAL', 'TOTAL_MEM', 'TOTAL_PY_CORR', 'TOTAL_MEM_CORR']
+    error_type = "TOTAL_MEM" # which type of error to plot
     # num_shots = 66666
     corr_list = ['CORR_XZ', 'CORR_ZX']
-    corr_type_list = ['X_MEM_CORR', 'Z_MEM_CORR', 'TOTAL_MEM_CORR']  
+    corr_type_list = ['X_MEM', 'Z_MEM', 'TOTAL_MEM']  
     noise_model = "circuit_level"
     py_corr = False # whether to use pymatching correlated decoder for circuit data
-    shots_per_task = 10**5
-    n_p = 13
+    total_num_shots = 10**6
+    chunk_size=10**3
+    n_p = 40
     p_range=0.001
+    p_list = np.logspace(-2.5,-1.5,n_p)
 
     if circuit_data:
         folder_path = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/circuit_data/'
@@ -3738,14 +3740,14 @@ if __name__ == "__main__":
                     cd_list=cd_list,
                     corr_list=corr_list,
                     total_num_shots=total_num_shots,
-                    p_list=None,
-                    p_th_init_d=p_th_init_CL_pycorr,
+                    p_list=p_list,
+                    p_th_init_d=None,
                     pymatch_corr=py_corr,
                     n_p = n_p,
-                    p_range=p_range,
-                    chunk_size=100,
+                    p_range=None,
+                    chunk_size=chunk_size,
                     resume=True,
-                    shots_per_task=shots_per_task,
+                    shots_per_task=None,
                     )
     # get_data_DCC(circuit_data, corr_decoding, noise_model, d_list, l_list, eta_list, cd_list, corr_list, total_num_shots, p_list=None, p_th_init_d=p_th_init_CL_pycorr, pymatch_corr=py_corr)
 
@@ -3767,14 +3769,14 @@ if __name__ == "__main__":
 
 
     # params to plot
-    # eta = 0.5
-    # l = 2
+    # eta = 50
+    # l = 6
     # curr_num_shots = 52631.0 # the file has 20408 for the 3,5 and 30303 for the 2,4,6 and 52631 for pycorr
     # noise_model = "circuit_level"
     # CD_type = "SC"
     # py_corr = False # whether to use pymatching correlated decoder for circuit data
-    # corr_decoding = True # whether to get data for correlated decoding using my decoder
-    # error_type = "Z_MEM_PY" # which type of error to plot, choose from ['X_MEM', 'Z_MEM', 'TOTAL_MEM', 'TOTAL_PY_MEM', 'TOTAL_MEM_PY_CORR']
+    # corr_decoding = False # whether to get data for correlated decoding using my decoder
+    # error_type = "Z_MEM" # which type of error to plot, choose from ['X_MEM', 'Z_MEM', 'TOTAL_MEM', 'TOTAL_PY_MEM', 'TOTAL_MEM_PY_CORR']
     # p_range = 0.001
 
     
@@ -3794,6 +3796,7 @@ if __name__ == "__main__":
     #     corr_decoding=corr_decoding,
     #     py_corr=py_corr,
     #     circuit_level=circuit_data,
+    #     loglog=True,
     # )
 
 
@@ -3823,7 +3826,7 @@ if __name__ == "__main__":
     # eta_threshold_plot_compare_error_types(
     # eta_df_code_cap,
     # cd_type="SC",
-    # error_type_list=["CORR_XZ", "CORR_ZX", "TOTAL"],
+    # error_type_list=["CORR_XZ", "CORR_ZX", "TOTAL_PY_CORR"],
     # noise_model="code_cap"
     # )
     
