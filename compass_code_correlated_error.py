@@ -3677,8 +3677,7 @@ if __name__ == "__main__":
     #### parameters
 
 
-    circuit_data = True # whether circuit level or code cap data is desired
-    corr_decoding = True # whether to get data for correlated decoding (corrxz or corrzx), or circuit level (X/Z mem or X/Z mem py)
+    
         
 
     # simulation
@@ -3703,6 +3702,8 @@ if __name__ == "__main__":
     corr_type_list = ['X_MEM', 'Z_MEM', 'TOTAL_MEM']  
     noise_model = "circuit_level"
     py_corr = False # whether to use pymatching correlated decoder for circuit data
+    circuit_data = True # whether circuit level or code cap data is desired
+    corr_decoding = False # whether to get data for correlated decoding (corrxz or corrzx), or circuit level (X/Z mem or X/Z mem py)
     total_num_shots = 10**6
     chunk_size=10**3
     n_p = 40
