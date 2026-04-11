@@ -12,6 +12,7 @@ phenom_data.csv
 code_cap_circuit_data.csv
 circuit_data_mycorr.csv
 signed_gap_data copy.csv
+signed_gap_data.csv
 
 
 __pycache__/
