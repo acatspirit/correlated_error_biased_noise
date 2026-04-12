@@ -3821,7 +3821,7 @@ if __name__ == "__main__":
 
     l_list = [2,3,4,5,6] # elongation params, do 3 and 5 in another batch
     d_list = [11,13,15,17,19] # code distances
-    eta_list = [75,100,500] # noise bias
+    eta_list = [25,50,75,100,500] # noise bias
     cd_list = ["SC", "ZXXZonSqu"] # clifford deformation types
     corr_type = "TOTAL_MEM" # which type of correlation to use, depending on the type of decoder. Choose from ['CORR_XZ', 'CORR_ZX', 'TOTAL', 'TOTAL_MEM', 'TOTAL_PY_CORR', 'TOTAL_MEM_CORR']
     error_type = "TOTAL_MEM" # which type of error to plot
@@ -3829,12 +3829,12 @@ if __name__ == "__main__":
     corr_list = ['CORR_XZ', 'CORR_ZX']
     corr_type_list = ['X_MEM', 'Z_MEM', 'TOTAL_MEM']  
     noise_model = "circuit_level"
-    py_corr = False # whether to use pymatching correlated decoder for circuit data
+    py_corr = True # whether to use pymatching correlated decoder for circuit data
     circuit_data = True # whether circuit level or code cap data is desired
     corr_decoding = False # whether to get data for correlated decoding (corrxz or corrzx), or circuit level (X/Z mem or X/Z mem py)
     total_num_shots = 10**6
     chunk_size=10**3
-    n_p = 20
+    n_p = 40
     p_range=0.00125
     p_list = np.logspace(-2.5,-1.5,n_p)
 
@@ -3869,8 +3869,8 @@ if __name__ == "__main__":
                     cd_list=cd_list,
                     corr_list=corr_list,
                     total_num_shots=total_num_shots,
-                    p_list=None,
-                    p_th_init_d=p_th_init_CL,
+                    p_list=p_list,
+                    p_th_init_d=None,
                     pymatch_corr=py_corr,
                     n_p = n_p,
                     p_range=p_range,
