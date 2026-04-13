@@ -2537,7 +2537,7 @@ def full_error_plot(full_df, curr_eta, curr_l, curr_num_shots, noise_model, CD_t
     plt.tight_layout()
     plt.show()
 
-def threshold_plot(full_df, p_th0, p_range, curr_eta, curr_l, curr_num_shots, corr_type, CD_type, noise_model, file, circuit_level=False, py_corr = False, corr_decoding=False, loglog=False, averaging=True, show_threshold=True, show_fit=False):
+def threshold_plot_old(full_df, p_th0, p_range, curr_eta, curr_l, curr_num_shots, corr_type, CD_type, noise_model, file, circuit_level=False, py_corr = False, corr_decoding=False, loglog=False, averaging=True, show_threshold=True, show_fit=False):
     """Make a plot of all 4 errors given a df with unedited contents"""
 
     prob_scale = get_prob_scale(corr_type, curr_eta)
@@ -2606,6 +2606,223 @@ def threshold_plot(full_df, p_th0, p_range, curr_eta, curr_l, curr_num_shots, co
     ax.legend()
 
     fig.suptitle(f'Logical Error Rates for eta = {curr_eta} and l = {curr_l}')
+    plt.tight_layout()
+    plt.show()
+
+def threshold_plot(
+    full_df,
+    p_th0,
+    p_range,
+    curr_eta,
+    curr_l,
+    curr_num_shots,
+    corr_type,
+    CD_type,
+    noise_model,
+    file,
+    circuit_level=False,
+    py_corr=False,
+    corr_decoding=False,
+    loglog=False,
+    averaging=True,
+    show_threshold=True,
+    show_fit=False,
+):
+    """Make a single threshold plot for one error type, using weighted averaging over raw chunk rows."""
+
+    prob_scale = get_prob_scale(corr_type, curr_eta)
+
+    # Filter the raw dataframe to the relevant physics slice and p-window
+    filtered_df = full_df[
+        (full_df["p"] > p_th0 - p_range) &
+        (full_df["p"] < p_th0 + p_range) &
+        (full_df["l"] == curr_l) &
+        (full_df["eta"] == curr_eta) &
+        (full_df["noise_model"] == noise_model) &
+        (full_df["CD_type"] == CD_type)
+    ].copy()
+
+    if py_corr:
+        filtered_df = filtered_df[
+            filtered_df["error_type"].isin(["X_MEM_PY", "Z_MEM_PY", "TOTAL_MEM_PY"])
+        ]
+    elif corr_decoding:
+        filtered_df = filtered_df[
+            filtered_df["error_type"].isin(["X_MEM_CORR", "Z_MEM_CORR", "TOTAL_MEM_CORR"])
+        ]
+    else:
+        if circuit_level:
+            filtered_df = filtered_df[
+                filtered_df["error_type"].isin(["X_MEM", "Z_MEM", "TOTAL_MEM"])
+            ]
+        else:
+            filtered_df = filtered_df[
+                filtered_df["error_type"].isin(["X", "Z", "TOTAL", "CORR_XZ", "CORR_ZX"])
+            ]
+
+    # Keep only the requested plotted error type
+    filtered_df = filtered_df[filtered_df["error_type"] == corr_type].copy()
+
+    if filtered_df.empty:
+        print("No data found for this threshold plot.")
+        return
+
+    d_values = np.sort(filtered_df["d"].unique())
+    num_lines = len(d_values)
+
+    cmap = colormaps["Blues_r"]
+    color_values = np.linspace(0.1, 0.8, max(num_lines, 1))
+    colors = [cmap(val) for val in color_values]
+
+    fig, ax = plt.subplots(1, 1, figsize=(10, 8))
+
+    # Plot each d value
+    for i, d in enumerate(d_values):
+        d_df = filtered_df[filtered_df["d"] == d].copy()
+
+        if d_df.empty:
+            continue
+
+        if averaging:
+            # Temporary weighted combine over raw rows at equal p
+            d_df_mean = shots_averaging(
+                num_shots=None,   # important for new raw-row workflow
+                l=curr_l,
+                eta=curr_eta,
+                err_type=corr_type,
+                in_df=d_df,
+                CD_type=CD_type,
+                file=file,
+            )
+
+            # Keep only the plotting window just in case
+            d_df_mean = d_df_mean[
+                (d_df_mean["p"] > p_th0 - p_range) &
+                (d_df_mean["p"] < p_th0 + p_range)
+            ].copy()
+
+            if d_df_mean.empty:
+                continue
+
+            if loglog:
+                ax.loglog(
+                    d_df_mean["p"] * prob_scale,
+                    d_df_mean["num_log_errors"],
+                    label=f"d={d}",
+                    color=colors[i],
+                )
+                error_bars = 10**(-6) * np.ones(len(d_df_mean["num_log_errors"]))
+                ax.fill_between(
+                    d_df_mean["p"] * prob_scale,
+                    d_df_mean["num_log_errors"] - error_bars,
+                    d_df_mean["num_log_errors"] + error_bars,
+                    alpha=0.2,
+                    color=colors[i],
+                )
+            else:
+                ax.plot(
+                    d_df_mean["p"] * prob_scale,
+                    d_df_mean["num_log_errors"],
+                    label=f"d={d}",
+                    color=colors[i],
+                )
+        else:
+            # Raw scatter of chunk rows
+            ax.scatter(
+                d_df["p"] * prob_scale,
+                d_df["num_log_errors"],
+                s=2,
+                label=f"d={d}",
+                color=colors[i],
+            )
+
+    # Threshold fit on weighted-combined temporary data
+    popt, pcov = get_threshold(
+        full_df=filtered_df,
+        pth0=p_th0,
+        p_range=p_range,
+        l=curr_l,
+        eta=curr_eta,
+        error_type=corr_type,
+        num_shots=None,      # important: do not filter by per-row chunk size
+        CD_type=CD_type,
+        noise_model=noise_model,
+    )
+
+    if isinstance(popt, int) and popt == 0:
+        print("Threshold fit failed or insufficient data.")
+        pth = None
+        pth_error = None
+    else:
+        pth = popt[0]
+        pth_error = np.sqrt(np.diag(pcov))[0]
+
+    if show_threshold and pth is not None:
+        # Use weighted-combined y scale for a cleaner threshold line height
+        temp_df = filtered_df.copy()
+        temp_df["weighted_errors"] = temp_df["num_log_errors"] * temp_df["num_shots"]
+        temp_avg = (
+            temp_df.groupby(["d", "p"], as_index=False)
+                  .agg({"num_shots": "sum", "weighted_errors": "sum"})
+        )
+        temp_avg["num_log_errors"] = temp_avg["weighted_errors"] / temp_avg["num_shots"]
+
+        ymax = temp_avg["num_log_errors"].max() if not temp_avg.empty else filtered_df["num_log_errors"].max()
+
+        ax.vlines(
+            pth,
+            ymin=0,
+            ymax=ymax,
+            color="red",
+            linestyles="--",
+            label=f"pth = {pth:.3f} +/- {pth_error:.3f}",
+        )
+
+    if show_fit and pth is not None:
+        for d in d_values:
+            # Build fit curve over the weighted-averaged p grid for that d
+            d_df = filtered_df[filtered_df["d"] == d].copy()
+
+            if averaging:
+                d_df_mean = shots_averaging(
+                    num_shots=None,
+                    l=curr_l,
+                    eta=curr_eta,
+                    err_type=corr_type,
+                    in_df=d_df,
+                    CD_type=CD_type,
+                    file=file,
+                )
+                p_vals = np.sort(d_df_mean["p"].unique())
+            else:
+                p_vals = np.sort(d_df["p"].unique())
+
+            if len(p_vals) == 0:
+                continue
+
+            y_fit = [threshold_fit((p, d), *popt) for p in p_vals]
+
+            if loglog:
+                ax.loglog(
+                    np.array(p_vals) * prob_scale,
+                    y_fit,
+                    linestyle="--",
+                    color="red",
+                )
+            else:
+                ax.plot(
+                    np.array(p_vals) * prob_scale,
+                    y_fit,
+                    linestyle="--",
+                    color="red",
+                )
+
+    ax.set_title(f"Error Type: {corr_type}", fontsize=20)
+    ax.set_xlabel("p", fontsize=14)
+    ax.set_ylabel("num_log_errors", fontsize=20)
+    ax.legend()
+
+    fig.suptitle(f"Logical Error Rates for eta = {curr_eta} and l = {curr_l}")
     plt.tight_layout()
     plt.show()
 
@@ -3044,8 +3261,9 @@ def eta_threshold_plot_compare_deformations_and_decoder(
     l_values = sorted(df['l'].unique())
     num_cols = len(cd_type_list)
 
-    # Colors for different l values
-    cmap = plt.get_cmap("Paired")
+    cmap = colormaps["plasma"]
+    color_values = np.linspace(0.1, 0.8, max(len(l_values), 1))
+    colors = [cmap(val) for val in color_values]
 
     # Each ℓ gets a pair: (light, dark)
     num_l = len(l_values)
@@ -3086,7 +3304,8 @@ def eta_threshold_plot_compare_deformations_and_decoder(
         df_cd = df[df['CD_type'] == cd_type]
 
         for l_idx, l in enumerate(l_values):
-            light_color, dark_color = l_color_pairs[l_idx]
+            # light_color, dark_color = l_color_pairs[l_idx]
+            color=colors[l_idx]
 
             # Main solid line: error_type
             df_main = df_cd[
@@ -3103,7 +3322,7 @@ def eta_threshold_plot_compare_deformations_and_decoder(
                     eta_vals,
                     pth,
                     label=rf"$\ell = {l}$",
-                    color=dark_color,
+                    color=color,
                     marker='o',
                     linestyle='-'
                 )
@@ -3112,7 +3331,7 @@ def eta_threshold_plot_compare_deformations_and_decoder(
                     eta_vals,
                     pth - err,
                     pth + err,
-                    color=dark_color,
+                    color=color,
                     alpha=0.2
                 )
 
@@ -3134,7 +3353,7 @@ def eta_threshold_plot_compare_deformations_and_decoder(
                 ax.plot(
                     eta_vals_base,
                     pth_base,
-                    color=light_color,
+                    color=color,
                     marker='o',
                     linestyle='--',
                     linewidth=1.8
@@ -3144,13 +3363,14 @@ def eta_threshold_plot_compare_deformations_and_decoder(
                     eta_vals_base,
                     pth_base - err_base,
                     pth_base + err_base,
-                    color=light_color,
+                    color=color,
                     alpha=0.10
                 )
 
         subplot_title = title_map.get(cd_type, cd_type)
         ax.set_title(subplot_title, fontsize=16)
         ax.set_xlabel("Noise Bias ($\\eta$)", fontsize=12)
+        ax.set_xscale("log")
         ax.grid(True)
 
     axes[0].set_ylabel("Threshold $p_{th}$", fontsize=12)
@@ -3182,7 +3402,7 @@ def threshold_fit(x, pth, nu, a,b,c):
     X = (d**(1/nu))*(p-pth)
     return a + b*X + c*X**2
 
-def get_threshold(full_df, pth0, p_range, l, eta, error_type, num_shots, CD_type):
+def get_threshold_old(full_df, pth0, p_range, l, eta, error_type, num_shots, CD_type):
     """ returns the threshold and confidence given a df 
         in: df - the dataframe containing all data, filtered for one error_type, l eta, and probability range
         out: p_thr - a float, the probability where intersection of different lattice distances occurred
@@ -3208,6 +3428,94 @@ def get_threshold(full_df, pth0, p_range, l, eta, error_type, num_shots, CD_type
     # overfitting = np.linalg.cond(pcov)
     # print(f"Overfitting condition number: {overfitting}")
     # print(f"diag of covariance matrix: {np.diag(pcov)}")
+    return popt, pcov
+
+def get_threshold(
+    full_df,
+    pth0,
+    p_range,
+    l,
+    eta,
+    error_type,
+    CD_type,
+    noise_model="circuit_level",
+    num_shots=None,
+):
+    """
+    Return the threshold fit parameters and covariance using a temporary
+    weighted average over chunked/raw rows.
+
+    Parameters
+    ----------
+    full_df : pd.DataFrame
+        Raw dataframe containing possibly many chunk rows per (d, p).
+    pth0 : float
+        Initial threshold guess.
+    p_range : float
+        Fit only points with p in (pth0 - p_range, pth0 + p_range).
+    l, eta, error_type, CD_type : filters for the desired dataset.
+    num_shots : int or None
+        Optional exact-row filter. Usually leave as None for the new workflow.
+    noise_model : str or None
+        Optional filter if you want to restrict to one noise model.
+    """
+    print(
+        f"Getting threshold for l = {l}, eta = {eta}, error type = {error_type}, "
+        f"num_shots = {num_shots}, CD = {CD_type}"
+    )
+
+    df = full_df[
+        (full_df["p"] < pth0 + p_range) &
+        (full_df["p"] > pth0 - p_range) &
+        (full_df["l"] == l) &
+        (full_df["eta"] == eta) &
+        (full_df["error_type"] == error_type) &
+        (full_df["CD_type"] == CD_type)
+    ].copy()
+
+    if noise_model is not None and "noise_model" in df.columns:
+        df = df[df["noise_model"] == noise_model]
+
+    # For the new chunked/raw-row workflow, this should usually be None.
+    if num_shots is not None:
+        df = df[df["num_shots"] == num_shots]
+
+    if df.empty:
+        return 0, 0
+
+    # Weighted combine over repeated rows at the same (d, p)
+    df["weighted_errors"] = df["num_log_errors"] * df["num_shots"]
+
+    df_avg = (
+        df.groupby(["d", "p"], as_index=False)
+          .agg({
+              "num_shots": "sum",
+              "weighted_errors": "sum"
+          })
+    )
+
+    df_avg["num_log_errors"] = df_avg["weighted_errors"] / df_avg["num_shots"]
+    df_avg = df_avg.drop(columns="weighted_errors")
+
+    if df_avg.empty:
+        return 0, 0
+
+    # Need enough points to fit 5 parameters robustly
+    if len(df_avg) < 6:
+        print("Not enough averaged (d, p) points to fit threshold.")
+        return 0, 0
+
+    p_list = df_avg["p"].to_numpy().flatten()
+    d_list = df_avg["d"].to_numpy().flatten()
+    error_list = df_avg["num_log_errors"].to_numpy().flatten()
+
+    popt, pcov = curve_fit(
+        threshold_fit,
+        (p_list, d_list),
+        error_list,
+        p0=[pth0, 0.5, 0, 0, 0],
+    )
+
     return popt, pcov
 
 def get_prob_scale(corr_type, eta):
@@ -3236,7 +3544,7 @@ def get_thresholds_from_data_exactish(num_shots, p_th_init_dict, p_range, output
         # threshold_d = {}
 
         p_th_init = p_th_init_dict[key]
-        pop,pcov = get_threshold(df, p_th_init,p_range, l, eta, corr_type, num_shots, CD_type)
+        pop,pcov = get_threshold(df, p_th_init,p_range, l, eta, corr_type, CD_type)
         print(p_th_init, pop)
         threshold = pop[0]
         std_error = np.sqrt(np.diag(pcov))[0] # should it be np.sqrt(np.trace(pcov)) instead to get the overall error?
@@ -3350,56 +3658,56 @@ if __name__ == "__main__":
                          }
     
     p_th_init_CL = {
-                    (2,0.5,"X_MEM", "SC","circuit_level"):0.00721, (2,0.5,"Z_MEM", "SC","circuit_level"):0.00736, (2,0.5,"TOTAL_MEM", "SC","circuit_level"):0.00728,
-                    (4,0.5,"X_MEM","SC", "circuit_level"):0.00935, (4,0.5,"Z_MEM", "SC","circuit_level"):0.00466, (4,0.5,"TOTAL_MEM", "SC","circuit_level"):0.00474,
-                    (6,0.5,"X_MEM", "SC","circuit_level"):0.01027, (6,0.5,"Z_MEM", "SC","circuit_level"):0.00354, (6,0.5,"TOTAL_MEM", "SC","circuit_level"):0.00348,
-                    (2,5,"X_MEM","SC", "circuit_level"):0.00734, (2,5,"Z_MEM", "SC","circuit_level"):0.01051, (2,5,"TOTAL_MEM","SC", "circuit_level"):0.00745,
-                    (4,5,"X_MEM", "SC","circuit_level"):0.01057, (4,5,"Z_MEM", "SC","circuit_level"):0.00648, (4,5,"TOTAL_MEM","SC", "circuit_level"):0.00721,
-                    (6,5,"X_MEM", "SC","circuit_level"):0.01219, (6,5,"Z_MEM", "SC","circuit_level"):0.00491, (6,5,"TOTAL_MEM", "SC","circuit_level"):0.00500,
-                    (2,10,"X_MEM","SC", "circuit_level"):0.00740, (2,10,"Z_MEM","SC", "circuit_level"):0.01116, (2,10,"TOTAL_MEM", "SC","circuit_level"):0.00747,
-                    (4,10,"X_MEM", "SC","circuit_level"):0.01101, (4,10,"Z_MEM", "SC","circuit_level"):0.00679, (4,10,"TOTAL_MEM", "SC","circuit_level"):0.00802,
-                    (6,10,"X_MEM", "SC","circuit_level"):0.01279, (6,10,"Z_MEM", "SC","circuit_level"):0.00527, (6,10,"TOTAL_MEM", "SC","circuit_level"):0.00550,
-                    (2,25,"X_MEM", "SC","circuit_level"):0.00745, (2,25,"Z_MEM","SC", "circuit_level"):0.01196, (2,25,"TOTAL_MEM", "SC","circuit_level"):0.00753,
-                    (4,25,"X_MEM", "SC","circuit_level"):0.01129, (4,25,"Z_MEM", "SC","circuit_level"):0.00726, (4,25,"TOTAL_MEM", "SC","circuit_level"):0.00871,
-                    (6,25,"X_MEM", "SC","circuit_level"):0.01329, (6,25,"Z_MEM", "SC","circuit_level"):0.00572, (6,25,"TOTAL_MEM","SC", "circuit_level"):0.00593,
-                    (2,50,"X_MEM", "SC","circuit_level"):0.00745, (2,50,"Z_MEM", "SC","circuit_level"):0.01230, (2,50,"TOTAL_MEM", "SC","circuit_level"):0.00757,
-                    (4,50,"X_MEM", "SC","circuit_level"):0.01150, (4,50,"Z_MEM", "SC","circuit_level"):0.00751, (4,50,"TOTAL_MEM", "SC","circuit_level"):0.00886,
-                    (6,50,"X_MEM","SC", "circuit_level"):0.01346, (6,50,"Z_MEM", "SC","circuit_level"):0.00584, (6,50,"TOTAL_MEM", "SC","circuit_level"):0.00603,
-                    (2,0.5,"X_MEM", "ZXXZonSqu","circuit_level"):0.00734, (2,0.5,"Z_MEM","ZXXZonSqu", "circuit_level"):0.00726, (2,0.5,"TOTAL_MEM", "ZXXZonSqu","circuit_level"):0.00732,
-                    (4,0.5,"X_MEM","ZXXZonSqu", "circuit_level"):0.00941, (4,0.5,"Z_MEM", "ZXXZonSqu","circuit_level"):0.00455, (4,0.5,"TOTAL_MEM", "ZXXZonSqu","circuit_level"):0.00458,
-                    (6,0.5,"X_MEM", "ZXXZonSqu","circuit_level"):0.01034, (6,0.5,"Z_MEM", "ZXXZonSqu","circuit_level"):0.00354, (6,0.5,"TOTAL_MEM","ZXXZonSqu", "circuit_level"):0.00352,
-                    (2,5,"X_MEM","ZXXZonSqu", "circuit_level"):0.00863, (2,5,"Z_MEM", "ZXXZonSqu","circuit_level"):0.00873, (2,5,"TOTAL_MEM", "ZXXZonSqu","circuit_level"):0.00873,
-                    (4,5,"X_MEM","ZXXZonSqu", "circuit_level"):0.01232, (4,5,"Z_MEM", "ZXXZonSqu","circuit_level"):0.00548, (4,5,"TOTAL_MEM","ZXXZonSqu", "circuit_level"):0.00555,
-                    (6,5,"X_MEM", "ZXXZonSqu","circuit_level"):0.01367, (6,5,"Z_MEM", "ZXXZonSqu","circuit_level"):0.00436, (6,5,"TOTAL_MEM", "ZXXZonSqu","circuit_level"):0.00441,
-                    (2,10,"X_MEM","ZXXZonSqu", "circuit_level"):0.00911, (2,10,"Z_MEM", "ZXXZonSqu","circuit_level"):0.00913, (2,10,"TOTAL_MEM", "ZXXZonSqu","circuit_level"):0.00911,
-                    (4,10,"X_MEM","ZXXZonSqu", "circuit_level"):0.01314, (4,10,"Z_MEM", "ZXXZonSqu","circuit_level"):0.00574, (4,10,"TOTAL_MEM", "ZXXZonSqu","circuit_level"):0.00590,
-                    (6,10,"X_MEM", "ZXXZonSqu","circuit_level"):0.01473, (6,10,"Z_MEM", "ZXXZonSqu","circuit_level"):0.00460, (6,10,"TOTAL_MEM","ZXXZonSqu", "circuit_level"):0.00455,
-                    (2,25,"X_MEM", "ZXXZonSqu","circuit_level"):0.00928, (2,25,"Z_MEM", "ZXXZonSqu","circuit_level"):0.00932, (2,25,"TOTAL_MEM","ZXXZonSqu", "circuit_level"):0.00935,
-                    (4,25,"X_MEM", "ZXXZonSqu","circuit_level"):0.01384, (4,25,"Z_MEM","ZXXZonSqu", "circuit_level"):0.00607, (4,25,"TOTAL_MEM","ZXXZonSqu", "circuit_level"):0.00612,
-                    (6,25,"X_MEM", "ZXXZonSqu","circuit_level"):0.01570, (6,25,"Z_MEM", "ZXXZonSqu","circuit_level"):0.00481, (6,25,"TOTAL_MEM", "ZXXZonSqu","circuit_level"):0.00477,
-                    (2,50,"X_MEM", "ZXXZonSqu","circuit_level"):0.00949, (2,50,"Z_MEM","ZXXZonSqu", "circuit_level"):0.00954, (2,50,"TOTAL_MEM", "ZXXZonSqu","circuit_level"):0.00949,
-                    (4,50,"X_MEM","ZXXZonSqu", "circuit_level"):0.01411, (4,50,"Z_MEM", "ZXXZonSqu","circuit_level"):0.00603, (4,50,"TOTAL_MEM", "ZXXZonSqu","circuit_level"):0.00616,
-                    (6,50,"X_MEM", "ZXXZonSqu","circuit_level"):0.01610, (6,50,"Z_MEM", "ZXXZonSqu","circuit_level"):0.00468, (6,50,"TOTAL_MEM", "ZXXZonSqu","circuit_level"):0.00493,
-                    (3,0.5,"X_MEM","SC", "circuit_level"):0.00835, (3,0.5,"Z_MEM", "SC","circuit_level"):0.00569, (3,0.5,"TOTAL_MEM", "SC","circuit_level"):0.00595,
-                    (5,0.5,"X_MEM", "SC","circuit_level"):0.00985, (5,0.5,"Z_MEM", "SC","circuit_level"):0.00411, (5,0.5,"TOTAL_MEM", "SC","circuit_level"):0.00409,
-                    (3,5,"X_MEM", "SC","circuit_level"):0.00937, (3,5,"Z_MEM", "SC","circuit_level"):0.00789, (3,5,"TOTAL_MEM","SC", "circuit_level"):0.00873,
-                    (5,5,"X_MEM", "SC","circuit_level"):0.01143, (5,5,"Z_MEM", "SC","circuit_level"):0.00565, (5,5,"TOTAL_MEM", "SC","circuit_level"):0.00586,
-                    (3,10,"X_MEM", "SC","circuit_level"):0.00964, (3,10,"Z_MEM", "SC","circuit_level"):0.00842, (3,10,"TOTAL_MEM", "SC","circuit_level"):0.00922,
-                    (5,10,"X_MEM", "SC","circuit_level"):0.01194, (5,10,"Z_MEM", "SC","circuit_level"):0.00603, (5,10,"TOTAL_MEM", "SC","circuit_level"):0.00645,
-                    (3,25,"X_MEM", "SC","circuit_level"):0.00985, (3,25,"Z_MEM", "SC","circuit_level"):0.00899, (3,25,"TOTAL_MEM", "SC","circuit_level"):0.00960,
-                    (5,25,"X_MEM", "SC","circuit_level"):0.01249, (5,25,"Z_MEM", "SC","circuit_level"):0.00637, (5,25,"TOTAL_MEM","SC", "circuit_level"):0.00700,
-                    (3,50,"X_MEM", "SC","circuit_level"):0.00987, (3,50,"Z_MEM", "SC","circuit_level"):0.00916, (3,50,"TOTAL_MEM", "SC","circuit_level"):0.00970,
-                    (5,50,"X_MEM","SC", "circuit_level"):0.01255, (5,50,"Z_MEM", "SC","circuit_level"):0.00654, (5,50,"TOTAL_MEM", "SC","circuit_level"):0.00719,
-                    (3,0.5,"X_MEM","ZXXZonSqu", "circuit_level"):0.00852, (3,0.5,"Z_MEM", "ZXXZonSqu","circuit_level"):0.00559, (3,0.5,"TOTAL_MEM", "ZXXZonSqu","circuit_level"):0.00574,
-                    (5,0.5,"X_MEM", "ZXXZonSqu","circuit_level"):0.00987, (5,0.5,"Z_MEM", "ZXXZonSqu","circuit_level"):0.00389, (5,0.5,"TOTAL_MEM","ZXXZonSqu", "circuit_level"):0.00394,
-                    (3,5,"X_MEM","ZXXZonSqu", "circuit_level"):0.01097, (3,5,"Z_MEM", "ZXXZonSqu","circuit_level"):0.00669, (3,5,"TOTAL_MEM","ZXXZonSqu", "circuit_level"):0.00698,
-                    (5,5,"X_MEM", "ZXXZonSqu","circuit_level"):0.01298, (5,5,"Z_MEM", "ZXXZonSqu","circuit_level"):0.00483, (5,5,"TOTAL_MEM", "ZXXZonSqu","circuit_level"):0.00481,
-                    (3,10,"X_MEM","ZXXZonSqu", "circuit_level"):0.01158, (3,10,"Z_MEM", "ZXXZonSqu","circuit_level"):0.00688, (3,10,"TOTAL_MEM", "ZXXZonSqu","circuit_level"):0.00734,
-                    (5,10,"X_MEM", "ZXXZonSqu","circuit_level"):0.01390, (5,10,"Z_MEM", "ZXXZonSqu","circuit_level"):0.00508, (5,10,"TOTAL_MEM","ZXXZonSqu", "circuit_level"):0.00517,
-                    (3,25,"X_MEM", "ZXXZonSqu","circuit_level"):0.01297, (3,25,"Z_MEM","ZXXZonSqu", "circuit_level"):0.00715, (3,25,"TOTAL_MEM","ZXXZonSqu", "circuit_level"):0.00759,
-                    (5,25,"X_MEM", "ZXXZonSqu","circuit_level"):0.01466, (5,25,"Z_MEM", "ZXXZonSqu","circuit_level"):0.00525, (5,25,"TOTAL_MEM", "ZXXZonSqu","circuit_level"):0.00538,
-                    (3,50,"X_MEM","ZXXZonSqu", "circuit_level"):0.01288, (3,50,"Z_MEM", "ZXXZonSqu","circuit_level"):0.00713, (3,50,"TOTAL_MEM", "ZXXZonSqu","circuit_level"):0.00764,
-                    (5,50,"X_MEM", "ZXXZonSqu","circuit_level"):0.01502, (5,50,"Z_MEM", "ZXXZonSqu","circuit_level"):0.00529, (5,50,"TOTAL_MEM", "ZXXZonSqu","circuit_level"):0.00538,
+                    # (2,0.5,"X_MEM", "SC","circuit_level"):0.00721, (2,0.5,"Z_MEM", "SC","circuit_level"):0.00736, (2,0.5,"TOTAL_MEM", "SC","circuit_level"):0.00728,
+                    # (4,0.5,"X_MEM","SC", "circuit_level"):0.00935, (4,0.5,"Z_MEM", "SC","circuit_level"):0.00466, (4,0.5,"TOTAL_MEM", "SC","circuit_level"):0.00474,
+                    # (6,0.5,"X_MEM", "SC","circuit_level"):0.01027, (6,0.5,"Z_MEM", "SC","circuit_level"):0.00354, (6,0.5,"TOTAL_MEM", "SC","circuit_level"):0.00348,
+                    # (2,5,"X_MEM","SC", "circuit_level"):0.00734, (2,5,"Z_MEM", "SC","circuit_level"):0.01051, (2,5,"TOTAL_MEM","SC", "circuit_level"):0.00745,
+                    # (4,5,"X_MEM", "SC","circuit_level"):0.01057, (4,5,"Z_MEM", "SC","circuit_level"):0.00648, (4,5,"TOTAL_MEM","SC", "circuit_level"):0.00721,
+                    # (6,5,"X_MEM", "SC","circuit_level"):0.01219, (6,5,"Z_MEM", "SC","circuit_level"):0.00491, (6,5,"TOTAL_MEM", "SC","circuit_level"):0.00500,
+                    # (2,10,"X_MEM","SC", "circuit_level"):0.00740, (2,10,"Z_MEM","SC", "circuit_level"):0.01116, (2,10,"TOTAL_MEM", "SC","circuit_level"):0.00747,
+                    # (4,10,"X_MEM", "SC","circuit_level"):0.01101, (4,10,"Z_MEM", "SC","circuit_level"):0.00679, (4,10,"TOTAL_MEM", "SC","circuit_level"):0.00802,
+                    # (6,10,"X_MEM", "SC","circuit_level"):0.01279, (6,10,"Z_MEM", "SC","circuit_level"):0.00527, (6,10,"TOTAL_MEM", "SC","circuit_level"):0.00550,
+                    # (2,25,"X_MEM", "SC","circuit_level"):0.00745, (2,25,"Z_MEM","SC", "circuit_level"):0.01196, (2,25,"TOTAL_MEM", "SC","circuit_level"):0.00753,
+                    # (4,25,"X_MEM", "SC","circuit_level"):0.01129, (4,25,"Z_MEM", "SC","circuit_level"):0.00726, (4,25,"TOTAL_MEM", "SC","circuit_level"):0.00871,
+                    # (6,25,"X_MEM", "SC","circuit_level"):0.01329, (6,25,"Z_MEM", "SC","circuit_level"):0.00572, (6,25,"TOTAL_MEM","SC", "circuit_level"):0.00593,
+                    # (2,50,"X_MEM", "SC","circuit_level"):0.00745, (2,50,"Z_MEM", "SC","circuit_level"):0.01230, (2,50,"TOTAL_MEM", "SC","circuit_level"):0.00757,
+                    # (4,50,"X_MEM", "SC","circuit_level"):0.01150, (4,50,"Z_MEM", "SC","circuit_level"):0.00751, (4,50,"TOTAL_MEM", "SC","circuit_level"):0.00886,
+                    # (6,50,"X_MEM","SC", "circuit_level"):0.01346, (6,50,"Z_MEM", "SC","circuit_level"):0.00584, (6,50,"TOTAL_MEM", "SC","circuit_level"):0.00603,
+                    # (2,0.5,"X_MEM", "ZXXZonSqu","circuit_level"):0.00734, (2,0.5,"Z_MEM","ZXXZonSqu", "circuit_level"):0.00726, (2,0.5,"TOTAL_MEM", "ZXXZonSqu","circuit_level"):0.00732,
+                    # (4,0.5,"X_MEM","ZXXZonSqu", "circuit_level"):0.00941, (4,0.5,"Z_MEM", "ZXXZonSqu","circuit_level"):0.00455, (4,0.5,"TOTAL_MEM", "ZXXZonSqu","circuit_level"):0.00458,
+                    # (6,0.5,"X_MEM", "ZXXZonSqu","circuit_level"):0.01034, (6,0.5,"Z_MEM", "ZXXZonSqu","circuit_level"):0.00354, (6,0.5,"TOTAL_MEM","ZXXZonSqu", "circuit_level"):0.00352,
+                    # (2,5,"X_MEM","ZXXZonSqu", "circuit_level"):0.00863, (2,5,"Z_MEM", "ZXXZonSqu","circuit_level"):0.00873, (2,5,"TOTAL_MEM", "ZXXZonSqu","circuit_level"):0.00873,
+                    # (4,5,"X_MEM","ZXXZonSqu", "circuit_level"):0.01232, (4,5,"Z_MEM", "ZXXZonSqu","circuit_level"):0.00548, (4,5,"TOTAL_MEM","ZXXZonSqu", "circuit_level"):0.00555,
+                    # (6,5,"X_MEM", "ZXXZonSqu","circuit_level"):0.01367, (6,5,"Z_MEM", "ZXXZonSqu","circuit_level"):0.00436, (6,5,"TOTAL_MEM", "ZXXZonSqu","circuit_level"):0.00441,
+                    # (2,10,"X_MEM","ZXXZonSqu", "circuit_level"):0.00911, (2,10,"Z_MEM", "ZXXZonSqu","circuit_level"):0.00913, (2,10,"TOTAL_MEM", "ZXXZonSqu","circuit_level"):0.00911,
+                    # (4,10,"X_MEM","ZXXZonSqu", "circuit_level"):0.01314, (4,10,"Z_MEM", "ZXXZonSqu","circuit_level"):0.00574, (4,10,"TOTAL_MEM", "ZXXZonSqu","circuit_level"):0.00590,
+                    # (6,10,"X_MEM", "ZXXZonSqu","circuit_level"):0.01473, (6,10,"Z_MEM", "ZXXZonSqu","circuit_level"):0.00460, (6,10,"TOTAL_MEM","ZXXZonSqu", "circuit_level"):0.00455,
+                    # (2,25,"X_MEM", "ZXXZonSqu","circuit_level"):0.00928, (2,25,"Z_MEM", "ZXXZonSqu","circuit_level"):0.00932, (2,25,"TOTAL_MEM","ZXXZonSqu", "circuit_level"):0.00935,
+                    # (4,25,"X_MEM", "ZXXZonSqu","circuit_level"):0.01384, (4,25,"Z_MEM","ZXXZonSqu", "circuit_level"):0.00607, (4,25,"TOTAL_MEM","ZXXZonSqu", "circuit_level"):0.00612,
+                    # (6,25,"X_MEM", "ZXXZonSqu","circuit_level"):0.01570, (6,25,"Z_MEM", "ZXXZonSqu","circuit_level"):0.00481, (6,25,"TOTAL_MEM", "ZXXZonSqu","circuit_level"):0.00477,
+                    # (2,50,"X_MEM", "ZXXZonSqu","circuit_level"):0.00949, (2,50,"Z_MEM","ZXXZonSqu", "circuit_level"):0.00954, (2,50,"TOTAL_MEM", "ZXXZonSqu","circuit_level"):0.00949,
+                    # (4,50,"X_MEM","ZXXZonSqu", "circuit_level"):0.01411, (4,50,"Z_MEM", "ZXXZonSqu","circuit_level"):0.00603, (4,50,"TOTAL_MEM", "ZXXZonSqu","circuit_level"):0.00616,
+                    # (6,50,"X_MEM", "ZXXZonSqu","circuit_level"):0.01610, (6,50,"Z_MEM", "ZXXZonSqu","circuit_level"):0.00468, (6,50,"TOTAL_MEM", "ZXXZonSqu","circuit_level"):0.00493,
+                    # (3,0.5,"X_MEM","SC", "circuit_level"):0.00835, (3,0.5,"Z_MEM", "SC","circuit_level"):0.00569, (3,0.5,"TOTAL_MEM", "SC","circuit_level"):0.00595,
+                    # (5,0.5,"X_MEM", "SC","circuit_level"):0.00985, (5,0.5,"Z_MEM", "SC","circuit_level"):0.00411, (5,0.5,"TOTAL_MEM", "SC","circuit_level"):0.00409,
+                    # (3,5,"X_MEM", "SC","circuit_level"):0.00937, (3,5,"Z_MEM", "SC","circuit_level"):0.00789, (3,5,"TOTAL_MEM","SC", "circuit_level"):0.00873,
+                    # (5,5,"X_MEM", "SC","circuit_level"):0.01143, (5,5,"Z_MEM", "SC","circuit_level"):0.00565, (5,5,"TOTAL_MEM", "SC","circuit_level"):0.00586,
+                    # (3,10,"X_MEM", "SC","circuit_level"):0.00964, (3,10,"Z_MEM", "SC","circuit_level"):0.00842, (3,10,"TOTAL_MEM", "SC","circuit_level"):0.00922,
+                    # (5,10,"X_MEM", "SC","circuit_level"):0.01194, (5,10,"Z_MEM", "SC","circuit_level"):0.00603, (5,10,"TOTAL_MEM", "SC","circuit_level"):0.00645,
+                    # (3,25,"X_MEM", "SC","circuit_level"):0.00985, (3,25,"Z_MEM", "SC","circuit_level"):0.00899, (3,25,"TOTAL_MEM", "SC","circuit_level"):0.00960,
+                    # (5,25,"X_MEM", "SC","circuit_level"):0.01249, (5,25,"Z_MEM", "SC","circuit_level"):0.00637, (5,25,"TOTAL_MEM","SC", "circuit_level"):0.00700,
+                    # (3,50,"X_MEM", "SC","circuit_level"):0.00987, (3,50,"Z_MEM", "SC","circuit_level"):0.00916, (3,50,"TOTAL_MEM", "SC","circuit_level"):0.00970,
+                    # (5,50,"X_MEM","SC", "circuit_level"):0.01255, (5,50,"Z_MEM", "SC","circuit_level"):0.00654, (5,50,"TOTAL_MEM", "SC","circuit_level"):0.00719,
+                    # (3,0.5,"X_MEM","ZXXZonSqu", "circuit_level"):0.00852, (3,0.5,"Z_MEM", "ZXXZonSqu","circuit_level"):0.00559, (3,0.5,"TOTAL_MEM", "ZXXZonSqu","circuit_level"):0.00574,
+                    # (5,0.5,"X_MEM", "ZXXZonSqu","circuit_level"):0.00987, (5,0.5,"Z_MEM", "ZXXZonSqu","circuit_level"):0.00389, (5,0.5,"TOTAL_MEM","ZXXZonSqu", "circuit_level"):0.00394,
+                    # (3,5,"X_MEM","ZXXZonSqu", "circuit_level"):0.01097, (3,5,"Z_MEM", "ZXXZonSqu","circuit_level"):0.00669, (3,5,"TOTAL_MEM","ZXXZonSqu", "circuit_level"):0.00698,
+                    # (5,5,"X_MEM", "ZXXZonSqu","circuit_level"):0.01298, (5,5,"Z_MEM", "ZXXZonSqu","circuit_level"):0.00483, (5,5,"TOTAL_MEM", "ZXXZonSqu","circuit_level"):0.00481,
+                    # (3,10,"X_MEM","ZXXZonSqu", "circuit_level"):0.01158, (3,10,"Z_MEM", "ZXXZonSqu","circuit_level"):0.00688, (3,10,"TOTAL_MEM", "ZXXZonSqu","circuit_level"):0.00734,
+                    # (5,10,"X_MEM", "ZXXZonSqu","circuit_level"):0.01390, (5,10,"Z_MEM", "ZXXZonSqu","circuit_level"):0.00508, (5,10,"TOTAL_MEM","ZXXZonSqu", "circuit_level"):0.00517,
+                    # (3,25,"X_MEM", "ZXXZonSqu","circuit_level"):0.01297, (3,25,"Z_MEM","ZXXZonSqu", "circuit_level"):0.00715, (3,25,"TOTAL_MEM","ZXXZonSqu", "circuit_level"):0.00759,
+                    # (5,25,"X_MEM", "ZXXZonSqu","circuit_level"):0.01466, (5,25,"Z_MEM", "ZXXZonSqu","circuit_level"):0.00525, (5,25,"TOTAL_MEM", "ZXXZonSqu","circuit_level"):0.00538,
+                    # (3,50,"X_MEM","ZXXZonSqu", "circuit_level"):0.01288, (3,50,"Z_MEM", "ZXXZonSqu","circuit_level"):0.00713, (3,50,"TOTAL_MEM", "ZXXZonSqu","circuit_level"):0.00764,
+                    # (5,50,"X_MEM", "ZXXZonSqu","circuit_level"):0.01502, (5,50,"Z_MEM", "ZXXZonSqu","circuit_level"):0.00529, (5,50,"TOTAL_MEM", "ZXXZonSqu","circuit_level"):0.00538,
                     #################### SC High Eta #######################
                     # eta = 75
                     (2,75,"X_MEM","SC","circuit_level"):0.00750,
@@ -3860,24 +4168,24 @@ if __name__ == "__main__":
     # shots_added_per_submission = repeats_per_submission * shots_per_task
     
     # run this to get data from the dcc
-    get_data_DCC_chat(circuit_data=circuit_data,
-                    corr_decoding=corr_decoding,
-                    noise_model=noise_model,
-                    d_list=d_list,
-                    l_list=l_list,
-                    eta_list=eta_list,
-                    cd_list=cd_list,
-                    corr_list=corr_list,
-                    total_num_shots=total_num_shots,
-                    p_list=p_list,
-                    p_th_init_d=None,
-                    pymatch_corr=py_corr,
-                    n_p = n_p,
-                    p_range=p_range,
-                    chunk_size=chunk_size,
-                    resume=True,
-                    shots_per_task=None,
-                    )
+    # get_data_DCC_chat(circuit_data=circuit_data,
+    #                 corr_decoding=corr_decoding,
+    #                 noise_model=noise_model,
+    #                 d_list=d_list,
+    #                 l_list=l_list,
+    #                 eta_list=eta_list,
+    #                 cd_list=cd_list,
+    #                 corr_list=corr_list,
+    #                 total_num_shots=total_num_shots,
+    #                 p_list=p_list,
+    #                 p_th_init_d=None,
+    #                 pymatch_corr=py_corr,
+    #                 n_p = n_p,
+    #                 p_range=p_range,
+    #                 chunk_size=chunk_size,
+    #                 resume=True,
+    #                 shots_per_task=None,
+    #                 )
     # get_data_DCC(circuit_data, corr_decoding, noise_model, d_list, l_list, eta_list, cd_list, corr_list, total_num_shots, p_list=None, p_th_init_d=p_th_init_CL_pycorr, pymatch_corr=py_corr)
 
     # run this once you have data and want to combo it to one csv
@@ -3913,7 +4221,7 @@ if __name__ == "__main__":
 
 
 
-    # df = pd.read_csv(output_file)
+    df = pd.read_csv(output_file)
 
     # full_error_plot(
     #     full_df=df,
@@ -3931,27 +4239,27 @@ if __name__ == "__main__":
 
 
     # make a plot for specific thresholds
-    # pth0 = p_th_init_CL_pycorr[(l, eta, error_type, CD_type, noise_model)]
-    # popt, pcov = get_threshold(df, pth0, p_range, l, eta, error_type, curr_num_shots, CD_type)
+    # pth0 = p_th_init_CL[(l, eta, error_type, CD_type, noise_model)]
+    # popt, pcov = get_threshold(df, pth0, p_range, l, eta, error_type, CD_type)
     # p_th = popt[0]
     # pth_error = np.sqrt(pcov[0][0])
     # print(p_th, pth_error)
-    # get_thresholds_from_data_exactish(curr_num_shots, p_th_init_CL_pycorr,p_range, output_file)
-    # eta_df = pd.read_csv("/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/threshold_exactish_per_eta.csv")
+    # get_thresholds_from_data_exactish(chunk_size, p_th_init_CL,p_range, output_file)
+    eta_df = pd.read_csv("/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/threshold_exactish_per_eta.csv")
     # eta_df_code_cap = pd.read_csv("/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/all_thresholds_per_eta_elongated.csv")
-#     eta_threshold_plot_totalmem_compare_deformations(
-#     eta_df,
-#     cd_type_list=["SC", "ZXXZonSqu"],
-#     noise_model="circuit_level",
-#     error_type = "TOTAL_MEM_PY"
-# )
-    # eta_threshold_plot_compare_deformations_and_decoder(
+    # eta_threshold_plot_totalmem_compare_deformations(
     # eta_df,
     # cd_type_list=["SC", "ZXXZonSqu"],
     # noise_model="circuit_level",
-    # error_type = "Z_MEM_PY",
-    # suffix_to_remove="_PY"
-    # )
+    # error_type = "TOTAL_MEM_PY"
+# )
+    eta_threshold_plot_compare_deformations_and_decoder(
+    eta_df,
+    cd_type_list=["SC", "ZXXZonSqu"],
+    noise_model="circuit_level",
+    error_type = "TOTAL_MEM_PY",
+    suffix_to_remove="_PY"
+    )
 
     # eta_threshold_plot_compare_error_types(
     # eta_df_code_cap,
