@@ -2470,7 +2470,7 @@ def full_error_plot(full_df, curr_eta, curr_l, curr_num_shots, noise_model, CD_t
     (full_df['CD_type'] == CD_type)
     ] # got rid num_shots
 
-    if py_corr: 
+    if py_corr and not corr_decoding: 
         filtered_df = filtered_df[filtered_df['error_type'].isin(['X_MEM_PY', 'Z_MEM_PY', 'TOTAL_MEM_PY'])]
     elif corr_decoding:
         filtered_df = filtered_df[filtered_df['error_type'].isin(['X_MEM_CORR', 'Z_MEM_CORR', 'TOTAL_MEM_CORR'])]
@@ -2642,11 +2642,12 @@ def threshold_plot(
         (full_df["CD_type"] == CD_type)
     ].copy()
 
-    if py_corr:
+    if py_corr and not corr_decoding:
         filtered_df = filtered_df[
             filtered_df["error_type"].isin(["X_MEM_PY", "Z_MEM_PY", "TOTAL_MEM_PY"])
         ]
     elif corr_decoding:
+        corr_type = corr_type.split("_")
         filtered_df = filtered_df[
             filtered_df["error_type"].isin(["X_MEM_CORR", "Z_MEM_CORR", "TOTAL_MEM_CORR"])
         ]
@@ -3007,7 +3008,7 @@ def eta_threshold_plot_totalmem_compare_deformations(
 
     # Pretty subplot titles
     title_map = {
-        "SC": "SC",
+        "SC": "CSS",
         "ZXXZonSqu": "ZXXZ\u2610",
         "Z": "V",
         "X": "H",
@@ -3292,7 +3293,7 @@ def eta_threshold_plot_compare_deformations_and_decoder(
 
     # Pretty subplot titles
     title_map = {
-        "SC": "SC",
+        "SC": "CSS",
         "ZXXZonSqu": "ZXXZ\u2610",
         "Z": "V",
         "X": "H",
@@ -3948,6 +3949,68 @@ if __name__ == "__main__":
                     (6,50,"Z_MEM_PY","SC","circuit_level"):0.00740,
                     (6,50,"TOTAL_MEM_PY","SC","circuit_level"):0.00802,
 
+                    # eta = 75
+                    (2,75,"X_MEM_PY","SC","circuit_level"):0.00865,
+                    (2,75,"Z_MEM_PY","SC","circuit_level"):0.01352,
+                    (2,75,"TOTAL_MEM_PY","SC","circuit_level"):0.00872,
+
+                    (3,75,"X_MEM_PY","SC","circuit_level"):0.01063,
+                    (3,75,"Z_MEM_PY","SC","circuit_level"):0.01113,
+                    (3,75,"TOTAL_MEM_PY","SC","circuit_level"):0.01073,
+
+                    (4,75,"X_MEM_PY","SC","circuit_level"):0.01194,
+                    (4,75,"Z_MEM_PY","SC","circuit_level"):0.00947,
+                    (4,75,"TOTAL_MEM_PY","SC","circuit_level"):0.01073,
+
+                    (5,75,"X_MEM_PY","SC","circuit_level"):0.01287,
+                    (5,75,"Z_MEM_PY","SC","circuit_level"):0.00828,
+                    (5,75,"TOTAL_MEM_PY","SC","circuit_level"):0.00952,
+
+                    (6,75,"X_MEM_PY","SC","circuit_level"):0.01385,
+                    (6,75,"Z_MEM_PY","SC","circuit_level"):0.00723,
+                    (6,75,"TOTAL_MEM_PY","SC","circuit_level"):0.00803,
+
+                    # eta = 100
+                    (2,100,"X_MEM_PY","SC","circuit_level"):0.00872,
+                    (2,100,"Z_MEM_PY","SC","circuit_level"):0.01356,
+                    (2,100,"TOTAL_MEM_PY","SC","circuit_level"):0.00871,
+
+                    (3,100,"X_MEM_PY","SC","circuit_level"):0.01065,
+                    (3,100,"Z_MEM_PY","SC","circuit_level"):0.01111,
+                    (3,100,"TOTAL_MEM_PY","SC","circuit_level"):0.01074,
+
+                    (4,100,"X_MEM_PY","SC","circuit_level"):0.01191,
+                    (4,100,"Z_MEM_PY","SC","circuit_level"):0.00952,
+                    (4,100,"TOTAL_MEM_PY","SC","circuit_level"):0.01082,
+
+                    (5,100,"X_MEM_PY","SC","circuit_level"):0.01289,
+                    (5,100,"Z_MEM_PY","SC","circuit_level"):0.00829,
+                    (5,100,"TOTAL_MEM_PY","SC","circuit_level"):0.00945,
+
+                    (6,100,"X_MEM_PY","SC","circuit_level"):0.01371,
+                    (6,100,"Z_MEM_PY","SC","circuit_level"):0.00735,
+                    (6,100,"TOTAL_MEM_PY","SC","circuit_level"):0.00789,
+
+                    # eta = 500
+                    (2,500,"X_MEM_PY","SC","circuit_level"):0.00866,
+                    (2,500,"Z_MEM_PY","SC","circuit_level"):0.01371,
+                    (2,500,"TOTAL_MEM_PY","SC","circuit_level"):0.00877,
+
+                    (3,500,"X_MEM_PY","SC","circuit_level"):0.01073,
+                    (3,500,"Z_MEM_PY","SC","circuit_level"):0.01127,
+                    (3,500,"TOTAL_MEM_PY","SC","circuit_level"):0.01078,
+
+                    (4,500,"X_MEM_PY","SC","circuit_level"):0.01202,
+                    (4,500,"Z_MEM_PY","SC","circuit_level"):0.00957,
+                    (4,500,"TOTAL_MEM_PY","SC","circuit_level"):0.01082,
+
+                    (5,500,"X_MEM_PY","SC","circuit_level"):0.01305,
+                    (5,500,"Z_MEM_PY","SC","circuit_level"):0.00831,
+                    (5,500,"TOTAL_MEM_PY","SC","circuit_level"):0.00911,
+
+                    (6,500,"X_MEM_PY","SC","circuit_level"):0.01392,
+                    (6,500,"Z_MEM_PY","SC","circuit_level"):0.00737,
+                    (6,500,"TOTAL_MEM_PY","SC","circuit_level"):0.00783,
 
                     # ===================== ZXXZonSqu =====================
                     # eta = 0.5
@@ -4055,10 +4118,76 @@ if __name__ == "__main__":
 
                     (6,50,"X_MEM_PY","ZXXZonSqu","circuit_level"):0.01629,
                     (6,50,"Z_MEM_PY","ZXXZonSqu","circuit_level"):0.00618,
-                    (6,50,"TOTAL_MEM_PY","ZXXZonSqu","circuit_level"):0.00641 }
+                    (6,50,"TOTAL_MEM_PY","ZXXZonSqu","circuit_level"):0.00641, 
+
+
+                    # eta 75
+                    (2,75,"X_MEM_PY","ZXXZonSqu","circuit_level"):0.01084,
+                    (2,75,"Z_MEM_PY","ZXXZonSqu","circuit_level"):0.01086,
+                    (2,75,"TOTAL_MEM_PY","ZXXZonSqu","circuit_level"):0.01087,
+
+                    (3,75,"X_MEM_PY","ZXXZonSqu","circuit_level"):0.01291,
+                    (3,75,"Z_MEM_PY","ZXXZonSqu","circuit_level"):0.00893,
+                    (3,75,"TOTAL_MEM_PY","ZXXZonSqu","circuit_level"):0.00966,
+
+                    (4,75,"X_MEM_PY","ZXXZonSqu","circuit_level"):0.01440,
+                    (4,75,"Z_MEM_PY","ZXXZonSqu","circuit_level"):0.00770,
+                    (4,75,"TOTAL_MEM_PY","ZXXZonSqu","circuit_level"):0.00810,
+
+                    (5,75,"X_MEM_PY","ZXXZonSqu","circuit_level"):0.01541,
+                    (5,75,"Z_MEM_PY","ZXXZonSqu","circuit_level"):0.00674,
+                    (5,75,"TOTAL_MEM_PY","ZXXZonSqu","circuit_level"):0.00695,
+
+                    (6,75,"X_MEM_PY","ZXXZonSqu","circuit_level"):0.01650,
+                    (6,75,"Z_MEM_PY","ZXXZonSqu","circuit_level"):0.00605,
+                    (6,75,"TOTAL_MEM_PY","ZXXZonSqu","circuit_level"):0.00615,
+
+                    # eta 100
+                    (2,100,"X_MEM_PY","ZXXZonSqu","circuit_level"):0.01088,
+                    (2,100,"Z_MEM_PY","ZXXZonSqu","circuit_level"):0.01087,
+                    (2,100,"TOTAL_MEM_PY","ZXXZonSqu","circuit_level"):0.01086,
+
+                    (3,100,"X_MEM_PY","ZXXZonSqu","circuit_level"):0.01291,
+                    (3,100,"Z_MEM_PY","ZXXZonSqu","circuit_level"):0.00903,
+                    (3,100,"TOTAL_MEM_PY","ZXXZonSqu","circuit_level"):0.00950,
+
+                    (4,100,"X_MEM_PY","ZXXZonSqu","circuit_level"):0.01442,
+                    (4,100,"Z_MEM_PY","ZXXZonSqu","circuit_level"):0.00766,
+                    (4,100,"TOTAL_MEM_PY","ZXXZonSqu","circuit_level"):0.00796,
+
+                    (5,100,"X_MEM_PY","ZXXZonSqu","circuit_level"):0.01552,
+                    (5,100,"Z_MEM_PY","ZXXZonSqu","circuit_level"):0.00675,
+                    (5,100,"TOTAL_MEM_PY","ZXXZonSqu","circuit_level"):0.00702,
+
+                    (6,100,"X_MEM_PY","ZXXZonSqu","circuit_level"):0.01656,
+                    (6,100,"Z_MEM_PY","ZXXZonSqu","circuit_level"):0.00604,
+                    (6,100,"TOTAL_MEM_PY","ZXXZonSqu","circuit_level"):0.00619,
+
+
+                    # eta 500
+                    (2,500,"X_MEM_PY","ZXXZonSqu","circuit_level"):0.01097,
+                    (2,500,"Z_MEM_PY","ZXXZonSqu","circuit_level"):0.01099,
+                    (2,500,"TOTAL_MEM_PY","ZXXZonSqu","circuit_level"):0.01099,
+
+                    (3,500,"X_MEM_PY","ZXXZonSqu","circuit_level"):0.01301,
+                    (3,500,"Z_MEM_PY","ZXXZonSqu","circuit_level"):0.00905,
+                    (3,500,"TOTAL_MEM_PY","ZXXZonSqu","circuit_level"):0.00961,
+
+                    (4,500,"X_MEM_PY","ZXXZonSqu","circuit_level"):0.01465,
+                    (4,500,"Z_MEM_PY","ZXXZonSqu","circuit_level"):0.00770,
+                    (4,500,"TOTAL_MEM_PY","ZXXZonSqu","circuit_level"):0.00809,
+
+                    (5,500,"X_MEM_PY","ZXXZonSqu","circuit_level"):0.01555,
+                    (5,500,"Z_MEM_PY","ZXXZonSqu","circuit_level"):0.00679,
+                    (5,500,"TOTAL_MEM_PY","ZXXZonSqu","circuit_level"):0.00698,
+
+                    (6,500,"X_MEM_PY","ZXXZonSqu","circuit_level"):0.01671,
+                    (6,500,"Z_MEM_PY","ZXXZonSqu","circuit_level"):0.00607,
+                    (6,500,"TOTAL_MEM_PY","ZXXZonSqu","circuit_level"):0.00619,
 
 
 
+    }
                     # (2,0.5,"X_MEM_PY", "SC","circuit_level"):0.00852, (2,0.5,"Z_MEM_PY", "SC","circuit_level"):0.00869, (2,0.5,"TOTAL_MEM_PY", "SC","circuit_level"):0.00859,
                     # (3,0.5,"X_MEM_PY","SC", "circuit_level"):0.00897, (3,0.5,"Z_MEM_PY", "SC","circuit_level"):0.00721, (3,0.5,"TOTAL_MEM_PY", "SC","circuit_level"):0.00768,
                     # (4,0.5,"X_MEM_PY", "SC","circuit_level"):0.00949, (4,0.5,"Z_MEM_PY", "SC","circuit_level"):0.00620, (4,0.5,"TOTAL_MEM_PY", "SC","circuit_level"):0.00652,
@@ -4129,7 +4258,7 @@ if __name__ == "__main__":
 
     l_list = [2,3,4,5,6] # elongation params, do 3 and 5 in another batch
     d_list = [11,13,15,17,19] # code distances
-    eta_list = [25,50,75,100,500] # noise bias
+    eta_list = [25,50,100,500] # noise bias
     cd_list = ["SC", "ZXXZonSqu"] # clifford deformation types
     corr_type = "TOTAL_MEM" # which type of correlation to use, depending on the type of decoder. Choose from ['CORR_XZ', 'CORR_ZX', 'TOTAL', 'TOTAL_MEM', 'TOTAL_PY_CORR', 'TOTAL_MEM_CORR']
     error_type = "TOTAL_MEM" # which type of error to plot
@@ -4142,14 +4271,14 @@ if __name__ == "__main__":
     corr_decoding = False # whether to get data for correlated decoding (corrxz or corrzx), or circuit level (X/Z mem or X/Z mem py)
     total_num_shots = 10**6
     chunk_size=10**3
-    n_p = 40
+    n_p = 10
     p_range=0.00125
     p_list = np.logspace(-2.5,-1.5,n_p)
 
     if circuit_data:
         folder_path = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/circuit_data/'
         if noise_model == "circuit_level":
-            output_file = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/circuit_data.csv'
+            output_file = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/circuit_data_clean.csv'
         elif noise_model == "code_cap":
             output_file = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/code_cap_circuit_data.csv'
         elif noise_model == "phenom":
@@ -4168,24 +4297,24 @@ if __name__ == "__main__":
     # shots_added_per_submission = repeats_per_submission * shots_per_task
     
     # run this to get data from the dcc
-    # get_data_DCC_chat(circuit_data=circuit_data,
-    #                 corr_decoding=corr_decoding,
-    #                 noise_model=noise_model,
-    #                 d_list=d_list,
-    #                 l_list=l_list,
-    #                 eta_list=eta_list,
-    #                 cd_list=cd_list,
-    #                 corr_list=corr_list,
-    #                 total_num_shots=total_num_shots,
-    #                 p_list=p_list,
-    #                 p_th_init_d=None,
-    #                 pymatch_corr=py_corr,
-    #                 n_p = n_p,
-    #                 p_range=p_range,
-    #                 chunk_size=chunk_size,
-    #                 resume=True,
-    #                 shots_per_task=None,
-    #                 )
+    get_data_DCC_chat(circuit_data=circuit_data,
+                    corr_decoding=corr_decoding,
+                    noise_model=noise_model,
+                    d_list=d_list,
+                    l_list=l_list,
+                    eta_list=eta_list,
+                    cd_list=cd_list,
+                    corr_list=corr_list,
+                    total_num_shots=total_num_shots,
+                    p_list=None,
+                    p_th_init_d=p_th_init_CL_pycorr,
+                    pymatch_corr=py_corr,
+                    n_p = n_p,
+                    p_range=p_range,
+                    chunk_size=chunk_size,
+                    resume=True,
+                    shots_per_task=None,
+                    )
     # get_data_DCC(circuit_data, corr_decoding, noise_model, d_list, l_list, eta_list, cd_list, corr_list, total_num_shots, p_list=None, p_th_init_d=p_th_init_CL_pycorr, pymatch_corr=py_corr)
 
     # run this once you have data and want to combo it to one csv
@@ -4207,21 +4336,21 @@ if __name__ == "__main__":
 
     # params to plot
     # eta = 500
-    # l = 6
+    # l = 5
 
     # curr_num_shots = chunk_size # the file has 20408 for the 3,5 and 30303 for the 2,4,6 and 52631 for pycorr
     # noise_model = "circuit_level"
-    # CD_type = "ZXXZonSqu"
-    # py_corr = False # whether to use pymatching correlated decoder for circuit data
+    # CD_type = "SC"
+    # py_corr = True # whether to use pymatching correlated decoder for circuit data
     # corr_decoding = False # whether to get data for correlated decoding using my decoder
-    # error_type = "Z_MEM" # which type of error to plot, choose from ['X_MEM', 'Z_MEM', 'TOTAL_MEM', 'TOTAL_PY_MEM', 'TOTAL_MEM_PY_CORR']
+    # error_type = "Z_MEM_PY" # which type of error to plot, choose from ['X_MEM', 'Z_MEM', 'TOTAL_MEM', 'TOTAL_PY_MEM', 'TOTAL_MEM_PY_CORR']
     # p_range = 0.001
 
     
 
 
 
-    df = pd.read_csv(output_file)
+    # df = pd.read_csv(output_file)
 
     # full_error_plot(
     #     full_df=df,
@@ -4239,13 +4368,13 @@ if __name__ == "__main__":
 
 
     # make a plot for specific thresholds
-    # pth0 = p_th_init_CL[(l, eta, error_type, CD_type, noise_model)]
+    # pth0 = p_th_init_CL_pycorr[(l, eta, error_type, CD_type, noise_model)]
     # popt, pcov = get_threshold(df, pth0, p_range, l, eta, error_type, CD_type)
     # p_th = popt[0]
     # pth_error = np.sqrt(pcov[0][0])
     # print(p_th, pth_error)
     # get_thresholds_from_data_exactish(chunk_size, p_th_init_CL,p_range, output_file)
-    eta_df = pd.read_csv("/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/threshold_exactish_per_eta.csv")
+    # eta_df = pd.read_csv("/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/threshold_exactish_per_eta.csv")
     # eta_df_code_cap = pd.read_csv("/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/all_thresholds_per_eta_elongated.csv")
     # eta_threshold_plot_totalmem_compare_deformations(
     # eta_df,
@@ -4253,13 +4382,13 @@ if __name__ == "__main__":
     # noise_model="circuit_level",
     # error_type = "TOTAL_MEM_PY"
 # )
-    eta_threshold_plot_compare_deformations_and_decoder(
-    eta_df,
-    cd_type_list=["SC", "ZXXZonSqu"],
-    noise_model="circuit_level",
-    error_type = "TOTAL_MEM_PY",
-    suffix_to_remove="_PY"
-    )
+    # eta_threshold_plot_compare_deformations_and_decoder(
+    # eta_df,
+    # cd_type_list=["SC", "ZXXZonSqu"],
+    # noise_model="circuit_level",
+    # error_type = "TOTAL_MEM_PY",
+    # suffix_to_remove="_PY"
+    # )
 
     # eta_threshold_plot_compare_error_types(
     # eta_df_code_cap,

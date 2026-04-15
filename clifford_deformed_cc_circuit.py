@@ -486,7 +486,7 @@ class CDCompassCodeCircuit:
     
 
     def make_elongated_circuit_from_parity(self, before_measure_flip, before_measure_pauli_channel, after_clifford_depolarization, before_round_data_pauli_channel,
-                                            between_round_idling_pauli_channel, idling_dephasing, phenom_meas=False, CD_type = "SC"):
+                                            between_round_idling_pauli_channel, idling_dephasing, phenom_meas=False, CD_type = "SC", num_rounds = None):
         """ 
         create a surface code memory experiment circuit from a parity check matrix
         Inputs:
@@ -516,8 +516,9 @@ class CDCompassCodeCircuit:
         p_i_round = between_round_idling_pauli_channel # idling error on all qubits between the measurement rounds
         p_i = idling_dephasing # idling error on all qubits during rounds
 
+        if num_rounds == None:
+            num_rounds = self.d
 
-        num_rounds = self.d
         memory = self.memory
 
         px_data = 0.5*p_data_dep/(1+self.eta) # biased depolarizing error on data qubits before round
@@ -630,42 +631,42 @@ class CDCompassCodeCircuit:
         #
         # start the for loop to repeat for d rounds - memory experiment rounds 2-d
         #
+        if num_rounds > 1:
+            loop_circuit = stim.Circuit() # create a loop circuit to repeat the following for d-1 rounds
+            # All other d rounds - t>0 measurements
+
+            # add error to the data qubits
+            loop_circuit.append("PAULI_CHANNEL_1", data_q_list, [px_data, py_data, pz_data])
         
-        loop_circuit = stim.Circuit() # create a loop circuit to repeat the following for d-1 rounds
-        # All other d rounds - t>0 measurements
-
-        # add error to the data qubits
-        loop_circuit.append("PAULI_CHANNEL_1", data_q_list, [px_data, py_data, pz_data])
-       
-        loop_circuit = self.add_meas_round(loop_circuit, stab_d_x, stab_d_z, order_d_x, order_d_z, qubit_d_x, qubit_d_z, num_ancillas, num_qubits_x, num_qubits_z, CD_data=CD_data_transform, p_i=p_i, p_gate=p_gate, p_i_round=p_i_round, CD_type=CD_type)
+            loop_circuit = self.add_meas_round(loop_circuit, stab_d_x, stab_d_z, order_d_x, order_d_z, qubit_d_x, qubit_d_z, num_ancillas, num_qubits_x, num_qubits_z, CD_data=CD_data_transform, p_i=p_i, p_gate=p_gate, p_i_round=p_i_round, CD_type=CD_type)
 
 
-        # idling errors on the data qubits, measure the ancillas, bit flip errors on measurements
-        loop_circuit.append("Z_ERROR", data_q_z_list, p_i)
-        
-        # add the error to the ancillas before the ancilla measurement, phenom model
-        for anc in range(len(stab_d_x)):
-            if phenom_meas:
-                loop_circuit.append("X_ERROR", anc, min(p_phenom_meas*len(stab_d_x[anc]),1))
-            else:
-                loop_circuit.append("X_ERROR", anc, p_meas)
-        for anc in range(len(stab_d_z)):
-            if phenom_meas:
-                loop_circuit.append("X_ERROR", anc + len(stab_d_x), min(p_phenom_meas*len(stab_d_z[anc]),1)) 
-            else:
-                loop_circuit.append("X_ERROR", anc + len(stab_d_x), p_meas) 
+            # idling errors on the data qubits, measure the ancillas, bit flip errors on measurements
+            loop_circuit.append("Z_ERROR", data_q_z_list, p_i)
+            
+            # add the error to the ancillas before the ancilla measurement, phenom model
+            for anc in range(len(stab_d_x)):
+                if phenom_meas:
+                    loop_circuit.append("X_ERROR", anc, min(p_phenom_meas*len(stab_d_x[anc]),1))
+                else:
+                    loop_circuit.append("X_ERROR", anc, p_meas)
+            for anc in range(len(stab_d_z)):
+                if phenom_meas:
+                    loop_circuit.append("X_ERROR", anc + len(stab_d_x), min(p_phenom_meas*len(stab_d_z[anc]),1)) 
+                else:
+                    loop_circuit.append("X_ERROR", anc + len(stab_d_x), p_meas) 
 
-        loop_circuit.append("MR", full_stab_L) # measure the ancillas at t>0
+            loop_circuit.append("MR", full_stab_L) # measure the ancillas at t>0
 
-        # timelike detectors for the X or Z stabilizers
-        for i in range(num_ancillas):
-            loop_circuit.append("DETECTOR", [stim.target_rec(-num_ancillas + i), stim.target_rec(-2*num_ancillas+ i)]) # anc round d tied to anc round d=0
+            # timelike detectors for the X or Z stabilizers
+            for i in range(num_ancillas):
+                loop_circuit.append("DETECTOR", [stim.target_rec(-num_ancillas + i), stim.target_rec(-2*num_ancillas+ i)]) # anc round d tied to anc round d=0
 
-        loop_circuit.append("TICK") # add a tick to the circuit to mark the end of the t>0 iteration
-        
-        if memory:
-            # repeat the loop circuit d-1 times - circuit level only
-            circuit.append(stim.CircuitRepeatBlock(repeat_count=(num_rounds-1), body=loop_circuit))# end the repeat block
+            loop_circuit.append("TICK") # add a tick to the circuit to mark the end of the t>0 iteration
+            
+            if memory:
+                # repeat the loop circuit d-1 times - circuit level only
+                circuit.append(stim.CircuitRepeatBlock(repeat_count=(num_rounds-1), body=loop_circuit))# end the repeat block
 
 
         #
