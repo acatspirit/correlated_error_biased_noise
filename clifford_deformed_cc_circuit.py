@@ -382,7 +382,7 @@ class CDCompassCodeCircuit:
         # print(repr(circuit))
         return circuit
     
-    def add_meas_round(self, curr_circuit, stab_d_x, stab_d_z, order_d_x, order_d_z, qubit_d_x, qubit_d_z, num_ancillas, num_qubits_x, num_qubits_z, CD_data, p_i, p_gate, p_i_round, CD_type):
+    def add_meas_round(self, curr_circuit, stab_d_x, stab_d_z, order_d_x, order_d_z, qubit_d_x, qubit_d_z, num_ancillas, num_qubits_x, num_qubits_z, CD_data, p_i, p_gate, p_i_round, CD_type, fully_biased=False):
         """
         Add a measurement round to the circuit. Construct the gates with error model 
         for one round of stabilizer construction.
@@ -392,9 +392,20 @@ class CDCompassCodeCircuit:
         px = 0.5*p_i_round/(1+self.eta)
         pz = p_i_round*(self.eta/(1+self.eta))
 
+        if fully_biased:
+            p_x_gate = 0.5*p_gate/(1+self.eta)
+            p_z_gate = p_gate*(self.eta/(1+self.eta))
+        else:
+            p_x_gate = p_gate/(12*(1+self.eta))
+            p_z_gate = self.eta*p_gate/(3*(1+self.eta))
+        
+
         circuit.append("PAULI_CHANNEL_1",range(num_ancillas + num_qubits_x), [px,px,pz]) # idling error on all qubits in between measurement rounds
         circuit.append("H", range(num_ancillas))
-        circuit.append("DEPOLARIZE1", range(num_ancillas), p_gate) # depolarizing error on the ancillas after H
+        if fully_biased:
+            circuit.append("PAULI_CHANNEL_1", range(num_ancillas), [p_x_gate, p_x_gate, p_z_gate]) # try fully biased gates after H
+        else:
+            circuit.append("DEPOLARIZE1", range(num_ancillas), p_gate) # depolarizing error on the ancillas after H
 
         
         if p_i > 0: circuit.append("Z_ERROR", [num_ancillas + q for q in list(qubit_d_x.keys())], p_i) # idling error on the data qubits during round
@@ -423,10 +434,12 @@ class CDCompassCodeCircuit:
 
                 # add 2-qubit depolarizing (biased or not depending on CD type) after the gate
                 if gate == "CX":
-                    circuit.append("DEPOLARIZE2", [ctrl, target], p_gate)
+                    if fully_biased:
+                        circuit.append("PAULI_CHANNEL_2", [ctrl, target], [p_x_gate, p_x_gate, p_z_gate, p_x_gate, p_x_gate, p_x_gate, p_x_gate, p_x_gate,p_x_gate, p_x_gate, p_x_gate, p_z_gate,p_x_gate, p_x_gate, p_z_gate]) # try fully biased gates after 2 qubit
+                    else:
+                        circuit.append("DEPOLARIZE2", [ctrl, target], p_gate)
                 else:
-                    p_x_gate = p_gate/(12*(1+self.eta))
-                    p_z_gate = self.eta*p_gate/(3*(1+self.eta))
+                    
                     circuit.append("PAULI_CHANNEL_2", [ctrl, target], [p_x_gate, p_x_gate, p_z_gate, p_x_gate, p_x_gate, p_x_gate, p_x_gate, p_x_gate,p_x_gate, p_x_gate, p_x_gate, p_z_gate,p_x_gate, p_x_gate, p_z_gate]) # Z error only after CZ gate
 
                 if p_i > 0:
@@ -462,10 +475,11 @@ class CDCompassCodeCircuit:
                 circuit.append(gate, [ctrl, target]) # apply the CX gate
                 # add 2-qubit depolarizing (biased or not depending on CD type) after the gate
                 if gate == "CX":
-                    circuit.append("DEPOLARIZE2", [ctrl, target], p_gate)
+                    if fully_biased:
+                        circuit.append("PAULI_CHANNEL_2", [ctrl, target], [p_x_gate, p_x_gate, p_z_gate, p_x_gate, p_x_gate, p_x_gate, p_x_gate, p_x_gate,p_x_gate, p_x_gate, p_x_gate, p_z_gate,p_x_gate, p_x_gate, p_z_gate]) # try fully biased gates after 2 qubit
+                    else:
+                        circuit.append("DEPOLARIZE2", [ctrl, target], p_gate)
                 else:
-                    p_x_gate = p_gate/(12*(1+self.eta))
-                    p_z_gate = self.eta*p_gate/(3*(1+self.eta))
                     circuit.append("PAULI_CHANNEL_2", [ctrl, target], [p_x_gate, p_x_gate, p_z_gate, p_x_gate, p_x_gate, p_x_gate, p_x_gate, p_x_gate,p_x_gate, p_x_gate, p_x_gate, p_z_gate,p_x_gate, p_x_gate, p_z_gate]) # Z error only after CZ gate
 
 
@@ -476,7 +490,10 @@ class CDCompassCodeCircuit:
                     circuit.append("Z_ERROR", full_inactive_list, p_i) # Idling error on the ancillas and qubits outside the stabilizer
 
         circuit.append("H", range(num_ancillas))
-        circuit.append("DEPOLARIZE1", range(num_ancillas), p_gate) # depolarizing error on the ancillas after H
+        if fully_biased:
+            circuit.append("PAULI_CHANNEL_1", range(num_ancillas), [p_x_gate, p_x_gate, p_z_gate]) # try fully biased gates after H
+        else:
+            circuit.append("DEPOLARIZE1", range(num_ancillas), p_gate) # depolarizing error on the ancillas after H
         circuit.append("TICK")
         
         
@@ -486,7 +503,7 @@ class CDCompassCodeCircuit:
     
 
     def make_elongated_circuit_from_parity(self, before_measure_flip, before_measure_pauli_channel, after_clifford_depolarization, before_round_data_pauli_channel,
-                                            between_round_idling_pauli_channel, idling_dephasing, phenom_meas=False, CD_type = "SC", num_rounds = None):
+                                            between_round_idling_pauli_channel, idling_dephasing, phenom_meas=False, CD_type = "SC", num_rounds = None, fully_biased=False):
         """ 
         create a surface code memory experiment circuit from a parity check matrix
         Inputs:
