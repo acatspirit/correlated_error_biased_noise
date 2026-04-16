@@ -4341,16 +4341,16 @@ if __name__ == "__main__":
 
 
     # params to plot
-    eta = 25
-    l = 5
+    # eta = 25
+    # l = 5
 
-    curr_num_shots = chunk_size # the file has 20408 for the 3,5 and 30303 for the 2,4,6 and 52631 for pycorr
-    noise_model = "circuit_level"
-    CD_type = "SC"
-    py_corr = True # whether to use pymatching correlated decoder for circuit data
-    corr_decoding = False # whether to get data for correlated decoding using my decoder
-    error_type = "Z_MEM_PY" # which type of error to plot, choose from ['X_MEM', 'Z_MEM', 'TOTAL_MEM', 'TOTAL_PY_MEM', 'TOTAL_MEM_PY_CORR']
-    p_range = 0.00125
+    # curr_num_shots = chunk_size # the file has 20408 for the 3,5 and 30303 for the 2,4,6 and 52631 for pycorr
+    # noise_model = "circuit_level"
+    # CD_type = "SC"
+    # py_corr = True # whether to use pymatching correlated decoder for circuit data
+    # corr_decoding = False # whether to get data for correlated decoding using my decoder
+    # error_type = "Z_MEM_PY" # which type of error to plot, choose from ['X_MEM', 'Z_MEM', 'TOTAL_MEM', 'TOTAL_PY_MEM', 'TOTAL_MEM_PY_CORR']
+    # p_range = 0.00125
 
     
 
@@ -4380,7 +4380,7 @@ if __name__ == "__main__":
     # pth_error = np.sqrt(pcov[0][0])
     # print(p_th, pth_error)
     # get_thresholds_from_data_exactish(chunk_size, p_th_init_CL_pycorr,p_range, output_file)
-    eta_df = pd.read_csv("/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/threshold_exactish_per_eta.csv")
+    # eta_df = pd.read_csv("/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/threshold_exactish_per_eta.csv")
     # eta_df_code_cap = pd.read_csv("/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/all_thresholds_per_eta_elongated.csv")
     # eta_threshold_plot_totalmem_compare_deformations(
     # eta_df,
@@ -4388,13 +4388,13 @@ if __name__ == "__main__":
     # noise_model="circuit_level",
     # error_type = "TOTAL_MEM_PY"
 # )
-    eta_threshold_plot_compare_deformations_and_decoder(
-    eta_df,
-    cd_type_list=["SC", "ZXXZonSqu"],
-    noise_model="circuit_level",
-    error_type = "TOTAL_MEM_PY",
-    suffix_to_remove="_PY"
-    )
+    # eta_threshold_plot_compare_deformations_and_decoder(
+    # eta_df,
+    # cd_type_list=["SC", "ZXXZonSqu"],
+    # noise_model="circuit_level",
+    # error_type = "TOTAL_MEM_PY",
+    # suffix_to_remove="_PY"
+    # )
 
     # eta_threshold_plot_compare_error_types(
     # eta_df_code_cap,
