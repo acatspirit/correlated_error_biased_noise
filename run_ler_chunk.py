@@ -71,12 +71,11 @@ def run_one_chunk(circuit, num_shots, decoder, basis='X', CD_type="SC"):
     return num_logical_errors_py_corr, num_logical_errors_my_corr
 
 
-def make_param_list(d_list, p_list, eta_list):
+def make_param_list(p_list, eta_list):
     params = []
-    for d in d_list:
-        for eta in eta_list:
-            for p in p_list:
-                params.append((d, p, eta))
+    for eta in eta_list:
+        for p in p_list:
+            params.append((p, eta))
     return params
 
 
@@ -103,7 +102,7 @@ def main():
     p_list = np.logspace(-2.5, -2.1, 3)
     eta_list = [0.5, 1, 5]
 
-    params = make_param_list( p_list, eta_list)
+    params = make_param_list(p_list, eta_list)
     num_param_sets = len(params)
     total_jobs = num_param_sets * args.num_chunks
 
