@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --job-name=ler_chunks
-#SBATCH --partition=common
+#SBATCH --partition=common,gpu-common,scavenger,scavenger-gpu
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=3G
 #SBATCH --time=24:00:00
