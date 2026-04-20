@@ -3087,12 +3087,15 @@ def eta_threshold_plot_compare_error_types(
     noise_model
 ):
     """
-    Compare threshold vs bias across multiple error types for one deformation type.
-    One subplot per error_type, with all l values overlaid and shaded error bands.
+    Compare threshold vs bias across four error types for one deformation type.
+    Uses a 2x2 grid of subplots, with all l values overlaid and shaded error bands.
     Uses one shared legend across all subplots.
     """
 
     eta_df = eta_df.copy()
+
+    if len(error_type_list) != 4:
+        raise ValueError("error_type_list must contain exactly 4 error types.")
 
     # Be robust to either 'cd_type' or 'CD_type'
     if 'CD_type' in eta_df.columns:
@@ -3117,29 +3120,19 @@ def eta_threshold_plot_compare_error_types(
     ]
 
     l_values = sorted(df['l'].unique())
-    num_cols = len(error_type_list)
 
-    # Paired colormap: one pair per ell, use dark color for the main line
-    cmap = plt.get_cmap("Paired")
-    num_l = len(l_values)
-
-    if num_l > 6:
-        raise ValueError("Paired colormap supports up to 6 ℓ values (12 colors total).")
-
-    l_color_pairs = [
-        (cmap(2 * i), cmap(2 * i + 1))   # (light, dark)
-        for i in range(num_l)
-    ]
+    # Plasma colormap: one color per ell
+    cmap = plt.get_cmap("plasma")
+    color_values = np.linspace(0.1, 0.9, max(len(l_values), 1))
+    l_colors = [cmap(val) for val in color_values]
 
     fig, axes = plt.subplots(
-        1, num_cols,
-        figsize=(7 * num_cols, 5),
+        2, 2,
+        figsize=(12, 9),
         sharex=True,
         sharey=True
     )
-
-    if num_cols == 1:
-        axes = [axes]
+    axes = axes.flatten()
 
     legend_handles = []
     legend_labels = []
@@ -3154,11 +3147,15 @@ def eta_threshold_plot_compare_error_types(
         "Z_MEM": r"$Z_{MEM}$",
         "TOTAL_MEM_CORR": r"$\mathrm{TOTAL}_{MEM,CORR}$",
         "TOTAL_PY_CORR": r"$\mathrm{CORR}_{PY}$",
+        "X_MEM_PY": r"$X_{MEM,PY}$",
+        "Z_MEM_PY": r"$Z_{MEM,PY}$",
+        "TOTAL_MEM_PY": r"$\mathrm{TOTAL}_{MEM,PY}$",
+        "SC": "CSS",
+        "ZXXZonSqu": "ZXXZ\u2610",
     }
 
-    for col_idx, error_type in enumerate(error_type_list):
-        ax = axes[col_idx]
-
+    for idx, error_type in enumerate(error_type_list):
+        ax = axes[idx]
         df_err = df[df['error_type'] == error_type]
 
         for l_idx, l in enumerate(l_values):
@@ -3171,13 +3168,13 @@ def eta_threshold_plot_compare_error_types(
             pth = df_filtered['pth'].to_numpy()
             err = df_filtered['stderr'].to_numpy()
 
-            light_color, dark_color = l_color_pairs[l_idx]
+            color = l_colors[l_idx]
 
             line, = ax.plot(
                 eta_vals,
                 pth,
                 label=rf"$\ell = {l}$",
-                color=dark_color,
+                color=color,
                 marker='o'
             )
 
@@ -3185,38 +3182,50 @@ def eta_threshold_plot_compare_error_types(
                 eta_vals,
                 pth - err,
                 pth + err,
-                color=dark_color,
+                color=color,
                 alpha=0.2
             )
 
-            if col_idx == 0:
+            if idx == 0:
                 legend_handles.append(line)
                 legend_labels.append(rf"$\ell = {l}$")
 
         subplot_title = title_map.get(error_type, error_type)
         ax.set_title(subplot_title, fontsize=16)
-        ax.set_xlabel(r"Noise Bias ($\eta$)", fontsize=12)
         ax.grid(True)
 
-    axes[0].set_ylabel(r"Threshold $p_{th}$", fontsize=12)
+        # Panel labels (a), (b), (c), (d)
+        panel_labels = ['(a)', '(b)', '(c)', '(d)']
+        ax.text(
+            0.02, 0.95,
+            panel_labels[idx],
+            transform=ax.transAxes,
+            fontsize=14,
+            fontweight='bold',
+            va='top',
+            ha='left'
+        )
 
     fig.suptitle(
-        f"Threshold vs Bias ({cd_type})",
+        f"Threshold vs Bias ({title_map[cd_type]} Deformation)",
         fontsize=18,
-        y=0.98
+        y=0.94
     )
 
     fig.legend(
         legend_handles,
         legend_labels,
         loc="upper center",
-        bbox_to_anchor=(0.5, 0.90),
+        bbox_to_anchor=(0.5, 0.91),
         ncol=len(l_values),
         fontsize=11,
         frameon=False
     )
 
-    fig.subplots_adjust(top=0.78, wspace=0.12)
+    fig.supxlabel(r"Noise Bias ($\eta$)", fontsize=12, y=0.05)
+    fig.supylabel(r"Threshold $p_{th}$", fontsize=12, x=0.05)
+
+    fig.subplots_adjust(top=0.84, wspace=0.2, hspace=0.2)
 
     plt.show()
 
@@ -3550,6 +3559,9 @@ def get_thresholds_from_data_exactish(num_shots, p_th_init_dict, p_range, output
 
         p_th_init = p_th_init_dict[key]
         pop,pcov = get_threshold(df, p_th_init,p_range, l, eta, corr_type, CD_type)
+        if type(pop) == int:
+            print(f"Threshold fit failed for l={l}, eta={eta}, corr_type={corr_type}, CD_type={CD_type}, noise_model={noise_model}. Skipping.")
+            continue
         print(p_th_init, pop)
         threshold = pop[0]
         std_error = np.sqrt(np.diag(pcov))[0] # should it be np.sqrt(np.trace(pcov)) instead to get the overall error?
@@ -4384,29 +4396,29 @@ if __name__ == "__main__":
     # shots_added_per_submission = repeats_per_submission * shots_per_task
     
     # run this to get data from the dcc
-    for py_corr in py_corr_list:
-        if py_corr == True:
-            p_init_d_temp = p_th_init_CL_pycorr
-        else:
-            p_init_d_temp = p_th_init_CL
-        get_data_DCC_chat(circuit_data=circuit_data,
-                        corr_decoding=corr_decoding,
-                        noise_model=noise_model,
-                        d_list=d_list,
-                        l_list=l_list,
-                        eta_list=eta_list,
-                        cd_list=cd_list,
-                        corr_list=corr_list,
-                        total_num_shots=total_num_shots,
-                        p_list=None,
-                        p_th_init_d=p_init_d_temp,
-                        pymatch_corr=py_corr,
-                        n_p = n_p,
-                        p_range=p_range,
-                        chunk_size=chunk_size,
-                        resume=True,
-                        shots_per_task=None,
-                        )
+    # for py_corr in py_corr_list:
+    #     if py_corr == True:
+    #         p_init_d_temp = p_th_init_CL_pycorr
+    #     else:
+    #         p_init_d_temp = p_th_init_CL
+    #     get_data_DCC_chat(circuit_data=circuit_data,
+    #                     corr_decoding=corr_decoding,
+    #                     noise_model=noise_model,
+    #                     d_list=d_list,
+    #                     l_list=l_list,
+    #                     eta_list=eta_list,
+    #                     cd_list=cd_list,
+    #                     corr_list=corr_list,
+    #                     total_num_shots=total_num_shots,
+    #                     p_list=None,
+    #                     p_th_init_d=p_init_d_temp,
+    #                     pymatch_corr=py_corr,
+    #                     n_p = n_p,
+    #                     p_range=p_range,
+    #                     chunk_size=chunk_size,
+    #                     resume=True,
+    #                     shots_per_task=None,
+    #                     )
     # get_data_DCC(circuit_data, corr_decoding, noise_model, d_list, l_list, eta_list, cd_list, corr_list, total_num_shots, p_list=None, p_th_init_d=p_th_init_CL_pycorr, pymatch_corr=py_corr)
 
     # run this once you have data and want to combo it to one csv
@@ -4465,9 +4477,14 @@ if __name__ == "__main__":
     # p_th = popt[0]
     # pth_error = np.sqrt(pcov[0][0])
     # print(p_th, pth_error)
-    # get_thresholds_from_data_exactish(chunk_size, p_th_init_CL_pycorr,p_range, output_file)
+    # for py_corr in py_corr_list:
+    #     if py_corr == True:
+    #         p_th_init_CL_temp = p_th_init_CL_pycorr
+    #     else:
+    #         p_th_init_CL_temp = p_th_init_CL
+    #     get_thresholds_from_data_exactish(chunk_size, p_th_init_CL_temp, p_range, output_file)
     # eta_df = pd.read_csv("/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/threshold_exactish_per_eta.csv")
-    # eta_df_code_cap = pd.read_csv("/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/all_thresholds_per_eta_elongated.csv")
+    eta_df_code_cap = pd.read_csv("/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/all_thresholds_per_eta_elongated.csv")
     # eta_threshold_plot_totalmem_compare_deformations(
     # eta_df,
     # cd_type_list=["SC", "ZXXZonSqu"],
@@ -4482,12 +4499,12 @@ if __name__ == "__main__":
     # suffix_to_remove="_PY"
     # )
 
-    # eta_threshold_plot_compare_error_types(
-    # eta_df_code_cap,
-    # cd_type="SC",
-    # error_type_list=["CORR_XZ", "CORR_ZX", "TOTAL_PY_CORR"],
-    # noise_model="code_cap"
-    # )
+    eta_threshold_plot_compare_error_types(
+    eta_df_code_cap,
+    cd_type="SC",
+    error_type_list=["CORR_XZ", "CORR_ZX", "TOTAL_PY_CORR", "TOTAL"],
+    noise_model="code_cap"
+    )
     
     
     # p_range_df = df[(df['p'] <= pth0 + p_range) & (df["p"] >= pth0 - p_range)]
