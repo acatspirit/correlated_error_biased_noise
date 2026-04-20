@@ -4,6 +4,10 @@ import argparse
 import pandas as pd
 
 
+#
+# before running make sure that you change it to add to file not just overwrite
+#
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--indir", type=str, required=True)
