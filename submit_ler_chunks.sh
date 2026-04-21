@@ -4,7 +4,7 @@
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=500M
 #SBATCH --time=24:00:00
-#SBATCH --array=0-89999
+#SBATCH --array=0-8999
 #SBATCH --output=logs/ler_%A_%a.out
 #SBATCH --error=logs/ler_%A_%a.err
 
