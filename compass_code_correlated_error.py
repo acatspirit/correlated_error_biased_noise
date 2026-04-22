@@ -3234,7 +3234,7 @@ def eta_threshold_plot_compare_error_types(
     plt.show()
 
 # plotter for plasma colormap
-def eta_threshold_plot_compare_deformations_and_decoder(
+def eta_delta_threshold_plot_compare_deformations_and_decoder(
     eta_df,
     cd_type_list,
     noise_model,
@@ -3407,6 +3407,182 @@ def eta_threshold_plot_compare_deformations_and_decoder(
         loc="upper center",
         bbox_to_anchor=(0.5, 0.84),
         ncol=2,
+        fontsize=11,
+        frameon=False
+    )
+
+    fig.subplots_adjust(top=0.74, wspace=0.12)
+
+    plt.show()
+
+def eta_threshold_gap_plot_compare_deformations_and_decoder(
+    eta_df,
+    cd_type_list,
+    noise_model,
+    error_type="TOTAL_MEM_PY",
+    suffix_to_remove="_PY"
+):
+    """
+    Compare threshold-vs-bias gap between two decoder types for multiple deformations.
+    One subplot per deformation type, all l values overlaid.
+
+    For each l, plots:
+        delta_pth = pth(error_type) - pth(baseline_error_type)
+
+    where baseline_error_type is formed by removing `suffix_to_remove`.
+
+    Example:
+        error_type='TOTAL_MEM_PY' -> baseline='TOTAL_MEM'
+
+    The shaded band uses quadrature-combined stderr:
+        sigma_delta = sqrt(stderr_main^2 + stderr_base^2)
+    """
+
+    eta_df = eta_df.copy()
+
+    eta_df['CD_type'] = eta_df['CD_type'].astype(str).str.strip()
+    eta_df['noise_model'] = eta_df['noise_model'].astype(str).str.strip()
+    eta_df['error_type'] = eta_df['error_type'].astype(str).str.strip()
+
+    cd_type_list = [cd.strip() for cd in cd_type_list]
+    noise_model = noise_model.strip()
+    error_type = error_type.strip()
+
+    if error_type.endswith(suffix_to_remove):
+        baseline_error_type = error_type[:-len(suffix_to_remove)]
+    else:
+        raise ValueError(
+            f"error_type must end with '{suffix_to_remove}', got {error_type}"
+        )
+
+    df = eta_df[
+        (eta_df['CD_type'].isin(cd_type_list)) &
+        (eta_df['noise_model'] == noise_model) &
+        (eta_df['error_type'].isin([error_type, baseline_error_type]))
+    ].copy()
+
+    l_values = sorted(df['l'].unique())
+    num_cols = len(cd_type_list)
+
+    cmap = colormaps["plasma"]
+    color_values = np.linspace(0.1, 0.8, max(len(l_values), 1))
+    colors = [cmap(val) for val in color_values]
+
+    fig, axes = plt.subplots(
+        1, num_cols,
+        figsize=(7 * num_cols, 5),
+        sharex=True,
+        sharey=True
+    )
+
+    if num_cols == 1:
+        axes = [axes]
+
+    legend_handles = []
+    legend_labels = []
+
+    title_map = {
+        "SC": "CSS",
+        "ZXXZonSqu": "ZXXZ\u2610",
+        "Z": "V",
+        "X": "H",
+    }
+
+    for col_idx, cd_type in enumerate(cd_type_list):
+        ax = axes[col_idx]
+        df_cd = df[df['CD_type'] == cd_type]
+
+        for l_idx, l in enumerate(l_values):
+            color = colors[l_idx]
+
+            df_main = df_cd[
+                (df_cd['l'] == l) &
+                (df_cd['error_type'] == error_type)
+            ][['eta', 'pth', 'stderr']].rename(
+                columns={'pth': 'pth_main', 'stderr': 'stderr_main'}
+            )
+
+            df_base = df_cd[
+                (df_cd['l'] == l) &
+                (df_cd['error_type'] == baseline_error_type)
+            ][['eta', 'pth', 'stderr']].rename(
+                columns={'pth': 'pth_base', 'stderr': 'stderr_base'}
+            )
+
+            df_gap = pd.merge(df_main, df_base, on='eta', how='inner').sort_values('eta')
+
+            if df_gap.empty:
+                continue
+
+            eta_vals = df_gap['eta'].to_numpy()
+            delta_pth = (df_gap['pth_main'] - df_gap['pth_base']).to_numpy()
+            delta_err = np.sqrt(
+                df_gap['stderr_main'].to_numpy()**2 +
+                df_gap['stderr_base'].to_numpy()**2
+            )
+
+            line, = ax.plot(
+                eta_vals,
+                delta_pth,
+                label=rf"$\ell = {l}$",
+                color=color,
+                marker='o',
+                linestyle='-'
+            )
+
+            ax.fill_between(
+                eta_vals,
+                delta_pth - delta_err,
+                delta_pth + delta_err,
+                color=color,
+                alpha=0.2
+            )
+
+            if col_idx == 0:
+                legend_handles.append(line)
+                legend_labels.append(rf"$\ell = {l}$")
+
+        subplot_title = title_map.get(cd_type, cd_type)
+        ax.set_title(subplot_title, fontsize=16)
+        ax.set_xlabel("Noise Bias ($\\eta$)", fontsize=12)
+        ax.set_xscale("log")
+        ax.grid(True)
+
+    axes[0].set_ylabel(r"$\Delta_{\mathrm{corr}}$", fontsize=12)
+
+    mem_type = "" if baseline_error_type.startswith("TOTAL") else title_map.get(
+        baseline_error_type[0], baseline_error_type[0]
+    ) + " Memory"
+
+    fig.suptitle(
+        f"Threshold Gap vs Bias {mem_type}",
+        fontsize=18,
+        y=0.98
+    )
+
+    fig.legend(
+        legend_handles,
+        legend_labels,
+        loc="upper center",
+        bbox_to_anchor=(0.5, 0.90),
+        ncol=len(l_values),
+        fontsize=11,
+        frameon=False
+    )
+
+    style_handles = [
+        Line2D(
+            [0], [0],
+            color="black",
+            linestyle="-",
+            label=rf"$\Delta_{{\mathrm{{corr}}}} = p_{{th}}^{{\mathrm{{PY}}}} - p_{{th}}^{{\mathrm{{MWPM}}}}$"
+        ),
+    ]
+    fig.legend(
+        handles=style_handles,
+        loc="upper center",
+        bbox_to_anchor=(0.5, 0.84),
+        ncol=1,
         fontsize=11,
         frameon=False
     )
@@ -4612,16 +4788,16 @@ if __name__ == "__main__":
     curr_num_shots = chunk_size # the file has 20408 for the 3,5 and 30303 for the 2,4,6 and 52631 for pycorr
     noise_model = "circuit_level"
     CD_type = "ZXXZonSqu"
-    py_corr = False # whether to use pymatching correlated decoder for circuit data
-    corr_decoding = True # whether to get data for correlated decoding using my decoder
-    error_type = "Z_MEM_CORR" # which type of error to plot, choose from ['X_MEM', 'Z_MEM', 'TOTAL_MEM', 'TOTAL_PY_MEM', 'TOTAL_MEM_PY_CORR']
+    py_corr = True # whether to use pymatching correlated decoder for circuit data
+    corr_decoding = False # whether to get data for correlated decoding using my decoder
+    error_type = "Z_MEM_PY" # which type of error to plot, choose from ['X_MEM', 'Z_MEM', 'TOTAL_MEM', 'TOTAL_PY_MEM', 'TOTAL_MEM_PY_CORR']
     p_range = 0.001
 
     
 
 
 
-    # df = pd.read_csv(output_file)
+    df = pd.read_csv(output_file)
     
     # plot_df = full_df[
     # (full_df['l'] == 2) &
@@ -4690,6 +4866,14 @@ if __name__ == "__main__":
     # suffix_to_remove="_PY"
     # )
 
+    # eta_threshold_gap_plot_compare_deformations_and_decoder(
+    # eta_df,
+    # cd_type_list=["SC", "ZXXZonSqu"],
+    # noise_model="circuit_level",
+    # error_type = "TOTAL_MEM_PY",
+    # suffix_to_remove="_PY"
+    # )
+
     # eta_threshold_plot_compare_error_types(
     # eta_df_code_cap,
     # cd_type="SC",
@@ -4698,9 +4882,9 @@ if __name__ == "__main__":
     # )
     
     
-    p_range_df = df[(df['p'] <= pth0 + p_range) & (df["p"] >= pth0 - p_range)]
+    # p_range_df = df[(df['p'] <= pth0 + p_range) & (df["p"] >= pth0 - p_range)]
     # print(len(p_range_df))
-    threshold_plot(p_range_df, pth0, p_range, eta, l, curr_num_shots, error_type, CD_type, noise_model, file=output_file, circuit_level=True, py_corr = py_corr, corr_decoding=corr_decoding, loglog=False, averaging=True, show_threshold=True, show_fit=True)
+    threshold_plot(df, pth0, p_range, eta, l, curr_num_shots, error_type, CD_type, noise_model, file=output_file, circuit_level=True, py_corr = py_corr, corr_decoding=corr_decoding, loglog=False, averaging=True, show_threshold=True, show_fit=True)
     # eta_threshold_plot(eta_df, CD_type,corr_type_list, noise_model)
     # get_thresholds_from_data_exactish(curr_num_shots, p_th_init_CL,p_range, output_file)
     # make eta plot
