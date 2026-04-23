@@ -1478,7 +1478,7 @@ class CorrelatedDecoder:
         
         return log_errors_array
 
-    def get_log_error_circuit_level(self, p_list, meas_type, num_shots, noise_model="code_cap", cd_type="SC", corr_decoding= False, pymatch_corr = False):
+    def get_log_error_circuit_level(self, p_list, meas_type, num_shots, noise_model="code_cap", cd_type="SC", corr_decoding= False, pymatch_corr = False, fully_biased=False):
         """
         Get the logical error rate for a list of physical error rates of gates at the circuit level
         :param p_list: list of p values
@@ -1502,7 +1502,7 @@ class CorrelatedDecoder:
             elif noise_model == "phenom":
                 circuit = circuit_obj.make_elongated_circuit_from_parity(p,0,0,p,0,0,CD_type=cd_type, phenom_meas=True) # check the plots that matched pymatching to get error model right, before meas flip and data qubit pauli between rounds
             elif noise_model == "circuit_level":
-                circuit = circuit_obj.make_elongated_circuit_from_parity(before_measure_flip=p,before_measure_pauli_channel=0,after_clifford_depolarization=p,before_round_data_pauli_channel=0,between_round_idling_pauli_channel=p,idling_dephasing=0,CD_type=cd_type) # between round idling biased pauli on all qubits, measurement flip errors, 2-qubit gate depolarizing
+                circuit = circuit_obj.make_elongated_circuit_from_parity(before_measure_flip=p,before_measure_pauli_channel=0,after_clifford_depolarization=p,before_round_data_pauli_channel=0,between_round_idling_pauli_channel=p,idling_dephasing=0,CD_type=cd_type, fully_biased=fully_biased) # between round idling biased pauli on all qubits, measurement flip errors, 2-qubit gate depolarizing
             else:
                 raise ValueError("Invalid noise model. Choose either 'code_cap', 'phenom', or 'circuit_level'.")
             
@@ -1583,6 +1583,7 @@ def get_data(
     append=False,
     chunk_size=5000,
     resume=True,
+    fully_biased=False,
 ):
     """Generate logical error-rate data in chunks, with resume support.
 
@@ -1681,6 +1682,7 @@ def get_data(
                         cd_type,
                         corr_decoding,
                         pymatch_corr,
+                        fully_biased=fully_biased
                     )
                     log_errors_x_array = decoder.get_log_error_circuit_level(
                         np.array([p]),
@@ -1690,6 +1692,7 @@ def get_data(
                         cd_type,
                         corr_decoding,
                         pymatch_corr,
+                        fully_biased=fully_biased
                     )
 
                     log_errors_z = np.sum(log_errors_z_array, axis=1)[0]
@@ -1794,6 +1797,7 @@ def write_data(
     chunk_size=5000,
     overwrite=False,
     resume=True,
+    fully_biased=False
 ):
     """Write data incrementally to CSV while the job runs.
 
@@ -1853,6 +1857,7 @@ def write_data(
         append=True,
         chunk_size=chunk_size,
         resume=resume,
+        fully_biased=fully_biased,
     )
 
     return data
@@ -2150,6 +2155,7 @@ def get_data_DCC_chat(
     p_range=0.001,
     n_p=20,
     pymatch_corr=False,
+    fully_biased=False,
     chunk_size=1000,
     overwrite=False,
     resume=True,
@@ -2246,6 +2252,7 @@ def get_data_DCC_chat(
             chunk_size=chunk_size,
             overwrite=overwrite,
             resume=resume,
+            fully_biased=fully_biased,
         )
 
     elif corr_decoding and not circuit_data:
@@ -2303,6 +2310,7 @@ def get_data_DCC_chat(
             chunk_size=chunk_size,
             overwrite=overwrite,
             resume=resume,
+            fully_biased=fully_biased,
         )
 
 def get_data_DCC(
@@ -3233,8 +3241,163 @@ def eta_threshold_plot_compare_error_types(
 
     plt.show()
 
+def eta_threshold_plot_compare_deformations_and_decoder_2x2(
+    eta_df,
+    cd_type_list,
+    noise_model,
+    error_type="TOTAL_MEM_PY",
+    suffix_to_remove="_PY"
+):
+    """
+    Compare threshold vs bias in a 2x2 grid:
+      rows = deformation type
+      cols = decoder type
+
+    Left column: baseline decoder (MWPM)
+    Right column: main decoder (correlated / PY)
+
+    All l values are overlaid in each subplot.
+    """
+
+    eta_df = eta_df.copy()
+
+    eta_df['CD_type'] = eta_df['CD_type'].astype(str).str.strip()
+    eta_df['noise_model'] = eta_df['noise_model'].astype(str).str.strip()
+    eta_df['error_type'] = eta_df['error_type'].astype(str).str.strip()
+
+    cd_type_list = [cd.strip() for cd in cd_type_list]
+    noise_model = noise_model.strip()
+    error_type = error_type.strip()
+
+    if len(cd_type_list) != 2:
+        raise ValueError("cd_type_list must contain exactly 2 deformation types for the 2x2 layout.")
+
+    if error_type.endswith(suffix_to_remove):
+        baseline_error_type = error_type[:-len(suffix_to_remove)]
+    else:
+        raise ValueError(f"error_type must end with '{suffix_to_remove}', got {error_type}")
+
+    df = eta_df[
+        (eta_df['CD_type'].isin(cd_type_list)) &
+        (eta_df['noise_model'] == noise_model) &
+        (eta_df['error_type'].isin([error_type, baseline_error_type]))
+    ].copy()
+
+    l_values = sorted(df['l'].unique())
+
+    cmap = colormaps["plasma"]
+    color_values = np.linspace(0.1, 0.8, max(len(l_values), 1))
+    colors = [cmap(val) for val in color_values]
+
+    fig, axes = plt.subplots(
+        2, 2,
+        figsize=(12, 9),
+        sharex=True,
+        sharey=True
+    )
+
+    legend_handles = []
+    legend_labels = []
+
+    title_map = {
+        "SC": "CSS",
+        "ZXXZonSqu": "ZXXZ\u2610",
+        "Z": "V",
+        "X": "H",
+    }
+
+    decoder_titles = ["MWPM", "Correlated MWPM"]
+
+    for row_idx, cd_type in enumerate(cd_type_list):
+        df_cd = df[df['CD_type'] == cd_type]
+
+        for col_idx, decoder_type in enumerate([baseline_error_type, error_type]):
+            ax = axes[row_idx, col_idx]
+
+            for l_idx, l in enumerate(l_values):
+                color = colors[l_idx]
+
+                df_plot = df_cd[
+                    (df_cd['l'] == l) &
+                    (df_cd['error_type'] == decoder_type)
+                ].sort_values(by='eta')
+
+                if df_plot.empty:
+                    continue
+
+                eta_vals = df_plot['eta'].to_numpy()
+                pth = df_plot['pth'].to_numpy()
+                err = df_plot['stderr'].to_numpy()
+
+                line, = ax.plot(
+                    eta_vals,
+                    pth,
+                    label=rf"$\ell = {l}$",
+                    color=color,
+                    marker='o',
+                    linestyle='-',
+                    linewidth=1.8
+                )
+
+                ax.fill_between(
+                    eta_vals,
+                    pth - err,
+                    pth + err,
+                    color=color,
+                    alpha=0.2
+                )
+
+                if row_idx == 0 and col_idx == 0:
+                    legend_handles.append(line)
+                    legend_labels.append(rf"$\ell = {l}$")
+
+            row_title = title_map.get(cd_type, cd_type)
+            col_title = decoder_titles[col_idx]
+            ax.set_title(f"{row_title}, {col_title}", fontsize=16)
+
+            # Panel labels
+            panel_labels = ['(a)', '(b)', '(c)', '(d)']
+            panel_idx = row_idx * 2 + col_idx
+
+            ax.text(
+                0.02, 0.95,
+                panel_labels[panel_idx],
+                transform=ax.transAxes,
+                fontsize=14,
+                fontweight='bold',
+                va='top',
+                ha='left'
+            )
+            ax.set_xscale("log")
+            ax.grid(True)
+
+    mem_type = "" if baseline_error_type.startswith("TOTAL") else title_map.get(baseline_error_type[0], baseline_error_type[0]) + " Memory"
+
+    # fig.suptitle(
+    #     f"Threshold vs Bias {mem_type}",
+    #     fontsize=18,
+    #     y=0.97
+    # )
+
+    fig.legend(
+        legend_handles,
+        legend_labels,
+        loc="upper center",
+        bbox_to_anchor=(0.5, 0.91),
+        ncol=len(l_values),
+        fontsize=11,
+        frameon=False
+    )
+
+    fig.supxlabel("Noise Bias ($\\eta$)", fontsize=13)
+    fig.supylabel("Threshold $p_{th}$", fontsize=13)
+
+    fig.subplots_adjust(top=0.83, wspace=0.10, hspace=0.18)
+
+    plt.show()
+
 # plotter for plasma colormap
-def eta_delta_threshold_plot_compare_deformations_and_decoder(
+def eta_threshold_plot_compare_deformations_and_decoder(
     eta_df,
     cd_type_list,
     noise_model,
@@ -3415,7 +3578,7 @@ def eta_delta_threshold_plot_compare_deformations_and_decoder(
 
     plt.show()
 
-def eta_threshold_gap_plot_compare_deformations_and_decoder(
+def eta_delta_threshold_gap_plot_compare_deformations_and_decoder(
     eta_df,
     cd_type_list,
     noise_model,
@@ -3449,7 +3612,7 @@ def eta_threshold_gap_plot_compare_deformations_and_decoder(
     error_type = error_type.strip()
 
     if error_type.endswith(suffix_to_remove):
-        baseline_error_type = error_type[:-len(suffix_to_remove)]
+        baseline_error_type = error_type[:-len(suffix_to_remove)] # MWPM with no correlations
     else:
         raise ValueError(
             f"error_type must end with '{suffix_to_remove}', got {error_type}"
@@ -3515,7 +3678,7 @@ def eta_threshold_gap_plot_compare_deformations_and_decoder(
                 continue
 
             eta_vals = df_gap['eta'].to_numpy()
-            delta_pth = (df_gap['pth_main'] - df_gap['pth_base']).to_numpy()
+            delta_pth = ((df_gap['pth_main'] - df_gap['pth_base'])/ df_gap['pth_base']).to_numpy()
             delta_err = np.sqrt(
                 df_gap['stderr_main'].to_numpy()**2 +
                 df_gap['stderr_base'].to_numpy()**2
@@ -3548,7 +3711,7 @@ def eta_threshold_gap_plot_compare_deformations_and_decoder(
         ax.set_xscale("log")
         ax.grid(True)
 
-    axes[0].set_ylabel(r"$\Delta_{\mathrm{corr}}$", fontsize=12)
+    axes[0].set_ylabel(r"$\frac{\Delta_{\mathrm{corr}}}{p^{\mathrm{MWPM}}_{\mathrm{th}}}$", fontsize=12)
 
     mem_type = "" if baseline_error_type.startswith("TOTAL") else title_map.get(
         baseline_error_type[0], baseline_error_type[0]
@@ -4697,9 +4860,9 @@ if __name__ == "__main__":
     # p_list = np.logspace(-2.5, -1.5, 40)
     # p_list = None
 
-    l_list = [2,3,4,5,6] # elongation params, do 3 and 5 in another batch
+    l_list = [2,4,6] # elongation params, do 3 and 5 in another batch
     d_list = [11,13,15,17,19] # code distances
-    eta_list = [1000] # noise bias
+    eta_list = [100,1000] # noise bias
     cd_list = ["SC", "ZXXZonSqu"] # clifford deformation types
     corr_type = "TOTAL_MEM" # which type of correlation to use, depending on the type of decoder. Choose from ['CORR_XZ', 'CORR_ZX', 'TOTAL', 'TOTAL_MEM', 'TOTAL_PY_CORR', 'TOTAL_MEM_CORR']
     error_type = "TOTAL_MEM" # which type of error to plot
@@ -4713,14 +4876,15 @@ if __name__ == "__main__":
     corr_decoding = False # whether to get data for correlated decoding (corrxz or corrzx), or circuit level (X/Z mem or X/Z mem py)
     total_num_shots = 10**6
     chunk_size=10**3
-    n_p = 10
+    n_p = 20
     p_range=0.00125
     p_list = np.logspace(-2.5,-1.5,n_p)
 
     if circuit_data:
         folder_path = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/circuit_data/'
         if noise_model == "circuit_level":
-            output_file = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/circuit_data_clean.csv'
+            # output_file = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/circuit_data_clean.csv'
+            output_file = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/circuit_biased_data.csv'
         elif noise_model == "code_cap":
             output_file = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/code_cap_circuit_data.csv'
         elif noise_model == "phenom":
@@ -4739,29 +4903,30 @@ if __name__ == "__main__":
     # shots_added_per_submission = repeats_per_submission * shots_per_task
     
     # run this to get data from the dcc
-    # for py_corr in py_corr_list:
-    #     if py_corr == True:
-    #         p_init_d_temp = p_th_init_CL_pycorr
-    #     else:
-    #         p_init_d_temp = p_th_init_CL
-    #     get_data_DCC_chat(circuit_data=circuit_data,
-    #                     corr_decoding=corr_decoding,
-    #                     noise_model=noise_model,
-    #                     d_list=d_list,
-    #                     l_list=l_list,
-    #                     eta_list=eta_list,
-    #                     cd_list=cd_list,
-    #                     corr_list=corr_list,
-    #                     total_num_shots=total_num_shots,
-    #                     p_list=None,
-    #                     p_th_init_d=p_init_d_temp,
-    #                     pymatch_corr=py_corr,
-    #                     n_p = n_p,
-    #                     p_range=p_range,
-    #                     chunk_size=chunk_size,
-    #                     resume=True,
-    #                     shots_per_task=None,
-    #                     )
+    for py_corr in py_corr_list:
+        if py_corr == True:
+            p_init_d_temp = p_th_init_CL_pycorr
+        else:
+            p_init_d_temp = p_th_init_CL
+        get_data_DCC_chat(circuit_data=circuit_data,
+                        corr_decoding=corr_decoding,
+                        noise_model=noise_model,
+                        d_list=d_list,
+                        l_list=l_list,
+                        eta_list=eta_list,
+                        cd_list=cd_list,
+                        corr_list=corr_list,
+                        total_num_shots=total_num_shots,
+                        p_list=p_list,
+                        p_th_init_d=None,
+                        pymatch_corr=py_corr,
+                        fully_biased=True,
+                        n_p = n_p,
+                        p_range=p_range,
+                        chunk_size=chunk_size,
+                        resume=True,
+                        shots_per_task=None,
+                        )
     # get_data_DCC(circuit_data, corr_decoding, noise_model, d_list, l_list, eta_list, cd_list, corr_list, total_num_shots, p_list=None, p_th_init_d=p_th_init_CL_pycorr, pymatch_corr=py_corr)
 
     # run this once you have data and want to combo it to one csv
@@ -4782,22 +4947,22 @@ if __name__ == "__main__":
 
 
     # params to plot
-    eta = 10
-    l = 4
+    # eta = 0.5
+    # l = 3
 
-    curr_num_shots = chunk_size # the file has 20408 for the 3,5 and 30303 for the 2,4,6 and 52631 for pycorr
-    noise_model = "circuit_level"
-    CD_type = "ZXXZonSqu"
-    py_corr = True # whether to use pymatching correlated decoder for circuit data
-    corr_decoding = False # whether to get data for correlated decoding using my decoder
-    error_type = "Z_MEM_PY" # which type of error to plot, choose from ['X_MEM', 'Z_MEM', 'TOTAL_MEM', 'TOTAL_PY_MEM', 'TOTAL_MEM_PY_CORR']
-    p_range = 0.001
+    # curr_num_shots = chunk_size # the file has 20408 for the 3,5 and 30303 for the 2,4,6 and 52631 for pycorr
+    # noise_model = "circuit_level"
+    # CD_type = "SC"
+    # py_corr = False # whether to use pymatching correlated decoder for circuit data
+    # corr_decoding = False # whether to get data for correlated decoding using my decoder
+    # error_type = "TOTAL_MEM" # which type of error to plot, choose from ['X_MEM', 'Z_MEM', 'TOTAL_MEM', 'TOTAL_PY_MEM', 'TOTAL_MEM_PY_CORR']
+    # p_range = 0.00125
 
     
 
 
 
-    df = pd.read_csv(output_file)
+    # df = pd.read_csv(output_file)
     
     # plot_df = full_df[
     # (full_df['l'] == 2) &
@@ -4843,7 +5008,7 @@ if __name__ == "__main__":
 
 
     # make a plot for specific thresholds
-    pth0 = p_th_init_CL_pycorr[(l, eta, "Z_MEM_PY", CD_type, noise_model)]
+    # pth0 = p_th_init_CL_pycorr[(l, eta, "Z_MEM_PY", CD_type, noise_model)]
     # popt, pcov = get_threshold(df, pth0, p_range, l, eta, error_type, CD_type)
     # p_th = popt[0]
     # pth_error = np.sqrt(pcov[0][0])
@@ -4866,7 +5031,15 @@ if __name__ == "__main__":
     # suffix_to_remove="_PY"
     # )
 
-    # eta_threshold_gap_plot_compare_deformations_and_decoder(
+    # eta_threshold_plot_compare_deformations_and_decoder_2x2(
+    # eta_df,
+    # cd_type_list=["SC", "ZXXZonSqu"],
+    # noise_model="circuit_level",
+    # error_type = "TOTAL_MEM_PY",
+    # suffix_to_remove="_PY"
+    # )
+
+    # eta_delta_threshold_gap_plot_compare_deformations_and_decoder(
     # eta_df,
     # cd_type_list=["SC", "ZXXZonSqu"],
     # noise_model="circuit_level",
@@ -4884,7 +5057,7 @@ if __name__ == "__main__":
     
     # p_range_df = df[(df['p'] <= pth0 + p_range) & (df["p"] >= pth0 - p_range)]
     # print(len(p_range_df))
-    threshold_plot(df, pth0, p_range, eta, l, curr_num_shots, error_type, CD_type, noise_model, file=output_file, circuit_level=True, py_corr = py_corr, corr_decoding=corr_decoding, loglog=False, averaging=True, show_threshold=True, show_fit=True)
+    # threshold_plot(df, pth0, p_range, eta, l, curr_num_shots, error_type, CD_type, noise_model, file=output_file, circuit_level=True, py_corr = py_corr, corr_decoding=corr_decoding, loglog=False, averaging=True, show_threshold=True, show_fit=True)
     # eta_threshold_plot(eta_df, CD_type,corr_type_list, noise_model)
     # get_thresholds_from_data_exactish(curr_num_shots, p_th_init_CL,p_range, output_file)
     # make eta plot

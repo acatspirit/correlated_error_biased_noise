@@ -392,12 +392,9 @@ class CDCompassCodeCircuit:
         px = 0.5*p_i_round/(1+self.eta)
         pz = p_i_round*(self.eta/(1+self.eta))
 
-        if fully_biased:
-            p_x_gate = 0.5*p_gate/(1+self.eta)
-            p_z_gate = p_gate*(self.eta/(1+self.eta))
-        else:
-            p_x_gate = p_gate/(12*(1+self.eta))
-            p_z_gate = self.eta*p_gate/(3*(1+self.eta))
+
+        p_x_gate = p_gate/(12*(1+self.eta))
+        p_z_gate = self.eta*p_gate/(3*(1+self.eta))
         
 
         circuit.append("PAULI_CHANNEL_1",range(num_ancillas + num_qubits_x), [px,px,pz]) # idling error on all qubits in between measurement rounds
