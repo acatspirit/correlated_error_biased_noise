@@ -14,6 +14,7 @@ circuit_data_mycorr.csv
 circuit_data_clean.csv
 signed_gap_data copy.csv
 signed_gap_data.csv
+circuit_biased_data.csv
 
 
 __pycache__/

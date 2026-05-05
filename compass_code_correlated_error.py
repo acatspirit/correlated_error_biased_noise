@@ -4,6 +4,7 @@ from pymatching import Matching
 import matplotlib.pyplot as plt
 from matplotlib import colormaps
 from matplotlib.colors import Normalize
+from matplotlib.ticker import ScalarFormatter
 from scipy import sparse, linalg
 import CompassCodes as cc
 import csv
@@ -3135,7 +3136,7 @@ def eta_threshold_plot_compare_error_types(
 
     # Plasma colormap: one color per ell
     cmap = plt.get_cmap("plasma")
-    color_values = np.linspace(0.1, 0.9, max(len(l_values), 1))
+    color_values = np.linspace(0.1, 0.8, max(len(l_values), 1))
     l_colors = [cmap(val) for val in color_values]
 
     fig, axes = plt.subplots(
@@ -3218,11 +3219,16 @@ def eta_threshold_plot_compare_error_types(
             ha='left'
         )
 
-    fig.suptitle(
-        f"Threshold vs Bias ({title_map[cd_type]} Deformation)",
-        fontsize=18,
-        y=0.94
-    )
+        formatter = ScalarFormatter(useMathText=True)
+        formatter.set_powerlimits((0, 0))
+        ax.yaxis.set_major_formatter(formatter)
+        ax.ticklabel_format(axis="y", style="sci", scilimits=(0, 0))
+
+    # fig.suptitle(
+    #     f"Threshold vs Bias ({title_map[cd_type]} Deformation)",
+    #     fontsize=18,
+    #     y=0.94
+    # )
 
     fig.legend(
         legend_handles,
@@ -3371,7 +3377,12 @@ def eta_threshold_plot_compare_deformations_and_decoder_2x2(
             ax.set_xscale("log")
             ax.grid(True)
 
-    mem_type = "" if baseline_error_type.startswith("TOTAL") else title_map.get(baseline_error_type[0], baseline_error_type[0]) + " Memory"
+            formatter = ScalarFormatter(useMathText=True)
+            formatter.set_powerlimits((0, 0))
+            ax.yaxis.set_major_formatter(formatter)
+            ax.ticklabel_format(axis="y", style="sci", scilimits=(0, 0))
+
+    # mem_type = "" if baseline_error_type.startswith("TOTAL") else title_map.get(baseline_error_type[0], baseline_error_type[0]) + " Memory"
 
     # fig.suptitle(
     #     f"Threshold vs Bias {mem_type}",
@@ -3751,6 +3762,220 @@ def eta_delta_threshold_gap_plot_compare_deformations_and_decoder(
     )
 
     fig.subplots_adjust(top=0.74, wspace=0.12)
+
+    plt.show()
+
+def eta_delta_threshold_gap_grid_compare_deformations_and_decoder(
+    eta_df,
+    cd_type_list,
+    noise_model,
+    error_type="TOTAL_MEM_PY",
+    suffix_to_remove="_PY"
+):
+    """
+    Make a 2x2 grid:
+      columns = deformation types
+      top row = Delta_corr
+      bottom row = Delta_corr / p_th^MWPM
+    """
+
+    eta_df = eta_df.copy()
+
+    eta_df['CD_type'] = eta_df['CD_type'].astype(str).str.strip()
+    eta_df['noise_model'] = eta_df['noise_model'].astype(str).str.strip()
+    eta_df['error_type'] = eta_df['error_type'].astype(str).str.strip()
+
+    cd_type_list = [cd.strip() for cd in cd_type_list]
+    noise_model = noise_model.strip()
+    error_type = error_type.strip()
+
+    if len(cd_type_list) != 2:
+        raise ValueError("cd_type_list must contain exactly 2 deformation types.")
+
+    if error_type.endswith(suffix_to_remove):
+        baseline_error_type = error_type[:-len(suffix_to_remove)]
+    else:
+        raise ValueError(
+            f"error_type must end with '{suffix_to_remove}', got {error_type}"
+        )
+
+    df = eta_df[
+        (eta_df['CD_type'].isin(cd_type_list)) &
+        (eta_df['noise_model'] == noise_model) &
+        (eta_df['error_type'].isin([error_type, baseline_error_type]))
+    ].copy()
+
+    l_values = sorted(df['l'].unique())
+
+    cmap = colormaps["plasma"]
+    color_values = np.linspace(0.1, 0.8, max(len(l_values), 1))
+    colors = [cmap(val) for val in color_values]
+
+    fig, axes = plt.subplots(
+        2, 2,
+        figsize=(13, 8),
+        sharex=True,
+        sharey="row"
+    )
+
+    legend_handles = []
+    legend_labels = []
+
+    title_map = {
+        "SC": "CSS",
+        "ZXXZonSqu": "ZXXZ\u2610",
+        "Z": "V",
+        "X": "H",
+    }
+
+    for col_idx, cd_type in enumerate(cd_type_list):
+        df_cd = df[df['CD_type'] == cd_type]
+
+        for l_idx, l in enumerate(l_values):
+            color = colors[l_idx]
+
+            df_main = df_cd[
+                (df_cd['l'] == l) &
+                (df_cd['error_type'] == error_type)
+            ][['eta', 'pth', 'stderr']].rename(
+                columns={'pth': 'pth_main', 'stderr': 'stderr_main'}
+            )
+
+            df_base = df_cd[
+                (df_cd['l'] == l) &
+                (df_cd['error_type'] == baseline_error_type)
+            ][['eta', 'pth', 'stderr']].rename(
+                columns={'pth': 'pth_base', 'stderr': 'stderr_base'}
+            )
+
+            df_gap = pd.merge(
+                df_main,
+                df_base,
+                on='eta',
+                how='inner'
+            ).sort_values('eta')
+
+            if df_gap.empty:
+                continue
+
+            eta_vals = df_gap['eta'].to_numpy()
+
+            p_py = df_gap['pth_main'].to_numpy()
+            p_mwpm = df_gap['pth_base'].to_numpy()
+
+            err_py = df_gap['stderr_main'].to_numpy()
+            err_mwpm = df_gap['stderr_base'].to_numpy()
+
+            delta_corr = p_py - p_mwpm
+            delta_corr_err = np.sqrt(err_py**2 + err_mwpm**2)
+
+            frac_delta = delta_corr / p_mwpm
+
+            frac_delta_err = np.sqrt(
+                (err_py / p_mwpm)**2 +
+                ((p_py * err_mwpm) / (p_mwpm**2))**2
+            )
+
+            # Top row: absolute delta
+            ax_top = axes[0, col_idx]
+            line, = ax_top.plot(
+                eta_vals,
+                delta_corr,
+                color=color,
+                marker='o',
+                linestyle='-',
+                label=rf"$\ell = {l}$"
+            )
+            ax_top.fill_between(
+                eta_vals,
+                delta_corr - delta_corr_err,
+                delta_corr + delta_corr_err,
+                color=color,
+                alpha=0.2
+            )
+
+            # Bottom row: normalized delta
+            ax_bottom = axes[1, col_idx]
+            ax_bottom.plot(
+                eta_vals,
+                frac_delta,
+                color=color,
+                marker='o',
+                linestyle='-'
+            )
+            ax_bottom.fill_between(
+                eta_vals,
+                frac_delta - frac_delta_err,
+                frac_delta + frac_delta_err,
+                color=color,
+                alpha=0.2
+            )
+
+            if col_idx == 0:
+                legend_handles.append(line)
+                legend_labels.append(rf"$\ell = {l}$")
+
+        axes[0, col_idx].set_title(title_map.get(cd_type, cd_type), fontsize=16)
+
+    # Formatting all axes
+    for row_idx in range(2):
+        for col_idx in range(2):
+            ax = axes[row_idx, col_idx]
+            ax.set_xscale("log")
+            ax.grid(True)
+
+            # Scientific notation with multiplier shown at top of y-axis
+            formatter = ScalarFormatter(useMathText=True)
+            formatter.set_powerlimits((0, 0))
+            ax.yaxis.set_major_formatter(formatter)
+            ax.ticklabel_format(axis="y", style="sci", scilimits=(0, 0))
+
+    axes[0, 0].set_ylabel(r"$\Delta_{\mathrm{CORR}}$", fontsize=12)
+    axes[1, 0].set_ylabel(
+        r"$\Delta_{\mathrm{CORR}} / p^{\mathrm{MWPM}}_{\mathrm{th}}$",
+        fontsize=12
+    )
+
+    fig.supxlabel(r"Noise Bias ($\eta$)", fontsize=13)
+
+    fig.legend(
+        legend_handles,
+        legend_labels,
+        loc="upper center",
+        bbox_to_anchor=(0.5, 0.94),
+        ncol=len(l_values),
+        fontsize=11,
+        frameon=False
+    )
+
+    definition_handle = [
+        Line2D(
+            [0], [0],
+            color="black",
+            linestyle="-",
+            label=(
+                r"$\Delta_{\mathrm{CORR}} = "
+                r"p_{\mathrm{th}}^{\mathrm{CORR}} - "
+                r"p_{\mathrm{th}}^{\mathrm{MWPM}}$"
+            )
+        )
+    ]
+
+    fig.legend(
+        handles=definition_handle,
+        loc="upper center",
+        bbox_to_anchor=(0.5, 0.90),
+        ncol=1,
+        fontsize=11,
+        frameon=False
+    )
+
+    fig.subplots_adjust(
+        top=0.84,
+        bottom=0.10,
+        wspace=0.20,
+        hspace=0.20
+    )
 
     plt.show()
 
@@ -4903,30 +5128,30 @@ if __name__ == "__main__":
     # shots_added_per_submission = repeats_per_submission * shots_per_task
     
     # run this to get data from the dcc
-    for py_corr in py_corr_list:
-        if py_corr == True:
-            p_init_d_temp = p_th_init_CL_pycorr
-        else:
-            p_init_d_temp = p_th_init_CL
-        get_data_DCC_chat(circuit_data=circuit_data,
-                        corr_decoding=corr_decoding,
-                        noise_model=noise_model,
-                        d_list=d_list,
-                        l_list=l_list,
-                        eta_list=eta_list,
-                        cd_list=cd_list,
-                        corr_list=corr_list,
-                        total_num_shots=total_num_shots,
-                        p_list=p_list,
-                        p_th_init_d=None,
-                        pymatch_corr=py_corr,
-                        fully_biased=True,
-                        n_p = n_p,
-                        p_range=p_range,
-                        chunk_size=chunk_size,
-                        resume=True,
-                        shots_per_task=None,
-                        )
+    # for py_corr in py_corr_list:
+    #     if py_corr == True:
+    #         p_init_d_temp = p_th_init_CL_pycorr
+    #     else:
+    #         p_init_d_temp = p_th_init_CL
+    #     get_data_DCC_chat(circuit_data=circuit_data,
+    #                     corr_decoding=corr_decoding,
+    #                     noise_model=noise_model,
+    #                     d_list=d_list,
+    #                     l_list=l_list,
+    #                     eta_list=eta_list,
+    #                     cd_list=cd_list,
+    #                     corr_list=corr_list,
+    #                     total_num_shots=total_num_shots,
+    #                     p_list=p_list,
+    #                     p_th_init_d=None,
+    #                     pymatch_corr=py_corr,
+    #                     fully_biased=True,
+    #                     n_p = n_p,
+    #                     p_range=p_range,
+    #                     chunk_size=chunk_size,
+    #                     resume=True,
+    #                     shots_per_task=None,
+    #                     )
     # get_data_DCC(circuit_data, corr_decoding, noise_model, d_list, l_list, eta_list, cd_list, corr_list, total_num_shots, p_list=None, p_th_init_d=p_th_init_CL_pycorr, pymatch_corr=py_corr)
 
     # run this once you have data and want to combo it to one csv
@@ -5016,7 +5241,7 @@ if __name__ == "__main__":
 
     # get_thresholds_from_data_exactish(chunk_size, p_th_init_CL_pycorr, p_range, output_file)
     # eta_df = pd.read_csv("/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/threshold_exactish_per_eta.csv")
-    # eta_df_code_cap = pd.read_csv("/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/all_thresholds_per_eta_elongated.csv")
+    eta_df_code_cap = pd.read_csv("/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/all_thresholds_per_eta_elongated.csv")
     # eta_threshold_plot_totalmem_compare_deformations(
     # eta_df,
     # cd_type_list=["SC", "ZXXZonSqu"],
@@ -5047,13 +5272,19 @@ if __name__ == "__main__":
     # suffix_to_remove="_PY"
     # )
 
-    # eta_threshold_plot_compare_error_types(
-    # eta_df_code_cap,
-    # cd_type="SC",
-    # error_type_list=["CORR_XZ", "CORR_ZX", "TOTAL_PY_CORR", "TOTAL"],
-    # noise_model="code_cap"
-    # )
+    eta_threshold_plot_compare_error_types(
+    eta_df_code_cap,
+    cd_type="SC",
+    error_type_list=["CORR_XZ", "CORR_ZX", "TOTAL_PY_CORR", "TOTAL"],
+    noise_model="code_cap"
+    )
     
+    # eta_delta_threshold_gap_grid_compare_deformations_and_decoder(
+    # eta_df,
+    # cd_type_list=["SC", "ZXXZonSqu"],
+    # noise_model="circuit_level",
+    # error_type = "TOTAL_MEM_PY",
+    # )
     
     # p_range_df = df[(df['p'] <= pth0 + p_range) & (df["p"] >= pth0 - p_range)]
     # print(len(p_range_df))
