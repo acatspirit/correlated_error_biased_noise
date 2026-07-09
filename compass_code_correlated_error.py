@@ -1615,34 +1615,22 @@ def get_data(
 
     existing_df = _safe_read_csv(data_file) if resume else None
 
-    def flush_rows(rows_to_write, data_file):
+    def flush_rows(rows_to_write):
+        """Append rows to local CSV immediately."""
         if not rows_to_write:
             return
-        try:
-            # Check free space (e.g., ensure at least 100MB free)
-            stat = os.statvfs(os.path.dirname(data_file))
-            free_bytes = stat.f_frsize * stat.f_bavail
-            if free_bytes < 100 * 1024 * 1024:
-                raise OSError(28, "Low disk space, aborting write")
 
+        if append and data_file is not None:
             chunk_df = pd.DataFrame(rows_to_write, columns=columns)
             file_exists = os.path.isfile(data_file)
             
-            # Write to CSV
-            chunk_df.to_csv(data_file, mode="a", header=not file_exists, index=False)
-            
-            # Sync
-            with open(data_file, "a") as f:
-                f.flush()
-                os.fsync(f.fileno())
-                
-        except OSError as e:
-            if e.errno == 28:
-                print(f"CRITICAL: Disk full when writing to {data_file}. Stopping!")
-                # Use sys.exit to stop the SLURM job cleanly
-                sys.exit(1)
-            else:
-                raise e
+            # Simple, fast write to the local scratch disk
+            chunk_df.to_csv(
+                data_file,
+                mode="a",
+                header=not file_exists,
+                index=False,
+            )
 
     for d in d_list:
         decoder = CorrelatedDecoder(eta, d, l, corr_type)
@@ -1847,7 +1835,7 @@ def write_data(
         data_file = (
             f"circuit_data/{prefix}"
             # f"_l{l}_eta{eta}_cd{cd_type}_d{d_tag}_p{p_tag}.csv"
-            f"_l{l}_eta{eta}_cd{cd_type}.csv"
+            f"_l{l}_eta{eta}_cd{cd_type}_{ID}.csv"
         )
 
     if overwrite and os.path.isfile(data_file):
