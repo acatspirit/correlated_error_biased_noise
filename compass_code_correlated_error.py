@@ -1615,24 +1615,34 @@ def get_data(
 
     existing_df = _safe_read_csv(data_file) if resume else None
 
-    def flush_rows(rows_to_write):
-        """Append rows to CSV immediately and force flush to disk."""
+    def flush_rows(rows_to_write, data_file):
         if not rows_to_write:
             return
+        try:
+            # Check free space (e.g., ensure at least 100MB free)
+            stat = os.statvfs(os.path.dirname(data_file))
+            free_bytes = stat.f_frsize * stat.f_bavail
+            if free_bytes < 100 * 1024 * 1024:
+                raise OSError(28, "Low disk space, aborting write")
 
-        if append and data_file is not None:
             chunk_df = pd.DataFrame(rows_to_write, columns=columns)
             file_exists = os.path.isfile(data_file)
-            chunk_df.to_csv(
-                data_file,
-                mode="a",
-                header=not file_exists,
-                index=False,
-            )
-
+            
+            # Write to CSV
+            chunk_df.to_csv(data_file, mode="a", header=not file_exists, index=False)
+            
+            # Sync
             with open(data_file, "a") as f:
                 f.flush()
                 os.fsync(f.fileno())
+                
+        except OSError as e:
+            if e.errno == 28:
+                print(f"CRITICAL: Disk full when writing to {data_file}. Stopping!")
+                # Use sys.exit to stop the SLURM job cleanly
+                sys.exit(1)
+            else:
+                raise e
 
     for d in d_list:
         decoder = CorrelatedDecoder(eta, d, l, corr_type)
