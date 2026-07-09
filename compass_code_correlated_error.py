@@ -1771,7 +1771,7 @@ def get_data(
                         })
 
                 all_rows.extend(rows_for_chunk)
-                flush_rows(rows_for_chunk)
+                flush_rows(rows_for_chunk,data_file)
 
                 shots_done += curr_num_shots
 
