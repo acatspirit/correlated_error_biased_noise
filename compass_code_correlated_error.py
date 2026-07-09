@@ -1615,7 +1615,7 @@ def get_data(
 
     existing_df = _safe_read_csv(data_file) if resume else None
 
-    def flush_rows(rows_to_write):
+    def flush_rows(rows_to_write,data_file):
         """Append rows to local CSV immediately."""
         if not rows_to_write:
             return
