@@ -5088,9 +5088,9 @@ if __name__ == "__main__":
     # p_list = np.logspace(-2.5, -1.5, 40)
     # p_list = None
 
-    l_list = [2] # elongation params, do 3 and 5 in another batch
+    l_list = [2,3,4,5,6] # elongation params, do 3 and 5 in another batch
     d_list = [11,13,15,17,19] # code distances
-    eta_list = [100] # noise bias
+    eta_list = [0.5,10,50,100,500,1000] # noise bias
     cd_list = ["SC", "ZXXZonSqu"] # clifford deformation types
     corr_type = "TOTAL_MEM" # which type of correlation to use, depending on the type of decoder. Choose from ['CORR_XZ', 'CORR_ZX', 'TOTAL', 'TOTAL_MEM', 'TOTAL_PY_CORR', 'TOTAL_MEM_CORR']
     error_type = "TOTAL_MEM" # which type of error to plot
@@ -5102,17 +5102,17 @@ if __name__ == "__main__":
     # py_corr_list = [True, False] # whether to use pymatching correlated decoder for circuit data, do both in separate batches
     circuit_data = True # whether circuit level or code cap data is desired
     corr_decoding = False # whether to get data for correlated decoding (corrxz or corrzx), or circuit level (X/Z mem or X/Z mem py)
-    total_num_shots = 10**3
-    chunk_size=10**2
+    total_num_shots = 10**6
+    chunk_size=10**3
     n_p = 20
     p_range=0.00125
-    p_list = np.logspace(-2.5,-1.5,n_p)
+    p_list = np.logspace(-2,-1.5,n_p)
 
     if circuit_data:
         folder_path = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/circuit_data/'
         if noise_model == "circuit_level":
             # output_file = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/circuit_data_clean.csv'
-            output_file = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/circuit_biased_data.csv'
+            output_file = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/circuit_data_bias_preserving.csv'
             # output_file = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/fully_biased_circuit_level.csv'
         elif noise_model == "code_cap":
             output_file = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/code_cap_circuit_data.csv'
@@ -5177,14 +5177,14 @@ if __name__ == "__main__":
 
     # params to plot
     # eta = 100
-    # l = 6
+    # l = 2
 
-    # curr_num_shots = 1e3 # the file has 20408 for the 3,5 and 30303 for the 2,4,6 and 52631 for pycorr
+    # curr_num_shots = 10 # the file has 20408 for the 3,5 and 30303 for the 2,4,6 and 52631 for pycorr
     # noise_model = "circuit_level"
     # CD_type = "ZXXZonSqu"
-    # py_corr = True # whether to use pymatching correlated decoder for circuit data
+    # py_corr = False # whether to use pymatching correlated decoder for circuit data
     # corr_decoding = False # whether to get data for correlated decoding using my decoder
-    # error_type = "TOTAL_MEM_PY" # which type of error to plot, choose from ['X_MEM', 'Z_MEM', 'TOTAL_MEM', 'TOTAL_PY_MEM', 'TOTAL_MEM_PY_CORR']
+    # error_type = "TOTAL_MEM" # which type of error to plot, choose from ['X_MEM', 'Z_MEM', 'TOTAL_MEM', 'TOTAL_PY_MEM', 'TOTAL_MEM_PY_CORR']
     # p_range = 0.00125
 
     
