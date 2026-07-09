@@ -1836,7 +1836,8 @@ def write_data(
 
         data_file = (
             f"circuit_data/{prefix}"
-            f"_l{l}_eta{eta}_cd{cd_type}_d{d_tag}_p{p_tag}.csv"
+            # f"_l{l}_eta{eta}_cd{cd_type}_d{d_tag}_p{p_tag}.csv"
+            f"_l{l}_eta{eta}_cd{cd_type}.csv"
         )
 
     if overwrite and os.path.isfile(data_file):
