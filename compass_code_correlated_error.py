@@ -1584,7 +1584,7 @@ def get_data(
     append=False,
     chunk_size=5000,
     resume=True,
-    fully_biased=False,
+    fully_biased=True,
 ):
     """Generate logical error-rate data in chunks, with resume support.
 
@@ -1798,7 +1798,7 @@ def write_data(
     chunk_size=5000,
     overwrite=False,
     resume=True,
-    fully_biased=False
+    fully_biased=True
 ):
     """Write data incrementally to CSV while the job runs.
 
@@ -2331,6 +2331,7 @@ def get_data_DCC(
         chunk_size=5000,
         overwrite=False,
         resume=True,
+        fully_biased=False,
     ):
     """ Function to get the data from the DCC using parallel SLURM arrays. Each array task will get data for a specific (l, eta, corr_type) or (l, eta, cd_type) combo.
         The total number of shots will be split evenly across the array tasks so that the total number of shots is reached upon averaging. 
@@ -2383,7 +2384,8 @@ def get_data_DCC(
                    pymatch_corr=pymatch_corr,
                    chunk_size=chunk_size,
                    overwrite=overwrite,
-                   resume=resume)
+                   resume=resume,
+                   fully_biased=fully_biased)
     if circuit_data and (pymatch_corr or corr_decoding):
         l_eta_cd_type_arr = list(itertools.product(l_list,eta_list,cd_list))
         reps = slurm_array_size//len(l_eta_cd_type_arr) # how many times to run file, num_shots each time
@@ -2409,7 +2411,8 @@ def get_data_DCC(
                    pymatch_corr=pymatch_corr,
                    chunk_size=chunk_size,
                    overwrite=overwrite,
-                   resume=resume)
+                   resume=resume,
+                   fully_biased=fully_biased)
 
     if corr_decoding and not circuit_data: # change this to get different data for eta plot
         l_eta_corr_type_arr = list(itertools.product(l_list, eta_list, corr_list)) # list of tuples (l, eta, corr_type), currently 40
@@ -2437,7 +2440,8 @@ def get_data_DCC(
                    pymatch_corr=pymatch_corr,
                    chunk_size=chunk_size,
                    overwrite=overwrite,
-                   resume=resume)
+                   resume=resume,
+                   fully_biased=fully_biased)
 
     print("reps", reps)
     print("ind", ind)
@@ -5085,9 +5089,9 @@ if __name__ == "__main__":
     # p_list = np.logspace(-2.5, -1.5, 40)
     # p_list = None
 
-    l_list = [2,4,6] # elongation params, do 3 and 5 in another batch
+    l_list = [2] # elongation params, do 3 and 5 in another batch
     d_list = [11,13,15,17,19] # code distances
-    eta_list = [100,1000] # noise bias
+    eta_list = [100] # noise bias
     cd_list = ["SC", "ZXXZonSqu"] # clifford deformation types
     corr_type = "TOTAL_MEM" # which type of correlation to use, depending on the type of decoder. Choose from ['CORR_XZ', 'CORR_ZX', 'TOTAL', 'TOTAL_MEM', 'TOTAL_PY_CORR', 'TOTAL_MEM_CORR']
     error_type = "TOTAL_MEM" # which type of error to plot
@@ -5095,12 +5099,12 @@ if __name__ == "__main__":
     corr_list = ['CORR_XZ', 'CORR_ZX']
     corr_type_list = ['X_MEM', 'Z_MEM', 'TOTAL_MEM']  
     noise_model = "circuit_level"
-    # py_corr = False # whether to use pymatching correlated decoder for circuit data
-    py_corr_list = [True, False] # whether to use pymatching correlated decoder for circuit data, do both in separate batches
+    py_corr = False # whether to use pymatching correlated decoder for circuit data
+    # py_corr_list = [True, False] # whether to use pymatching correlated decoder for circuit data, do both in separate batches
     circuit_data = True # whether circuit level or code cap data is desired
     corr_decoding = False # whether to get data for correlated decoding (corrxz or corrzx), or circuit level (X/Z mem or X/Z mem py)
-    total_num_shots = 10**6
-    chunk_size=10**3
+    total_num_shots = 10**3
+    chunk_size=10**2
     n_p = 20
     p_range=0.00125
     p_list = np.logspace(-2.5,-1.5,n_p)
@@ -5110,6 +5114,7 @@ if __name__ == "__main__":
         if noise_model == "circuit_level":
             # output_file = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/circuit_data_clean.csv'
             output_file = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/circuit_biased_data.csv'
+            # output_file = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/fully_biased_circuit_level.csv'
         elif noise_model == "code_cap":
             output_file = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/code_cap_circuit_data.csv'
         elif noise_model == "phenom":
@@ -5152,7 +5157,7 @@ if __name__ == "__main__":
     #                     resume=True,
     #                     shots_per_task=None,
     #                     )
-    # get_data_DCC(circuit_data, corr_decoding, noise_model, d_list, l_list, eta_list, cd_list, corr_list, total_num_shots, p_list=None, p_th_init_d=p_th_init_CL_pycorr, pymatch_corr=py_corr)
+    get_data_DCC(circuit_data, corr_decoding, noise_model, d_list, l_list, eta_list, cd_list, corr_list, total_num_shots, p_list=p_list, p_th_init_d=None, pymatch_corr=py_corr, fully_biased=True)
 
     # run this once you have data and want to combo it to one csv
     # append_task_csvs_into_master(master_file=output_file)
@@ -5172,15 +5177,15 @@ if __name__ == "__main__":
 
 
     # params to plot
-    # eta = 0.5
-    # l = 3
+    # eta = 100
+    # l = 6
 
-    # curr_num_shots = chunk_size # the file has 20408 for the 3,5 and 30303 for the 2,4,6 and 52631 for pycorr
+    # curr_num_shots = 1e3 # the file has 20408 for the 3,5 and 30303 for the 2,4,6 and 52631 for pycorr
     # noise_model = "circuit_level"
-    # CD_type = "SC"
-    # py_corr = False # whether to use pymatching correlated decoder for circuit data
+    # CD_type = "ZXXZonSqu"
+    # py_corr = True # whether to use pymatching correlated decoder for circuit data
     # corr_decoding = False # whether to get data for correlated decoding using my decoder
-    # error_type = "TOTAL_MEM" # which type of error to plot, choose from ['X_MEM', 'Z_MEM', 'TOTAL_MEM', 'TOTAL_PY_MEM', 'TOTAL_MEM_PY_CORR']
+    # error_type = "TOTAL_MEM_PY" # which type of error to plot, choose from ['X_MEM', 'Z_MEM', 'TOTAL_MEM', 'TOTAL_PY_MEM', 'TOTAL_MEM_PY_CORR']
     # p_range = 0.00125
 
     
@@ -5241,7 +5246,7 @@ if __name__ == "__main__":
 
     # get_thresholds_from_data_exactish(chunk_size, p_th_init_CL_pycorr, p_range, output_file)
     # eta_df = pd.read_csv("/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/threshold_exactish_per_eta.csv")
-    eta_df_code_cap = pd.read_csv("/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/all_thresholds_per_eta_elongated.csv")
+    # eta_df_code_cap = pd.read_csv("/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/all_thresholds_per_eta_elongated.csv")
     # eta_threshold_plot_totalmem_compare_deformations(
     # eta_df,
     # cd_type_list=["SC", "ZXXZonSqu"],
@@ -5272,12 +5277,12 @@ if __name__ == "__main__":
     # suffix_to_remove="_PY"
     # )
 
-    eta_threshold_plot_compare_error_types(
-    eta_df_code_cap,
-    cd_type="SC",
-    error_type_list=["CORR_XZ", "CORR_ZX", "TOTAL_PY_CORR", "TOTAL"],
-    noise_model="code_cap"
-    )
+    # eta_threshold_plot_compare_error_types(
+    # eta_df_code_cap,
+    # cd_type="SC",
+    # error_type_list=["CORR_XZ", "CORR_ZX", "TOTAL_PY_CORR", "TOTAL"],
+    # noise_model="code_cap"
+    # )
     
     # eta_delta_threshold_gap_grid_compare_deformations_and_decoder(
     # eta_df,

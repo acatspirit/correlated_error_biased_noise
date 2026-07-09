@@ -500,7 +500,7 @@ class CDCompassCodeCircuit:
     
 
     def make_elongated_circuit_from_parity(self, before_measure_flip, before_measure_pauli_channel, after_clifford_depolarization, before_round_data_pauli_channel,
-                                            between_round_idling_pauli_channel, idling_dephasing, phenom_meas=False, CD_type = "SC", num_rounds = None, fully_biased=False):
+                                            between_round_idling_pauli_channel, idling_dephasing, phenom_meas=False, CD_type = "SC", num_rounds = None, fully_biased=True):
         """ 
         create a surface code memory experiment circuit from a parity check matrix
         Inputs:
