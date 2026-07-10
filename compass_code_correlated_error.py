@@ -5071,6 +5071,93 @@ if __name__ == "__main__":
                     # (5,50,"X_MEM_PY", "ZXXZonSqu","circuit_level"):0.00721, (5,50,"Z_MEM_PY", "ZXXZonSqu","circuit_level"):0.00736, (5,50,"TOTAL_MEM_PY", "ZXXZonSqu","circuit_level"):0.00728,
                     # (6,50,"X_MEM_PY","ZXXZonSqu", "circuit_level"):0.00935, (6,50,"Z_MEM_PY", "ZXXZonSqu","circuit_level"):0.00466, (6,50,"TOTAL_MEM_PY", "ZXXZonSqu","circuit_level"):0.00474}
 
+    p_th_init_bias_preserving_CL = {
+        ######### eta = 0.5 ################
+        (2,0.5, "X_MEM", "SC", "circuit_level"):0.00852, (2,0.5, "Z_MEM", "SC", "circuit_level"):0.00869, (2,0.5, "TOTAL_MEM", "SC", "circuit_level"):0.00859, # take again but lower
+        (3,0.5, "X_MEM", "SC", "circuit_level"):0.00897, (3,0.5, "Z_MEM", "SC", "circuit_level"):0.00721, (3,0.5, "TOTAL_MEM", "SC", "circuit_level"):0.00768, #
+        (4,0.5, "X_MEM", "SC", "circuit_level"):0.00949, (4,0.5, "Z_MEM", "SC", "circuit_level"):0.00620, (4,0.5, "TOTAL_MEM", "SC", "circuit_level"):0.00652, #
+        (5,0.5, "X_MEM", "SC", "circuit_level"):0.00996, (5,0.5, "Z_MEM", "SC", "circuit_level"):0.00546, (5,0.5, "TOTAL_MEM", "SC", "circuit_level"):0.00570, #
+        (6,0.5, "X_MEM", "SC", "circuit_level"):0.00935, (6,0.5, "Z_MEM", "SC", "circuit_level"):0.00466, (6,0.5, "TOTAL_MEM", "SC", "circuit_level"):0.00474, #
+
+        ######### eta = 10 ################
+        (2,10, "X_MEM", "SC", "circuit_level"):0.00721, (2,10, "Z_MEM", "SC", "circuit_level"):0.00736, (2,10, "TOTAL_MEM", "SC", "circuit_level"):0.00728, #
+        (3,10, "X_MEM", "SC", "circuit_level"):0.00935, (3,10, "Z_MEM", "SC", "circuit_level"):0.00466, (3,10, "TOTAL_MEM", "SC", "circuit_level"):0.00474,
+        (4,10, "X_MEM", "SC", "circuit_level"):0.01027, (4,10, "Z_MEM", "SC", "circuit_level"):0.00354, (4,10, "TOTAL_MEM", "SC", "circuit_level"):0.00348,
+        (5,10, "X_MEM", "SC", "circuit_level"):0.00721, (5,10, "Z_MEM", "SC", "circuit_level"):0.00736, (5,10, "TOTAL_MEM", "SC", "circuit_level"):0.00728,
+        (6,10, "X_MEM", "SC", "circuit_level"):0.00935, (6,10, "Z_MEM", "SC", "circuit_level"):0.00466, (6,10, "TOTAL_MEM", "SC", "circuit_level"):0.00474,
+
+        ######### eta = 50 ###############
+        (2,50, "X_MEM", "SC", "circuit_level"):0.00721, (2,50, "Z_MEM", "SC", "circuit_level"):0.00736, (2,50, "TOTAL_MEM", "SC", "circuit_level"):0.00728,
+        (3,50, "X_MEM", "SC", "circuit_level"):0.00935, (3,50, "Z_MEM", "SC", "circuit_level"):0.00466, (3,50, "TOTAL_MEM", "SC", "circuit_level"):0.00474,
+        (4,50, "X_MEM", "SC", "circuit_level"):0.01027, (4,50, "Z_MEM", "SC", "circuit_level"):0.00354, (4,50, "TOTAL_MEM", "SC", "circuit_level"):0.00348,
+        (5,50, "X_MEM", "SC", "circuit_level"):0.00721, (5,50, "Z_MEM", "SC", "circuit_level"):0.00736, (5,50, "TOTAL_MEM", "SC", "circuit_level"):0.00728,
+        (6,50, "X_MEM", "SC", "circuit_level"):0.00935, (6,50, "Z_MEM", "SC", "circuit_level"):0.00466, (6,50, "TOTAL_MEM", "SC", "circuit_level"):0.00474,
+
+        ######### eta = 100 ###############
+        (2,100, "X_MEM", "SC", "circuit_level"):0.00721, (2,100, "Z_MEM", "SC", "circuit_level"):0.00736, (2,100, "TOTAL_MEM", "SC", "circuit_level"):0.00728,
+        (3,100, "X_MEM", "SC", "circuit_level"):0.00935, (3,100, "Z_MEM", "SC", "circuit_level"):0.00466, (3,100, "TOTAL_MEM", "SC", "circuit_level"):0.00474,
+        (4,100, "X_MEM", "SC", "circuit_level"):0.01027, (4,100, "Z_MEM", "SC", "circuit_level"):0.00354, (4,100, "TOTAL_MEM", "SC", "circuit_level"):0.00348,
+        (5,100, "X_MEM", "SC", "circuit_level"):0.00721, (5,100, "Z_MEM", "SC", "circuit_level"):0.00736, (5,100, "TOTAL_MEM", "SC", "circuit_level"):0.00728,
+        (6,100, "X_MEM", "SC", "circuit_level"):0.00935, (6,100, "Z_MEM", "SC", "circuit_level"):0.00466, (6,100, "TOTAL_MEM", "SC", "circuit_level"):0.00474,
+        ######### eta = 500 ###############
+        (2,500, "X_MEM", "SC", "circuit_level"):0.00721, (2,500, "Z_MEM", "SC", "circuit_level"):0.00736, (2,500, "TOTAL_MEM", "SC", "circuit_level"):0.00728,
+        (3,500, "X_MEM", "SC", "circuit_level"):0.00935, (3,500, "Z_MEM", "SC", "circuit_level"):0.00466, (3,500, "TOTAL_MEM", "SC", "circuit_level"):0.00474,
+        (4,500, "X_MEM", "SC", "circuit_level"):0.01027, (4,500, "Z_MEM", "SC", "circuit_level"):0.00354, (4,500, "TOTAL_MEM", "SC", "circuit_level"):0.00348,
+        (5,500, "X_MEM", "SC", "circuit_level"):0.00721, (5,500, "Z_MEM", "SC", "circuit_level"):0.00736, (5,500, "TOTAL_MEM", "SC", "circuit_level"):0.00728,
+        (6,500, "X_MEM", "SC", "circuit_level"):0.00935, (6,500, "Z_MEM", "SC", "circuit_level"):0.00466, (6,500, "TOTAL_MEM", "SC", "circuit_level"):0.00474,
+
+        ######### eta = 1000 ###############
+        (2,1000, "X_MEM", "SC", "circuit_level"):0.00721, (2,1000, "Z_MEM", "SC", "circuit_level"):0.00736, (2,1000, "TOTAL_MEM", "SC", "circuit_level"):0.00728,
+        (3,1000, "X_MEM", "SC", "circuit_level"):0.00935, (3,1000, "Z_MEM", "SC", "circuit_level"):0.00466, (3,1000, "TOTAL_MEM", "SC", "circuit_level"):0.00474,
+        (4,1000, "X_MEM", "SC", "circuit_level"):0.01027, (4,1000, "Z_MEM", "SC", "circuit_level"):0.00354, (4,1000, "TOTAL_MEM", "SC", "circuit_level"):0.00348,
+        (5,1000, "X_MEM", "SC", "circuit_level"):0.00721, (5,1000, "Z_MEM", "SC", "circuit_level"):0.00736, (5,1000, "TOTAL_MEM", "SC", "circuit_level"):0.00728,
+        (6,1000, "X_MEM", "SC", "circuit_level"):0.00935, (6,1000, "Z_MEM", "SC", "circuit_level"):0.00466, (6,1000, "TOTAL_MEM", "SC", "circuit_level"):0.00474,
+
+        #
+        # ZXXZonSqu
+        #
+        ######### eta = 0.5 ################
+        (2,0.5, "X_MEM", "ZXXZonSqu", "circuit_level"):0.00852, (2,0.5, "Z_MEM", "ZXXZonSqu", "circuit_level"):0.00869, (2,0.5, "TOTAL_MEM", "ZXXZonSqu", "circuit_level"):0.00859,
+        (3,0.5, "X_MEM", "ZXXZonSqu", "circuit_level"):0.00897, (3,0.5, "Z_MEM", "ZXXZonSqu", "circuit_level"):0.00721, (3,0.5, "TOTAL_MEM", "ZXXZonSqu", "circuit_level"):0.00768,
+        (4,0.5, "X_MEM", "ZXXZonSqu", "circuit_level"):0.00949, (4,0.5, "Z_MEM", "ZXXZonSqu", "circuit_level"):0.00620, (4,0.5, "TOTAL_MEM", "ZXXZonSqu", "circuit_level"):0.00652,
+        (5,0.5, "X_MEM", "ZXXZonSqu", "circuit_level"):0.00996, (5,0.5, "Z_MEM", "ZXXZonSqu", "circuit_level"):0.00546, (5,0.5, "TOTAL_MEM", "ZXXZonSqu", "circuit_level"):0.00570,
+        (6,0.5, "X_MEM", "ZXXZonSqu", "circuit_level"):0.00935, (6,0.5, "Z_MEM", "ZXXZonSqu", "circuit_level"):0.00466, (6,0.5, "TOTAL_MEM", "ZXXZonSqu", "circuit_level"):0.00474,
+
+        ######### eta = 10 ################
+        (2,10, "X_MEM", "ZXXZonSqu", "circuit_level"):0.00721, (2,10, "Z_MEM", "ZXXZonSqu", "circuit_level"):0.00736, (2,10, "TOTAL_MEM", "ZXXZonSqu", "circuit_level"):0.00728,
+        (3,10, "X_MEM", "ZXXZonSqu", "circuit_level"):0.00935, (3,10, "Z_MEM", "ZXXZonSqu", "circuit_level"):0.00466, (3,10, "TOTAL_MEM", "ZXXZonSqu", "circuit_level"):0.00474,
+        (4,10, "X_MEM", "ZXXZonSqu", "circuit_level"):0.01027, (4,10, "Z_MEM", "ZXXZonSqu", "circuit_level"):0.00354, (4,10, "TOTAL_MEM", "ZXXZonSqu", "circuit_level"):0.00348,
+        (5,10, "X_MEM", "ZXXZonSqu", "circuit_level"):0.00721, (5,10, "Z_MEM", "ZXXZonSqu", "circuit_level"):0.00736, (5,10, "TOTAL_MEM", "ZXXZonSqu", "circuit_level"):0.00728,
+        (6,10, "X_MEM", "ZXXZonSqu", "circuit_level"):0.00935, (6,10, "Z_MEM", "ZXXZonSqu", "circuit_level"):0.00466, (6,10, "TOTAL_MEM", "ZXXZonSqu", "circuit_level"):0.00474,
+        ######### eta = 50 ###############
+        (2,50, "X_MEM", "ZXXZonSqu", "circuit_level"):0.00721, (2,50, "Z_MEM", "ZXXZonSqu", "circuit_level"):0.00736, (2,50, "TOTAL_MEM", "ZXXZonSqu", "circuit_level"):0.00728,
+        (3,50, "X_MEM", "ZXXZonSqu", "circuit_level"):0.00935, (3,50, "Z_MEM", "ZXXZonSqu", "circuit_level"):0.00466, (3,50, "TOTAL_MEM", "ZXXZonSqu", "circuit_level"):0.00474,
+        (4,50, "X_MEM", "ZXXZonSqu", "circuit_level"):0.01027, (4,50, "Z_MEM", "ZXXZonSqu", "circuit_level"):0.00354, (4,50, "TOTAL_MEM", "ZXXZonSqu", "circuit_level"):0.00348,
+        (5,50, "X_MEM", "ZXXZonSqu", "circuit_level"):0.00721, (5,50, "Z_MEM", "ZXXZonSqu", "circuit_level"):0.00736, (5,50, "TOTAL_MEM", "ZXXZonSqu", "circuit_level"):0.00728,
+        (6,50, "X_MEM", "ZXXZonSqu", "circuit_level"):0.00935, (6,50, "Z_MEM", "ZXXZonSqu", "circuit_level"):0.00466, (6,50, "TOTAL_MEM", "ZXXZonSqu", "circuit_level"):0.00474,
+
+        ######### eta = 100 ###############
+        (2,100, "X_MEM", "ZXXZonSqu", "circuit_level"):0.00721, (2,100, "Z_MEM", "ZXXZonSqu", "circuit_level"):0.00736, (2,100, "TOTAL_MEM", "ZXXZonSqu", "circuit_level"):0.00728,
+        (3,100, "X_MEM", "ZXXZonSqu", "circuit_level"):0.00935, (3,100, "Z_MEM", "ZXXZonSqu", "circuit_level"):0.00466, (3,100, "TOTAL_MEM", "ZXXZonSqu", "circuit_level"):0.00474,
+        (4,100, "X_MEM", "ZXXZonSqu", "circuit_level"):0.01027, (4,100, "Z_MEM", "ZXXZonSqu", "circuit_level"):0.00354, (4,100, "TOTAL_MEM", "ZXXZonSqu", "circuit_level"):0.00348,
+        (5,100, "X_MEM", "ZXXZonSqu", "circuit_level"):0.00721, (5,100, "Z_MEM", "ZXXZonSqu", "circuit_level"):0.00736, (5,100, "TOTAL_MEM", "ZXXZonSqu", "circuit_level"):0.00728,
+        (6,100, "X_MEM", "ZXXZonSqu", "circuit_level"):0.00935, (6,100, "Z_MEM", "ZXXZonSqu", "circuit_level"):0.00466, (6,100, "TOTAL_MEM", "ZXXZonSqu", "circuit_level"):0.00474,
+        ######### eta = 500 ###############
+        (2,500, "X_MEM", "ZXXZonSqu", "circuit_level"):0.00721, (2,500, "Z_MEM", "ZXXZonSqu", "circuit_level"):0.00736, (2,500, "TOTAL_MEM", "ZXXZonSqu", "circuit_level"):0.00728,
+        (3,500, "X_MEM", "ZXXZonSqu", "circuit_level"):0.00935, (3,500, "Z_MEM", "ZXXZonSqu", "circuit_level"):0.00466, (3,500, "TOTAL_MEM", "ZXXZonSqu", "circuit_level"):0.00474,
+        (4,500, "X_MEM", "ZXXZonSqu", "circuit_level"):0.01027, (4,500, "Z_MEM", "ZXXZonSqu", "circuit_level"):0.00354, (4,500, "TOTAL_MEM", "ZXXZonSqu", "circuit_level"):0.00348,
+        (5,500, "X_MEM", "ZXXZonSqu", "circuit_level"):0.00721, (5,500, "Z_MEM", "ZXXZonSqu", "circuit_level"):0.00736, (5,500, "TOTAL_MEM", "ZXXZonSqu", "circuit_level"):0.00728,
+        (6,500, "X_MEM", "ZXXZonSqu", "circuit_level"):0.00935, (6,500, "Z_MEM", "ZXXZonSqu", "circuit_level"):0.00466, (6,500, "TOTAL_MEM", "ZXXZonSqu", "circuit_level"):0.00474,
+
+        ######### eta = 1000 ###############
+        (2,1000, "X_MEM", "ZXXZonSqu", "circuit_level"):0.00721, (2,1000, "Z_MEM", "ZXXZonSqu", "circuit_level"):0.00736, (2,1000, "TOTAL_MEM", "ZXXZonSqu", "circuit_level"):0.00728,
+        (3,1000, "X_MEM", "ZXXZonSqu", "circuit_level"):0.00935, (3,1000, "Z_MEM", "ZXXZonSqu", "circuit_level"):0.00466, (3,1000, "TOTAL_MEM", "ZXXZonSqu", "circuit_level"):0.00474,
+        (4,1000, "X_MEM", "ZXXZonSqu", "circuit_level"):0.01027, (4,1000, "Z_MEM", "ZXXZonSqu", "circuit_level"):0.00354, (4,1000, "TOTAL_MEM", "ZXXZonSqu", "circuit_level"):0.00348,
+        (5,1000, "X_MEM", "ZXXZonSqu", "circuit_level"):0.00721, (5,1000, "Z_MEM", "ZXXZonSqu", "circuit_level"):0.00736, (5,1000, "TOTAL_MEM", "ZXXZonSqu", "circuit_level"):0.00728,
+        (6,1000, "X_MEM", "ZXXZonSqu", "circuit_level"):0.00935, (6,1000, "Z_MEM", "ZXXZonSqu", "circuit_level"):0.00466, (6,1000, "TOTAL_MEM", "ZXXZonSqu", "circuit_level"):0.00474,
+
+    }
+
     #### parameters
 
 
@@ -5106,7 +5193,7 @@ if __name__ == "__main__":
     chunk_size=10**3
     n_p = 20
     p_range=0.00125
-    p_list = np.logspace(-2,-1.5,n_p)
+    p_list = np.logspace(-3,-2,n_p)
 
     if circuit_data:
         folder_path = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/circuit_data/'
@@ -5176,12 +5263,12 @@ if __name__ == "__main__":
 
 
     # params to plot
-    # eta = 100
-    # l = 2
+    # eta = 10
+    # l = 3
 
     # curr_num_shots = 10 # the file has 20408 for the 3,5 and 30303 for the 2,4,6 and 52631 for pycorr
     # noise_model = "circuit_level"
-    # CD_type = "ZXXZonSqu"
+    # CD_type = "SC"
     # py_corr = False # whether to use pymatching correlated decoder for circuit data
     # corr_decoding = False # whether to get data for correlated decoding using my decoder
     # error_type = "TOTAL_MEM" # which type of error to plot, choose from ['X_MEM', 'Z_MEM', 'TOTAL_MEM', 'TOTAL_PY_MEM', 'TOTAL_MEM_PY_CORR']
