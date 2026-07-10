@@ -5219,6 +5219,7 @@ if __name__ == "__main__":
     circuit_data = True # whether circuit level or code cap data is desired
     corr_decoding = False # whether to get data for correlated decoding (corrxz or corrzx), or circuit level (X/Z mem or X/Z mem py)
     enable_belief_matching = False # whether to decode with the belief matching algorithm
+    max_bp_iters = 30
     total_num_shots = 10**6
     chunk_size=10**3
     n_p = 20
@@ -5273,7 +5274,7 @@ if __name__ == "__main__":
     #                     resume=True,
     #                     shots_per_task=None,
     #                     )
-    get_data_DCC(circuit_data, corr_decoding, noise_model, d_list, l_list, eta_list, cd_list, corr_list, total_num_shots, p_list=p_list, p_th_init_d=None, pymatch_corr=py_corr, fully_biased=True, enable_belief_matching=enable_belief_matching)
+    # get_data_DCC(circuit_data, corr_decoding, noise_model, d_list, l_list, eta_list, cd_list, corr_list, total_num_shots, p_list=p_list, p_th_init_d=None, pymatch_corr=py_corr, fully_biased=True, enable_belief_matching=enable_belief_matching, max_bp_iters = max_bp_iters)
 
     # run this once you have data and want to combo it to one csv
     # append_task_csvs_into_master(master_file=output_file)
