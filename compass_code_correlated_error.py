@@ -2414,7 +2414,7 @@ def get_data_DCC(
     if circuit_data and (pymatch_corr or corr_decoding):
         l_eta_cd_type_arr = list(itertools.product(l_list,eta_list,cd_list))
         reps = slurm_array_size//len(l_eta_cd_type_arr) # how many times to run file, num_shots each time
-        ind = task_id%len(l_eta_cd_type_arr) # get the index of the task_id in the l_eta__corr_type_arr
+        ind = task_id%len(l_eta_cd_type_arr) # get the index of the task_id in the l_eta_cd_type_arr
         l, eta, cd_type = l_eta_cd_type_arr[ind] # get the l and eta from the task_id, pymatching corr should be doing an erasure channel this whole time, see what happens
         num_shots = int(total_num_shots//reps) # number of shots to sample
         print("l,eta,cd_type", l,eta, cd_type)
@@ -5217,13 +5217,13 @@ if __name__ == "__main__":
     d_list = [11,13,15,17,19] # code distances
     eta_list = [0.5,10,50,100,500,1000] # noise bias
     cd_list = ["SC", "ZXXZonSqu"] # clifford deformation types
-    corr_type = "TOTAL_MEM" # which type of correlation to use, depending on the type of decoder. Choose from ['CORR_XZ', 'CORR_ZX', 'TOTAL', 'TOTAL_MEM', 'TOTAL_PY_CORR', 'TOTAL_MEM_CORR']
-    error_type = "TOTAL_MEM" # which type of error to plot
+    corr_type = "TOTAL_MEM_PY" # which type of correlation to use, depending on the type of decoder. Choose from ['CORR_XZ', 'CORR_ZX', 'TOTAL', 'TOTAL_MEM', 'TOTAL_PY_CORR', 'TOTAL_MEM_CORR']
+    error_type = "TOTAL_MEM_PY" # which type of error to plot
     # num_shots = 66666
     corr_list = ['CORR_XZ', 'CORR_ZX']
     corr_type_list = ['X_MEM', 'Z_MEM', 'TOTAL_MEM']  
     noise_model = "circuit_level"
-    py_corr = False # whether to use pymatching correlated decoder for circuit data
+    py_corr = True # whether to use pymatching correlated decoder for circuit data
     # py_corr_list = [True, False] # whether to use pymatching correlated decoder for circuit data, do both in separate batches
     circuit_data = True # whether circuit level or code cap data is desired
     corr_decoding = False # whether to get data for correlated decoding (corrxz or corrzx), or circuit level (X/Z mem or X/Z mem py)
@@ -5231,8 +5231,9 @@ if __name__ == "__main__":
     max_bp_iters = 30
     total_num_shots = 10**6
     chunk_size=10**3
-    n_p = 20
-    p_range=0.00125
+    n_p = 30
+    # p_range=0.00125
+    p_range = 0.003
     p_list = np.logspace(-3,-2,n_p)
 
     if circuit_data:
@@ -5283,7 +5284,7 @@ if __name__ == "__main__":
     #                 resume=True,
     #                 shots_per_task=None,
     #                 )
-    # get_data_DCC(circuit_data, corr_decoding, noise_model, d_list, l_list, eta_list, cd_list, corr_list, total_num_shots, p_list=None, p_th_init_d=p_init_d_temp, pymatch_corr=py_corr, fully_biased=True, enable_belief_matching=enable_belief_matching, max_bp_iters = max_bp_iters)
+    get_data_DCC(circuit_data, corr_decoding, noise_model, d_list, l_list, eta_list, cd_list, corr_list, total_num_shots, p_list=None, p_th_init_d=p_init_d_temp, pymatch_corr=py_corr, fully_biased=True, enable_belief_matching=enable_belief_matching, max_bp_iters = max_bp_iters)
 
     # run this once you have data and want to combo it to one csv
     # append_task_csvs_into_master(master_file=output_file)
