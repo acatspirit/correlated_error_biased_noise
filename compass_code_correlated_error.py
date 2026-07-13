@@ -4149,7 +4149,7 @@ def get_thresholds_from_data_exactish(p_th_init_dict, p_range, output_file):
         p_th_init_dict - a dictionary of initial guesses for the threshold, only the entries you want to make exactish, with keys (l, eta, corr_type)
     out: threshold_d - the updated dictionary of thresholds
     """
-    all_thresholds_df = pd.read_csv('/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/threshold_exactish_per_eta.csv')
+    all_thresholds_df = pd.read_csv('/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/thresholds_bias_preserving.csv')
     # print("thresholds_df 1", all_thresholds_df)
 
 
@@ -4162,8 +4162,16 @@ def get_thresholds_from_data_exactish(p_th_init_dict, p_range, output_file):
         # threshold_d = {}
 
         p_th_init = p_th_init_dict[key]
-        
-        pop,pcov = get_threshold(df, p_th_init,p_range, l, eta, corr_type, CD_type)
+
+        try:
+            pop,pcov = get_threshold(df, p_th_init,p_range, l, eta, corr_type, CD_type)
+
+        except Exception as e:
+            print(f"Threshold fit failed for l={l}, eta={eta}, corr_type={corr_type}, CD_type={CD_type}, noise_model={noise_model}. Skipping.")
+            continue
+        except RuntimeError as e:
+            print(f"Threshold fit failed for l={l}, eta={eta}, corr_type={corr_type}, CD_type={CD_type}, noise_model={noise_model}. Skipping.")
+            continue
         if type(pop) == int:
             print(f"Threshold fit failed for l={l}, eta={eta}, corr_type={corr_type}, CD_type={CD_type}, noise_model={noise_model}. Skipping.")
             continue
@@ -4174,7 +4182,7 @@ def get_thresholds_from_data_exactish(p_th_init_dict, p_range, output_file):
         all_thresholds_df = pd.concat([all_thresholds_df,pd.DataFrame({'l':l,'eta':eta, 'error_type':corr_type, 'CD_type':CD_type, 'noise_model':noise_model, 'pth':threshold, 'stderr':std_error}, index=[0])], ignore_index=True)
         # print("thresholds_df 2", all_thresholds_df)
 
-    all_thresholds_df.to_csv('/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/threshold_exactish_per_eta.csv', index=False)
+    all_thresholds_df.to_csv('/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/thresholds_bias_preserving.csv', index=False)
 
 
 def get_thresholds_from_data_exactish_chat(
@@ -5275,7 +5283,7 @@ if __name__ == "__main__":
     #                 resume=True,
     #                 shots_per_task=None,
     #                 )
-    get_data_DCC(circuit_data, corr_decoding, noise_model, d_list, l_list, eta_list, cd_list, corr_list, total_num_shots, p_list=None, p_th_init_d=p_init_d_temp, pymatch_corr=py_corr, fully_biased=True, enable_belief_matching=enable_belief_matching, max_bp_iters = max_bp_iters)
+    # get_data_DCC(circuit_data, corr_decoding, noise_model, d_list, l_list, eta_list, cd_list, corr_list, total_num_shots, p_list=None, p_th_init_d=p_init_d_temp, pymatch_corr=py_corr, fully_biased=True, enable_belief_matching=enable_belief_matching, max_bp_iters = max_bp_iters)
 
     # run this once you have data and want to combo it to one csv
     # append_task_csvs_into_master(master_file=output_file)
@@ -5362,7 +5370,7 @@ if __name__ == "__main__":
     # pth_error = np.sqrt(pcov[0][0])
     # print(p_th, pth_error)
 
-    # get_thresholds_from_data_exactish(chunk_size, p_th_init_CL_pycorr, p_range, output_file)
+    # get_thresholds_from_data_exactish(p_th_init_bias_preserving_CL, p_range, output_file)
     # eta_df = pd.read_csv("/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/threshold_exactish_per_eta.csv")
     # eta_df_code_cap = pd.read_csv("/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/all_thresholds_per_eta_elongated.csv")
     # eta_threshold_plot_totalmem_compare_deformations(
