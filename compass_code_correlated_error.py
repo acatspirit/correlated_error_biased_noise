@@ -5234,7 +5234,7 @@ if __name__ == "__main__":
     n_p = 30
     # p_range=0.00125
     p_range = 0.003
-    p_list = np.logspace(-3,-2,n_p)
+    p_list = np.logspace(-3,-1.5,n_p)
 
     if circuit_data:
         folder_path = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/circuit_data/'
@@ -5284,7 +5284,7 @@ if __name__ == "__main__":
     #                 resume=True,
     #                 shots_per_task=None,
     #                 )
-    get_data_DCC(circuit_data, corr_decoding, noise_model, d_list, l_list, eta_list, cd_list, corr_list, total_num_shots, p_list=None, p_th_init_d=p_init_d_temp, pymatch_corr=py_corr, fully_biased=True, enable_belief_matching=enable_belief_matching, max_bp_iters = max_bp_iters)
+    get_data_DCC(circuit_data, corr_decoding, noise_model, d_list, l_list, eta_list, cd_list, corr_list, total_num_shots, p_list=p_list, p_th_init_d=None, pymatch_corr=py_corr, fully_biased=True, enable_belief_matching=enable_belief_matching, max_bp_iters = max_bp_iters)
 
     # run this once you have data and want to combo it to one csv
     # append_task_csvs_into_master(master_file=output_file)
@@ -5304,16 +5304,18 @@ if __name__ == "__main__":
 
 
     # params to plot
-    # eta = 10
-    # l = 6
+    # eta = 1000
+    # l = 5
+
 
     # curr_num_shots = 10 # the file has 20408 for the 3,5 and 30303 for the 2,4,6 and 52631 for pycorr
     # noise_model = "circuit_level"
-    # CD_type = "ZXXZonSqu"
-    # py_corr = False # whether to use pymatching correlated decoder for circuit data
+    # CD_type = "SC"
+    # py_corr = True # whether to use pymatching correlated decoder for circuit data
     # corr_decoding = False # whether to get data for correlated decoding using my decoder
-    # error_type = "TOTAL_MEM" # which type of error to plot, choose from ['X_MEM', 'Z_MEM', 'TOTAL_MEM', 'TOTAL_PY_MEM', 'TOTAL_MEM_PY_CORR']
-    # p_range = 0.00125
+    # error_type = "TOTAL_MEM_PY" # which type of error to plot, choose from ['X_MEM', 'Z_MEM', 'TOTAL_MEM', 'TOTAL_PY_MEM', 'TOTAL_MEM_PY_CORR']
+    # # p_range = 0.00125
+    # p_range = 0.003
 
     
 
