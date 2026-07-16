@@ -1,7 +1,7 @@
 from matplotlib.lines import Line2D
 import numpy as np
 from pymatching import Matching
-from beliefmatching import BeliefMatching
+# from beliefmatching import BeliefMatching
 import matplotlib.pyplot as plt
 from matplotlib import colormaps
 from matplotlib.colors import Normalize
@@ -3353,8 +3353,8 @@ def eta_threshold_plot_compare_deformations_and_decoder_2x2(
     title_map = {
         "SC": "CSS",
         "ZXXZonSqu": "ZXXZ\u2610",
-        "Z": "V",
-        "X": "H",
+        "Z": "Z",
+        "X": "X",
     }
 
     decoder_titles = ["MWPM", "Correlated MWPM"]
@@ -3518,8 +3518,8 @@ def eta_threshold_plot_compare_deformations_and_decoder(
     title_map = {
         "SC": "CSS",
         "ZXXZonSqu": "ZXXZ\u2610",
-        "Z": "V",
-        "X": "H",
+        "Z": "Z",
+        "X": "X",
     }
 
     for col_idx, cd_type in enumerate(cd_type_list):
@@ -5382,7 +5382,7 @@ if __name__ == "__main__":
     #                 resume=True,
     #                 shots_per_task=None,
     #                 )
-    get_data_DCC(circuit_data, corr_decoding, noise_model, d_list, l_list, eta_list, cd_list, corr_list, total_num_shots, p_list=p_list, p_th_init_d=None, pymatch_corr=py_corr, fully_biased=True, enable_belief_matching=enable_belief_matching, max_bp_iters = max_bp_iters)
+    # get_data_DCC(circuit_data, corr_decoding, noise_model, d_list, l_list, eta_list, cd_list, corr_list, total_num_shots, p_list=p_list, p_th_init_d=None, pymatch_corr=py_corr, fully_biased=True, enable_belief_matching=enable_belief_matching, max_bp_iters = max_bp_iters)
 
     # run this once you have data and want to combo it to one csv
     # append_task_csvs_into_master(master_file=output_file)
@@ -5472,7 +5472,7 @@ if __name__ == "__main__":
     # print(p_th, pth_error)
 
     # get_thresholds_from_data_exactish(p_th_init_bias_preserving_CL_pycorr, p_range, output_file)
-    # eta_df = pd.read_csv("/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/threshold_exactish_per_eta.csv")
+    # eta_df = pd.read_csv("/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/thresholds_bias_preserving.csv")
     # eta_df_code_cap = pd.read_csv("/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/all_thresholds_per_eta_elongated.csv")
     # eta_threshold_plot_totalmem_compare_deformations(
     # eta_df,
