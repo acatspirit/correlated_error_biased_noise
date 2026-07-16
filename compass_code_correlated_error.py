@@ -1846,6 +1846,8 @@ def write_data(
             prefix = "py_corr"
         elif corr_decoding:
             prefix = "corr"
+        elif enable_belief_matching:
+            prefix = "bm"
         else:
             prefix = "circuit_level"
 
@@ -2093,6 +2095,8 @@ def _get_expected_error_types(corr_type, circuit_data, corr_decoding=False, pyma
             return ["X_MEM_PY", "Z_MEM_PY", "TOTAL_MEM_PY"]
         elif corr_decoding:
             return ["X_MEM_CORR", "Z_MEM_CORR", "TOTAL_MEM_CORR"]
+        elif enable_belief_matching:
+            return ["X_MEM_BM", "Z_MEM_BM", "TOTAL_MEM_BM"]
         else:
             return ["X_MEM", "Z_MEM", "TOTAL_MEM"]
     else:
@@ -2411,7 +2415,14 @@ def get_data_DCC(
                    fully_biased=fully_biased,
                    enable_belief_matching=enable_belief_matching,
                    max_bp_iters=max_bp_iters)
-    if circuit_data and (pymatch_corr or corr_decoding):
+    if circuit_data and (pymatch_corr or corr_decoding or enable_belief_matching):
+        if pymatch_corr:
+            suffix = "_PY"
+        elif corr_decoding:
+            suffix = "_CORR"
+        else:
+            suffix = "_BM"
+
         l_eta_cd_type_arr = list(itertools.product(l_list,eta_list,cd_list))
         reps = slurm_array_size//len(l_eta_cd_type_arr) # how many times to run file, num_shots each time
         ind = task_id%len(l_eta_cd_type_arr) # get the index of the task_id in the l_eta_cd_type_arr
@@ -2420,7 +2431,7 @@ def get_data_DCC(
         print("l,eta,cd_type", l,eta, cd_type)
         corr_type = "None"
         if p_th_init_d is not None:
-            p_th_init = p_th_init_d[(l, eta, "TOTAL_MEM_PY", cd_type,noise_model)] # add the mem type somehow
+            p_th_init = p_th_init_d[(l, eta, "TOTAL_MEM" + suffix, cd_type,noise_model)] # add the mem type somehow
             p_list = np.linspace(p_th_init - p_range, p_th_init + p_range, 15)
         write_data(total_num_shots=num_shots, 
                    d_list=d_list, 
@@ -5313,11 +5324,11 @@ if __name__ == "__main__":
     # py_corr_list = [True, False] # whether to use pymatching correlated decoder for circuit data, do both in separate batches
     circuit_data = True # whether circuit level or code cap data is desired
     corr_decoding = False # whether to get data for correlated decoding (corrxz or corrzx), or circuit level (X/Z mem or X/Z mem py)
-    enable_belief_matching = False # whether to decode with the belief matching algorithm
+    enable_belief_matching = True # whether to decode with the belief matching algorithm
     max_bp_iters = 30
     total_num_shots = 10**6
     chunk_size=10**3
-    n_p = 15
+    n_p = 30
     # p_range=0.00125
     p_range = 0.00125
     p_list = np.logspace(-3,-1.5,n_p)
@@ -5370,7 +5381,7 @@ if __name__ == "__main__":
     #                 resume=True,
     #                 shots_per_task=None,
     #                 )
-    get_data_DCC(circuit_data, corr_decoding, noise_model, d_list, l_list, eta_list, cd_list, corr_list, total_num_shots, p_list=None, p_th_init_d=p_init_d_temp, pymatch_corr=py_corr, fully_biased=True, enable_belief_matching=enable_belief_matching, max_bp_iters = max_bp_iters)
+    get_data_DCC(circuit_data, corr_decoding, noise_model, d_list, l_list, eta_list, cd_list, corr_list, total_num_shots, p_list=p_list, p_th_init_d=None, pymatch_corr=py_corr, fully_biased=True, enable_belief_matching=enable_belief_matching, max_bp_iters = max_bp_iters)
 
     # run this once you have data and want to combo it to one csv
     # append_task_csvs_into_master(master_file=output_file)
@@ -5400,8 +5411,8 @@ if __name__ == "__main__":
     # py_corr = True # whether to use pymatching correlated decoder for circuit data
     # corr_decoding = False # whether to get data for correlated decoding using my decoder
     # error_type = "TOTAL_MEM_PY" # which type of error to plot, choose from ['X_MEM', 'Z_MEM', 'TOTAL_MEM', 'TOTAL_PY_MEM', 'TOTAL_MEM_PY_CORR']
-    # # p_range = 0.00125
-    # p_range = 0.003
+    # p_range = 0.00125
+    # # p_range = 0.003
 
     
 
@@ -5459,7 +5470,7 @@ if __name__ == "__main__":
     # pth_error = np.sqrt(pcov[0][0])
     # print(p_th, pth_error)
 
-    # get_thresholds_from_data_exactish(p_th_init_bias_preserving_CL, p_range, output_file)
+    # get_thresholds_from_data_exactish(p_th_init_bias_preserving_CL_pycorr, p_range, output_file)
     # eta_df = pd.read_csv("/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/threshold_exactish_per_eta.csv")
     # eta_df_code_cap = pd.read_csv("/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/all_thresholds_per_eta_elongated.csv")
     # eta_threshold_plot_totalmem_compare_deformations(
