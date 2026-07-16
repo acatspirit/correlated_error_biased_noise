@@ -1475,8 +1475,9 @@ class CorrelatedDecoder:
             seed = np.random.randint(0, 2**32 - 1)
             sampler = circuit.compile_detector_sampler(seed=seed) # double check that this randomness is doing the right thing, every shot should be random and compare
             syndrome, observable_flips = sampler.sample(num_shots, separate_observables=True) # do i need to set a seed here?
+            dem = circuit.detector_error_model(decompose_errors=True, approximate_disjoint_errors=True)
 
-            bm = BeliefMatching(circuit, max_bp_iters=max_bp_iters)
+            bm = BeliefMatching(dem, max_bp_iters=max_bp_iters)
             predictions = bm.decode_batch(syndrome)
             log_errors_array = np.any(np.array(observable_flips) != np.array(predictions), axis=1)
         
