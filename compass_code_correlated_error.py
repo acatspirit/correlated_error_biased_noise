@@ -2187,6 +2187,7 @@ def get_data_DCC_chat(
     overwrite=False,
     resume=True,
     shots_per_task=None,
+    enable_belief_matching=False
 ):
     """
     Smaller-granularity SLURM array launcher.
@@ -2227,6 +2228,8 @@ def get_data_DCC_chat(
                     err_key = "TOTAL_MEM_PY"
                 elif corr_decoding:
                     err_key = "TOTAL_MEM_PY" # CHANGE THIS LATER IF MORE DATA
+                elif enable_belief_matching:
+                    err_key = "TOTAL_MEM_BM"
                 else:
                     err_key = "TOTAL_MEM"
 
@@ -2280,6 +2283,7 @@ def get_data_DCC_chat(
             overwrite=overwrite,
             resume=resume,
             fully_biased=fully_biased,
+            enable_belief_matching=enable_belief_matching
         )
 
     elif corr_decoding and not circuit_data:
@@ -2338,6 +2342,7 @@ def get_data_DCC_chat(
             overwrite=overwrite,
             resume=resume,
             fully_biased=fully_biased,
+            enable_belief_matching=enable_belief_matching
         )
 
 def get_data_DCC(
@@ -5311,7 +5316,7 @@ if __name__ == "__main__":
     # p_list = np.logspace(-2.5, -1.5, 40)
     # p_list = None
 
-    l_list = [2,3,4,5,6] # elongation params, do 3 and 5 in another batch
+    l_list = [2,4,6] # elongation params, do 3 and 5 in another batch
     d_list = [11,13,15,17,19] # code distances
     eta_list = [0.5,10,50,100,500,1000] # noise bias
     cd_list = ["SC", "ZXXZonSqu"] # clifford deformation types
@@ -5333,6 +5338,8 @@ if __name__ == "__main__":
     # p_range=0.00125
     p_range = 0.00125
     p_list = np.logspace(-3,-1.5,n_p)
+
+
 
     if circuit_data:
         folder_path = '/Users/ariannameinking/Documents/Brown_Research/correlated_error_biased_noise/circuit_data/'
@@ -5363,25 +5370,25 @@ if __name__ == "__main__":
         p_init_d_temp = p_th_init_bias_preserving_CL_pycorr
     else:
         p_init_d_temp = p_th_init_bias_preserving_CL
-    # get_data_DCC_chat(circuit_data=circuit_data,
-    #                 corr_decoding=corr_decoding,
-    #                 noise_model=noise_model,
-    #                 d_list=d_list,
-    #                 l_list=l_list,
-    #                 eta_list=eta_list,
-    #                 cd_list=cd_list,
-    #                 corr_list=corr_list,
-    #                 total_num_shots=total_num_shots,
-    #                 p_list=p_list,
-    #                 p_th_init_d=None,
-    #                 pymatch_corr=py_corr,
-    #                 fully_biased=True,
-    #                 n_p = n_p,
-    #                 p_range=p_range,
-    #                 chunk_size=chunk_size,
-    #                 resume=True,
-    #                 shots_per_task=None,
-    #                 )
+    get_data_DCC_chat(circuit_data=circuit_data,
+                    corr_decoding=corr_decoding,
+                    noise_model=noise_model,
+                    d_list=d_list,
+                    l_list=l_list,
+                    eta_list=eta_list,
+                    cd_list=cd_list,
+                    corr_list=corr_list,
+                    total_num_shots=total_num_shots,
+                    p_list=p_list,
+                    p_th_init_d=None,
+                    pymatch_corr=py_corr,
+                    fully_biased=True,
+                    n_p = n_p,
+                    p_range=p_range,
+                    chunk_size=chunk_size,
+                    resume=True,
+                    shots_per_task=None,
+                    )
     # get_data_DCC(circuit_data, corr_decoding, noise_model, d_list, l_list, eta_list, cd_list, corr_list, total_num_shots, p_list=p_list, p_th_init_d=None, pymatch_corr=py_corr, fully_biased=True, enable_belief_matching=enable_belief_matching, max_bp_iters = max_bp_iters)
 
     # run this once you have data and want to combo it to one csv
