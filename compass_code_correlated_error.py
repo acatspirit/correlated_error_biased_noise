@@ -1,7 +1,7 @@
 from matplotlib.lines import Line2D
 import numpy as np
 from pymatching import Matching
-# from beliefmatching import BeliefMatching
+from beliefmatching import BeliefMatching
 import matplotlib.pyplot as plt
 from matplotlib import colormaps
 from matplotlib.colors import Normalize
