@@ -5388,6 +5388,7 @@ if __name__ == "__main__":
                     chunk_size=chunk_size,
                     resume=True,
                     shots_per_task=None,
+                    enable_belief_matching=enable_belief_matching
                     )
     # get_data_DCC(circuit_data, corr_decoding, noise_model, d_list, l_list, eta_list, cd_list, corr_list, total_num_shots, p_list=p_list, p_th_init_d=None, pymatch_corr=py_corr, fully_biased=True, enable_belief_matching=enable_belief_matching, max_bp_iters = max_bp_iters)
 
